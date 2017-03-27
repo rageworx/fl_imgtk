@@ -1,0 +1,84 @@
+# Makefile for fl_imgtk
+# (C)2017 Raphael Kim / rageworx@gmail.com
+#
+
+#########################################################################
+# About cross compiler, or other platform :
+#
+# To enable build for embedded linux, you may encomment next 2 lines.
+# Or, may need to change your cross compiler path with environments.
+# It is up to developer !
+
+# CCPREPATH = ${ARM_LINUX_GCC_PATH}
+# CCPREFIX  = arm-linux-
+
+# To enable build for embedded linux, change following line.
+# CCPATH    = ${CCPREPATH}/${CCPREFIX}
+CCPATH =
+#########################################################################
+
+# Compiler configure.
+GCC = ${CCPATH}gcc
+GPP = ${CCPATH}g++
+AR  = ${CCPATH}ar
+
+# FLTK place
+FLTKDIR    = /usr/include
+FLTKLIBDIR = /usr/lib
+FLTKLIBS   = -L$(FLTKLIBDIR) -lfltk -lfltk_images -lfltk_png -lfltk_jpeg
+
+# Sources and how it built
+# Optimization issue: recommend to build with using -ffast-math option.
+# Change if your CPU architecture supports more high technologies.
+INCDIR    = ./inc
+SOURCEDIR = ./src
+OBJDIR    = ./obj/Release
+OUTBIN    = libfl_imgtk.a
+OUTDIR    = ./lib
+DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE
+OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
+CPUARCHOPT    = -mavx
+
+ifeq (64bit,$(firstword $(MAKECMDGOALS)))
+	OBJDIR = ./obj64/Release
+	OUTDIR = ./lib64
+	CPUARCHOPT += -m64
+endif
+
+ifeq (debug,$(firstword $(MAKECMDGOALS)))
+	DEFINEOPT += -DDEBUG
+	OUTBIN = librawprocessor_d.a
+endif
+
+CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT) $(FLTKLIBS)
+
+.PHONY: 64bit
+
+all: prepare clean ${OUTDIR}/${OUTBIN}
+
+64bit: all
+debug: all
+
+prepare:
+	@mkdir -p ${OBJDIR}
+	@mkdir -p ${OUTDIR}
+
+${OBJDIR}/fl_imgtk_tonemap.o:
+	@$(GPP) -c ${SOURCEDIR}/fl_imgtk_tonemap.cpp ${CFLAGS} -o $@
+
+${OBJDIR}/fl_smimg.o:
+	@$(GPP) -c ${SOURCEDIR}/fl_smimg.cpp ${CFLAGS} -o $@
+
+${OBJDIR}/fl_imgtk.o:
+	@$(GPP) -c ${SOURCEDIR}/fl_imgtk.cpp ${CFLAGS} -o $@
+
+
+${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}/fl_imgtk.o
+	@echo "Generating $@ ..."
+	@$(AR) -q $@ ${OBJDIR}/*.o
+	@cp -f ${INCDIR}/fl_imgtk.h ${OUTDIR}
+
+clean:
+	@echo "Cleaning built directories ..."
+	@rm -rf ${OBJDIR}/*
+	@rm -rf ${OUTDIR}/${OUTBIN}
