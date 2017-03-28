@@ -217,7 +217,7 @@ Fl_RGB_Image* fl_imgtk::rotate180( Fl_RGB_Image* img )
         #pragma omp parallel for
         for( unsigned cnt=0; cnt<cntmax; cnt++ )
         {
-            for( unsigned cntd=1;cntd<=d; cntd++)
+            for( unsigned cntd=0;cntd<d; cntd++)
             {
                 fl_imgtk_swap_uc( buff[ cnt * d + cntd ],
                                   buff[ (imgmax - cnt) * d + cntd ] );
