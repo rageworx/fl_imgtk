@@ -11,31 +11,31 @@
 #define F_EPSILON       1e-06f
 #define F_INFINITE      1e+10f
 
-#define F_LOG05         -0.693147
+#define F_LOG05         -0.693147f
 
-#define ILLU_CIE_XR     0.640f
-#define ILLU_CIE_YR     0.330f
-#define ILLU_CIE_XG     0.300f
-#define ILLU_CIE_YG     0.600f
-#define ILLU_CIE_XB     0.150f
-#define ILLU_CIE_YB     0.060f
-#define ILLU_CIE_XW     0.3127f
-#define ILLU_CIE_YW     0.3290f
+#define ILLU_CIE_XR     0.640
+#define ILLU_CIE_YR     0.330
+#define ILLU_CIE_XG     0.300
+#define ILLU_CIE_YG     0.600
+#define ILLU_CIE_XB     0.150
+#define ILLU_CIE_YB     0.060
+#define ILLU_CIE_XW     0.3127
+#define ILLU_CIE_YW     0.3290
 
 #define ILLU_CIE_D      ( ILLU_CIE_XR * \
                           ( ILLU_CIE_YG - ILLU_CIE_YB) + \
                           ILLU_CIE_XG * ( ILLU_CIE_YB - ILLU_CIE_YR ) + \
                           ILLU_CIE_XB * (ILLU_CIE_YR - ILLU_CIE_YG) )
 
-#define ILLU_CIE_C_RD   ( ( 1.0f / ILLU_CIE_YW ) * \
+#define ILLU_CIE_C_RD   ( ( 1.0 / ILLU_CIE_YW ) * \
                           ( ILLU_CIE_XW * ( ILLU_CIE_YG - ILLU_CIE_YB ) - \
                             ILLU_CIE_YW * ( ILLU_CIE_XG - ILLU_CIE_XB ) + \
                             ILLU_CIE_XG * ILLU_CIE_YB - ILLU_CIE_XB * ILLU_CIE_YG) )
-#define ILLU_CIE_C_GD   ( ( 1.0f / ILLU_CIE_YW ) * \
+#define ILLU_CIE_C_GD   ( ( 1.0 / ILLU_CIE_YW ) * \
                           ( ILLU_CIE_XW * ( ILLU_CIE_YB - ILLU_CIE_YR ) - \
                             ILLU_CIE_YW * ( ILLU_CIE_XB - ILLU_CIE_XR ) - \
                             ILLU_CIE_XR * ILLU_CIE_YB + ILLU_CIE_XB * ILLU_CIE_YR ) )
-#define ILLU_CIE_C_BD   ( ( 1.0f / ILLU_CIE_YW ) * \
+#define ILLU_CIE_C_BD   ( ( 1.0 / ILLU_CIE_YW ) * \
                           ( ILLU_CIE_XW * ( ILLU_CIE_YR - ILLU_CIE_YG ) - \
                             ILLU_CIE_YW * ( ILLU_CIE_XR - ILLU_CIE_XG ) + \
                             ILLU_CIE_XR * ILLU_CIE_YG - ILLU_CIE_XG * ILLU_CIE_YR ) )
@@ -53,7 +53,7 @@ typedef struct
 ////////////////////////////////////////////////////////////////////////////////
 
 // Table of RGB to XYZ (no white balance)
-static const float  RGB2XYZ[3][3] =
+static const double  RGB2XYZ[3][3] =
 {
 	{
         ILLU_CIE_XR * ILLU_CIE_C_RD / ILLU_CIE_D,
@@ -66,14 +66,14 @@ static const float  RGB2XYZ[3][3] =
         ILLU_CIE_YB * ILLU_CIE_C_BD / ILLU_CIE_D
 	},
 	{
-        (1.0f - ILLU_CIE_XR - ILLU_CIE_YR) * ILLU_CIE_C_RD / ILLU_CIE_D,
-        (1.0f - ILLU_CIE_XG - ILLU_CIE_YG) * ILLU_CIE_C_GD / ILLU_CIE_D,
-        (1.0f - ILLU_CIE_XB - ILLU_CIE_YB) * ILLU_CIE_C_BD / ILLU_CIE_D
+        (1.0 - ILLU_CIE_XR - ILLU_CIE_YR) * ILLU_CIE_C_RD / ILLU_CIE_D,
+        (1.0 - ILLU_CIE_XG - ILLU_CIE_YG) * ILLU_CIE_C_GD / ILLU_CIE_D,
+        (1.0 - ILLU_CIE_XB - ILLU_CIE_YB) * ILLU_CIE_C_BD / ILLU_CIE_D
 	}
 };
 
 // Table of XYZ to RGB (no white balance)
-static const float  XYZ2RGB[3][3] =
+static const double  XYZ2RGB[3][3] =
 {
 	{
 	    ( ILLU_CIE_YG - ILLU_CIE_XB - ILLU_CIE_XB * ILLU_CIE_YG + ILLU_CIE_XB * ILLU_CIE_XG )
@@ -110,16 +110,11 @@ static inline double fl_imgtk_biasFunction(const double b, const double x)
 
 static inline double fl_imgtk_pade_log(const double x)
 {
-	if( x < 1.0 )
-    {
-        return ( x * ( 6.0 + x ) / ( 6.0 + 4.0 * x ) );
+	if(x < 1) {
+		return (x * (6 + x) / (6 + 4 * x));
+	} else if(x < 2) {
+		return (x * (6 + 0.7662 * x) / (5.9897 + 3.7658 * x));
 	}
-	else
-    if( x < 2.0 )
-    {
-        return ( x * (  6.0 + 0.7662 * x ) / ( 5.9897 + 3.7658 * x ) );
-	}
-
 	return log(x + 1);
 }
 
@@ -182,7 +177,7 @@ Fl_RGB_Image* fl_imgtk_F2RGB( fl_imgtk_fimg* img )
             #pragma omp parallel for
             for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
             {
-                buff[ cnt ] = (uchar)( (float)img->pixels[ cnt ] * 255.0f );
+                buff[ cnt ] = (uchar)( img->pixels[ cnt ] * 255.0f );
             }
 
             return new Fl_RGB_Image( buff, w, h ,d );
@@ -207,8 +202,9 @@ Fl_RGB_Image* fl_imgtk_clamp_F2RGB( fl_imgtk_fimg* img )
 
         if ( buff != NULL )
         {
+            unsigned imgsz = w*h*d;
             #pragma omp parallel for
-            for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
+            for( unsigned cnt=0; cnt<imgsz; cnt++ )
             {
                 float conv = ( img->pixels[ cnt ] > 1.0f ) ? 1.0f : img->pixels[ cnt ];
                 buff[ cnt ] = (uchar)( conv * 255.0f + 0.5f );
@@ -227,10 +223,11 @@ bool fl_imgtk_F2YXY( fl_imgtk_fimg* img )
 {
     if ( img != NULL )
     {
+        unsigned imgsz = img->w * img->h;
         #pragma omp parellel for
-        for( unsigned cnt=0; cnt<(img->w * img->h); cnt++ )
+        for( unsigned cnt=0; cnt<imgsz; cnt++ )
         {
-            float tf[3] = {0};
+            float tf[3] = {0,0,0};
             float* psrc = &img->pixels[ cnt * img->d ];
 
             for ( unsigned rpt=0; rpt<3; rpt++ )
@@ -243,17 +240,15 @@ bool fl_imgtk_F2YXY( fl_imgtk_fimg* img )
             float fW = tf[0] + tf[1] + tf[2];
             float fY = tf[1];
 
-            if ( fY > 0.0f )
+            if ( fW > 0.0f )
             {
-                psrc[0] = fY;
-                psrc[1] = tf[0] / fW;
-                psrc[2] = tf[1] / fW;
+                psrc[0] = fY;           /// Y
+                psrc[1] = tf[0] / fW;   /// x
+                psrc[2] = tf[1] / fW;   /// y
             }
             else
             {
-                psrc[0] = 0;
-                psrc[1] = 0;
-                psrc[2] = 0;
+                memset( psrc, 0, 3 * sizeof(float) );
             }
         }
 
@@ -295,12 +290,11 @@ fl_imgtk_fimg* fl_imgtk_F2Y( fl_imgtk_fimg* img )
             {
                 float* psrc = &img->pixels[ cnt * d ];
 
-                float luma790 = ( ( (float)psrc[0] * 0.2126f ) +
-                                  ( (float)psrc[1] * 0.7152f ) +
-                                  ( (float)psrc[2] * 0.0722f ) );
+                float luma790 = ( ( psrc[0] * 0.2126f ) +
+                                  ( psrc[1] * 0.7152f ) +
+                                  ( psrc[2] * 0.0722f ) );
 
                 newfimg->pixels[ cnt ] = ( luma790 > 0.0f ) ? luma790 : 0.0f;
-
             }
 
             return newfimg;
@@ -314,8 +308,10 @@ bool fl_imgtk_YXY2F( fl_imgtk_fimg* img )
 {
     if ( img != NULL )
     {
+        unsigned imgsz = img->w * img->h;
+
         #pragma omp parellel for
-        for( unsigned cnt=0; cnt<(img->w * img->h); cnt++ )
+        for( unsigned cnt=0; cnt<imgsz; cnt++ )
         {
             float tf[3] = {0};
             float* psrc = &img->pixels[ cnt * img->d ];
@@ -341,6 +337,10 @@ bool fl_imgtk_YXY2F( fl_imgtk_fimg* img )
             psrc[1] = fY;
             psrc[2] = fZ;
 
+            tf[0] = 0;
+            tf[1] = 0;
+            tf[2] = 0;
+
             for( unsigned rpt=0; rpt<3; rpt++ )
             {
                 tf[rpt] += XYZ2RGB[rpt][0] * psrc[0];
@@ -348,7 +348,10 @@ bool fl_imgtk_YXY2F( fl_imgtk_fimg* img )
                 tf[rpt] += XYZ2RGB[rpt][2] * psrc[2];
             }
 
-            memcpy( &psrc, &tf, 3 * sizeof(float) );
+            psrc[0] = tf[0];
+            psrc[1] = tf[1];
+            psrc[2] = tf[2];
+
         }
 
         return true;
@@ -365,14 +368,10 @@ bool fl_imgtk_luminancefromYXY( fl_imgtk_fimg* img, float &maxlumi, float &minlu
 
         double dsum = 0.0;
 
-        maxlumi = 0.0f;
-        minlumi = 0.0f;
-        worldlumi = 0.0f;
-
         //#pragma omp parellel for private( dsum )
         for( unsigned cnt=0; cnt<cmax; cnt++ )
         {
-            float fY = MAX( 0.0f, img->pixels[ cnt ] );
+            float fY = MAX( 0.0f, img->pixels[ cnt * img->d ] );
 
             maxlumi = ( maxlumi < fY ) ? fY : maxlumi;
             minlumi = ( minlumi < fY ) ? minlumi : fY;
@@ -399,23 +398,23 @@ bool fl_imgtk_luminancefromY( fl_imgtk_fimg* img, float &maxlumi, float &minlumi
 
     unsigned imgsz = img->w * img->h;
 
-    maxlumi  = -1e20f;
-    minlumi  = 1e20f;
+    float maxl   = -1e20f;
+    float minl   = 1e20f;
+    double lsum  = 0.0;
+    double llsum = 0.0;
 
-    double   lsum  = 0.0;
-    double   llsum = 0.0;
-
-    #pragma omp parallel for private( lsum, llsum )
     for( unsigned cnt=0; cnt<imgsz; cnt++ )
     {
         float Y = img->pixels[ cnt ];
-        maxlumi = ( maxlumi < Y ) ? Y:maxlumi;
-        minlumi = ( ( Y > 0.0f ) && ( minlumi < Y ) ) ? minlumi : Y;
-        lsum += Y;
-        llsum += log( 2.3e-5f + Y );
+        maxl    = ( maxl < Y ) ? Y : maxl;
+        minl    = ( ( Y > 0.0f ) && ( minl < Y ) ) ? minl : Y;
+        lsum   += Y;
+        llsum  += log( 2.3e-5f + Y );
     }
 
-    avglumi = (float)( lsum / (double)imgsz );
+    maxlumi    = maxl;
+    minlumi    = minl;
+    avglumi    = (float)( lsum / (double)imgsz );
     avgloglumi = (float)exp( llsum / (double)imgsz );
 
     return true;
@@ -454,6 +453,7 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
         return false;
 
     f = exp( -f );
+
     if ( ( m == 0.0f ) || ( a != 1.0f ) || ( c != 1.0f ) )
     {
         fl_imgtk_luminancefromY( Y, lumimax, lumimin, lumiavg, lumilogavg );
@@ -471,7 +471,7 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
         }
     }
 
-    m = ( m > 0.0f ) ? m:(float)( 0.3f + 0.7f * pow(key, 1.4f) );
+    m = ( m > 0.0f ) ? m : (float)( 0.3 + 0.7 * pow(key, 1.4) );
 
     float colMax = -1e6f;
     float colMin = +1e6f;
@@ -480,24 +480,26 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
 
     if ( ( a == 1.0f ) && ( c == 0.0f ) )
     {
+        #pragma omp parallel for
         for( unsigned cnt=0; cnt<imgsz; cnt++ )
         {
             // = pixel luminance
             float pixllumi = Y->pixels[cnt];
 
-            img->pixels[ cnt * img->d ] /= ( img->pixels[ cnt * img->d ]
-                                             + pow( f * pixllumi, m ) );
+            for( unsigned rpt=0; rpt<img->d; rpt++ )
+            {
+                float* pixel = &img->pixels[ cnt * img->d + rpt ];
 
-            colMax = ( img->pixels[ cnt * img->d ] > colMax ) ?
-                     img->pixels[ cnt * img->d ] : colMax;
-            colMin = ( img->pixels[ cnt * img->d ] < colMin ) ?
-                     img->pixels[ cnt * img->d ] : colMin;
+                *pixel /= ( *pixel + pow( f * pixllumi, m ) );
 
+                colMax = ( *pixel > colMax ) ? *pixel : colMax;
+                colMin = ( *pixel < colMin ) ? *pixel : colMin;
+            }
         }
     }
     else
     {
-        float chnlavg[3] = {0.0f};
+        double chnlavg[3] = {0,0,0};
 
         if ( ( a != 1.0f ) && ( c != 0.0f ) )
         {
@@ -523,9 +525,9 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
 
             for( unsigned rpt=0; rpt<3; rpt++ )
             {
-                float apixl    = img->pixels[ cnt * img->d + rpt ];
+                float* pixel  = &img->pixels[ cnt * img->d + rpt ];
                 // global light adaptation
-                float lightloc = c *
+                float lightloc = c * *pixel
                                  + ( 1.0f - c ) * pixllumi;
 
                 // local light adaptation
@@ -534,8 +536,10 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
                 // interpolated pixel light adaptation
                 float lightinp = a * lightloc + ( 1.0f - a ) * lightglb;
 
-                apixl /= apixl + pow( f * lightinp, m );
-                img->pixels[ cnt * img->d + rpt ] = apixl;
+                *pixel /= *pixel + pow( f * lightinp, m );
+
+                colMax = (*pixel > colMax) ? *pixel : colMax;
+                colMin = (*pixel < colMin) ? *pixel : colMin;
             }
         }
 
@@ -550,8 +554,9 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
         {
             for( unsigned rpt=0; rpt<3; rpt++ )
             {
-                img->pixels[ cnt * img->d + rpt ] -= colMin;
-                img->pixels[ cnt * img->d + rpt ] /= colRange;
+                float* pixel = &img->pixels[ cnt * img->d + rpt ];
+
+                *pixel = (*pixel - colMin) / colRange;
             }
         }
     }
@@ -575,11 +580,11 @@ bool fl_imgtk_tonemappingdrago( fl_imgtk_fimg* img, float maxLum, float avgLum, 
         #pragma omp parellel for
         for( unsigned cnt=0; cnt<imgsz; cnt++ )
         {
-            double Yw = img->pixels[0] / avgLum;
+            double Yw = img->pixels[ cnt * img->d ] / avgLum;
             Yw *= exposure;
             double interpol = log( 2.0 + fl_imgtk_biasFunction( biasp, Yw / lmax ) * 8.0 );
-            double L = fl_imgtk_pade_log( Yw );
-            img->pixels[2] = (float)( (L / interpol) / divider);
+            double logv = fl_imgtk_pade_log( Yw );
+            img->pixels[ cnt* img->d ] = (float)( (logv / interpol) / divider);
         }
 
         return true;
@@ -608,16 +613,15 @@ bool fl_imgtk_rec709gammacorrect( fl_imgtk_fimg* img, float gval )
             slope = 4.5f * ( 2.0f - gval ) * 7.5;
         }
 
+        unsigned imgsz = img->w * img->h * img->d;
+
         #pragma omp parellel for
-        for( unsigned cnt=0; cnt<(img->w*img->h); cnt++ )
+        for( unsigned cnt=0; cnt<imgsz; cnt++ )
         {
-            for( unsigned rpt=0; rpt<img->d; rpt++ )
-            {
-                float pixel = img->pixels[ cnt * img->d + rpt ];
-                pixel = ( pixel <= start ) ? pixel * slope
-                        : ( 1.099f * pow( pixel, fgamma) - 0.099f );
-                img->pixels[ cnt * img->d + rpt ] = pixel;
-            }
+            float* pixel = &img->pixels[cnt];
+
+            *pixel = ( *pixel <= start ) ? *pixel * slope
+                     : ( 1.099f * pow( *pixel, fgamma) - 0.099f );
         }
 
         return true;
@@ -673,32 +677,35 @@ Fl_RGB_Image* fl_imgtk::tonemapping_drago( Fl_RGB_Image* src, float gamma, float
     Fl_RGB_Image* retimg = NULL;
 
     fl_imgtk_fimg* convimg = fl_imgtk_RGB2F( src );
+
     if ( convimg != NULL )
     {
         float biasparam = 0.85f;
         float exposparam = (float)pow(2.0, exposure);
 
-        if ( fl_imgtk_F2YXY( convimg ) == false )
+        if ( fl_imgtk_F2YXY( convimg ) == true )
         {
-            fl_imgtk_discard_fimg( convimg );
+            float lumimax = 0.0f;
+            float lumimin = 0.0f;
+            float lumiavg = 0.0f;
 
-            return retimg;
+            if ( fl_imgtk_luminancefromYXY( convimg, lumimax, lumimin, lumiavg ) == true )
+            {
+                if ( fl_imgtk_tonemappingdrago( convimg, lumimax, lumiavg, biasparam, exposparam ) == true )
+                {
+                    if ( fl_imgtk_YXY2F( convimg ) == true )
+                    {
+                        if ( gamma != 1.0 )
+                        {
+                            fl_imgtk_rec709gammacorrect( convimg, gamma );
+                        }
+
+                        //retimg = fl_imgtk_clamp_F2RGB( convimg );
+                        retimg = fl_imgtk_F2RGB( convimg );
+                    }
+                }
+            }
         }
-
-        float lumimax = 0.0f;
-        float lumimin = 0.0f;
-        float lumiavg = 0.0f;
-
-        fl_imgtk_luminancefromYXY( convimg, lumimax, lumimin, lumiavg );
-        fl_imgtk_tonemappingdrago( convimg, lumimax, lumiavg, biasparam, exposparam );
-        fl_imgtk_YXY2F( convimg );
-
-        if ( gamma != 1.0 )
-        {
-            fl_imgtk_rec709gammacorrect( convimg, gamma );
-        }
-
-        retimg = fl_imgtk_clamp_F2RGB( convimg );
 
         fl_imgtk_discard_fimg( convimg );
     }
