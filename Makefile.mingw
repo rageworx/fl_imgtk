@@ -35,7 +35,7 @@ SOURCEDIR = ./src
 OBJDIR    = ./obj/Release
 OUTBIN    = libfl_imgtk.a
 OUTDIR    = ./lib
-DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE
+DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
 OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
 CPUARCHOPT    = -mavx
 
@@ -47,7 +47,7 @@ endif
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
 	DEFINEOPT += -DDEBUG
-	OUTBIN = librawprocessor_d.a
+	OUTBIN = libfl_imgtk_d.a
 endif
 
 CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT) $(FLTKLIBS)

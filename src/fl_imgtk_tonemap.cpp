@@ -1,7 +1,9 @@
 #include "fl_imgtk.h"
 #include "fl_imgtk_minmax.h"
 
+#ifdef USING_OMP
 #include <omp.h>
+#endif /// of USING_OMP
 #include <cmath>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -13,14 +15,14 @@
 
 #define F_LOG05         -0.693147f
 
-#define ILLU_CIE_XR     0.640
-#define ILLU_CIE_YR     0.330
-#define ILLU_CIE_XG     0.300
-#define ILLU_CIE_YG     0.600
-#define ILLU_CIE_XB     0.150
-#define ILLU_CIE_YB     0.060
-#define ILLU_CIE_XW     0.3127
-#define ILLU_CIE_YW     0.3290
+#define ILLU_CIE_XR     0.640f
+#define ILLU_CIE_YR     0.330f
+#define ILLU_CIE_XG     0.300f
+#define ILLU_CIE_YG     0.600f
+#define ILLU_CIE_XB     0.150f
+#define ILLU_CIE_YB     0.060f
+#define ILLU_CIE_XW     0.3127f
+#define ILLU_CIE_YW     0.3290f
 
 #define ILLU_CIE_D      ( ILLU_CIE_XR * \
                           ( ILLU_CIE_YG - ILLU_CIE_YB) + \
@@ -52,6 +54,23 @@ typedef struct
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/*
+** default reference :
+
+static const float RGB2XYZ[3][3] = {
+	{ 0.41239083F, 0.35758433F, 0.18048081F },
+	{ 0.21263903F, 0.71516865F, 0.072192319F },
+	{ 0.019330820F, 0.11919473F, 0.95053220F }
+};
+
+static const float XYZ2RGB[3][3] = {
+	{ 3.2409699F, -1.5373832F, -0.49861079F },
+	{ -0.96924376F, 1.8759676F, 0.041555084F },
+	{ 0.055630036F, -0.20397687F, 1.0569715F }
+};
+*/
+
+
 // Table of RGB to XYZ (no white balance)
 static const double  RGB2XYZ[3][3] =
 {
@@ -76,19 +95,19 @@ static const double  RGB2XYZ[3][3] =
 static const double  XYZ2RGB[3][3] =
 {
 	{
-	    ( ILLU_CIE_YG - ILLU_CIE_XB - ILLU_CIE_XB * ILLU_CIE_YG + ILLU_CIE_XB * ILLU_CIE_XG )
+	    ( ILLU_CIE_YG - ILLU_CIE_YB - ILLU_CIE_XB * ILLU_CIE_YG + ILLU_CIE_YB * ILLU_CIE_XG )
 	    / ILLU_CIE_C_RD,
-        ( ILLU_CIE_XB - ILLU_CIE_XG - ILLU_CIE_XB * ILLU_CIE_YG + ILLU_CIE_XG * ILLU_CIE_XB )
+        ( ILLU_CIE_XB - ILLU_CIE_XG - ILLU_CIE_XB * ILLU_CIE_YG + ILLU_CIE_XG * ILLU_CIE_YB )
         / ILLU_CIE_C_RD,
-        ( ILLU_CIE_XG * ILLU_CIE_XB - ILLU_CIE_XB * ILLU_CIE_YG )
+        ( ILLU_CIE_XG * ILLU_CIE_YB - ILLU_CIE_XB * ILLU_CIE_YG )
         / ILLU_CIE_C_RD
 	},
 	{
-	    ( ILLU_CIE_XB - ILLU_CIE_YR - ILLU_CIE_XB * ILLU_CIE_XR + ILLU_CIE_YR * ILLU_CIE_XB )
+	    ( ILLU_CIE_YB - ILLU_CIE_YR - ILLU_CIE_YB * ILLU_CIE_XR + ILLU_CIE_YR * ILLU_CIE_XB )
 	    / ILLU_CIE_C_GD,
-        ( ILLU_CIE_XR - ILLU_CIE_XB - ILLU_CIE_XR * ILLU_CIE_XB + ILLU_CIE_XB * ILLU_CIE_YR )
+        ( ILLU_CIE_XR - ILLU_CIE_XB - ILLU_CIE_XR * ILLU_CIE_YB + ILLU_CIE_XB * ILLU_CIE_YR )
         / ILLU_CIE_C_GD,
-        ( ILLU_CIE_XB * ILLU_CIE_YR - ILLU_CIE_XR * ILLU_CIE_XB )
+        ( ILLU_CIE_XB * ILLU_CIE_YR - ILLU_CIE_XR * ILLU_CIE_YB )
         / ILLU_CIE_C_GD
 	},
 	{
@@ -700,8 +719,7 @@ Fl_RGB_Image* fl_imgtk::tonemapping_drago( Fl_RGB_Image* src, float gamma, float
                             fl_imgtk_rec709gammacorrect( convimg, gamma );
                         }
 
-                        //retimg = fl_imgtk_clamp_F2RGB( convimg );
-                        retimg = fl_imgtk_F2RGB( convimg );
+                        retimg = fl_imgtk_clamp_F2RGB( convimg );
                     }
                 }
             }

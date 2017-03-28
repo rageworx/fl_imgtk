@@ -1,17 +1,15 @@
 #include "fl_smimg.h"
+#include "fl_imgtk_minmax.h"
+
+#ifdef USING_OMP
+#include <omp.h>
+#endif /// of USING_OMP
 
 #define FI_RGBA_RED				0
 #define FI_RGBA_GREEN			1
 #define FI_RGBA_BLUE			2
 #define FI_RGBA_ALPHA			3
 
-#ifndef MIN
-    #define MIN(a,b) (((a)<(b))?(a):(b))
-#endif
-
-#ifndef MAX
-    #define MAX(a,b) (((a)>(b))?(a):(b))
-#endif
 
 /// Clamp function
 template <class T> T CLAMP(const T &value, const T &min_value, const T &max_value) {

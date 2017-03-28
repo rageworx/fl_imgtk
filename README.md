@@ -1,11 +1,19 @@
-# fl_imgtk
+# (lib)fl_imgtk
 
-* * A small library for FLTK image toolkit
+* A small library for FLTK image toolkit
 * Designed to use some useful effects in FLTK GUI.
 
 ## Lastest upate
 
-* First commit.
+* Supporting LLVM-gcc for Apple Mac.
+* Fixed bugs on Tone mapping (HDR), now it runs well for Drago and Reinhard algorithms.
+
+## How to build ?
+
+* Copy your right Makefile.xxxx to Makefile.
+    - Ex) MinGW-W64 need do 
+    ```cp Makefile.mingw Makefile```
+* Then ```make```
 
 
 ## Currently supported
@@ -25,7 +33,7 @@
 * Draw Fl_Widget to Fl_RGB_Image.
 * Draw Fl_Widget to blurred Fl_RGB_Image.
     - may useful to make background image.
-* Tone mapping (HDR) - Experimental
+* Tone mapping (HDR)
     1. DRAGO algorithm.
     2. REINHARD algorithm.
 * Kernel matrix filter ( 3x3 to NxN )
@@ -40,7 +48,8 @@
 ## Supported compiler:
 
 * gcc (with OpenMP), or MinGW-W64
-
+* llvm-gcc (Apple)
+* (Maybe works on M$VC too, but no project file.)
 
 ## External license:
 
