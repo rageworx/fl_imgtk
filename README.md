@@ -5,6 +5,7 @@
 
 ## Lastest upate
 
+* Cropping image to a new Fl_RGB_Image.
 * Supporting LLVM-gcc for Apple Mac.
 * Fixed bugs on Tone mapping (HDR), now it runs well for Drago and Reinhard algorithms.
 

@@ -697,7 +697,6 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
 
             Fl_RGB_Image* widgetimg = imgsurf->image();
 
-
             BilinearFilter* blfilter = new BilinearFilter();
             if ( blfilter != NULL )
             {
@@ -731,6 +730,110 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
     }
 
     return blurredimg;
+}
+
+Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
+{
+    Fl_RGB_Image* newimg = NULL;
+
+    if ( src != NULL )
+    {
+        // Calc scaling factor.
+        if ( factor ==  0 )
+            factor = 1;
+
+        unsigned scd_w = src->w() / factor;
+        unsigned scd_h = src->h() / factor;
+
+        if ( scd_w == 0 )
+            scd_w = 10;
+
+        if ( scd_h == 0 )
+            scd_h = 10;
+
+        BilinearFilter* blfilter = new BilinearFilter();
+        if ( blfilter != NULL )
+        {
+            ResizeEngine* redown = new ResizeEngine( blfilter );
+            if ( redown != NULL )
+            {
+                Fl_RGB_Image* sdimg = redown->scale( src, scd_w, scd_h );
+                if ( sdimg != NULL )
+                {
+                    BSplineFilter* bsfilter = new BSplineFilter();
+                    if ( bsfilter != NULL )
+                    {
+                        ResizeEngine* reup = new ResizeEngine( bsfilter );
+                        if (  reup != NULL )
+                        {
+                            newimg = reup->scale( sdimg, src->w(), src->h() );
+
+                            delete reup;
+                        }
+                        delete bsfilter;
+                    }
+                    discard_user_rgb_image( sdimg );
+                }
+                delete redown;
+            }
+            delete blfilter;
+        }
+    }
+
+    return newimg;
+}
+
+Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsigned w, unsigned h )
+{
+    if ( src != NULL )
+    {
+        unsigned rsx = sx;
+        unsigned rsy = sy;
+        unsigned rw  = w;
+        unsigned rh  = h;
+        unsigned sd  = src->d();
+
+        if ( ( rsx > src->w() ) || ( rsy > src->h() ) )
+            return NULL;
+
+        if ( src->w() > ( rw + rsx ) )
+        {
+            rw = src->w() - rsx;
+        }
+
+        if ( src->h() > ( rh + rsy ) )
+        {
+            rh = src->h() - rsy;
+        }
+
+        uchar* rbuff = (uchar*)src->data()[0];
+        uchar* obuff = new uchar[ rw * rh * sd ];
+
+        if ( ( rbuff != NULL ) && ( obuff != NULL ) )
+        {
+            unsigned srcw = src->w();
+            unsigned srch = src->h();
+            unsigned dsth = srch - rsy;
+            unsigned cnty;
+            unsigned cntx;
+
+            #pragma omp parellel for private( cntx )
+            for( cnty=rsy; cnty<srch; cnty++ )
+            {
+                for( cntx=rsx; cntx<srcw; cntx ++ )
+                {
+                    uchar* rptr = &rbuff[ ( cnty * srcw + cntx ) * sd ];
+                    uchar* wptr = &obuff[ ( (cnty - rsy) * rw + ( cntx - rsx) ) * sd ];
+
+                    memcpy( wptr, rptr, sd );
+                }
+            }
+
+            return new Fl_RGB_Image( obuff, rw, rh , sd );
+        }
+    }
+
+    return NULL;
 }
 
 void fl_imgtk_t_set_kfconfig( fl_imgtk::kfconfig* kfc, uchar w, uchar h, float f, float b, const float* m )
