@@ -2,11 +2,15 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2017-03-24-0
+* fl_imgtk.H , version 2017-03-29-0
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2017 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
 * All rights reserved for MIT license.
+*
+* [ Disclaimer ]
+* - Some codes belong to FreeImage 3 library, and modified to FLTK and fl_imgtk.
+* - It follows FreeImage license and open as free.
 *******************************************************************************/
 
 #include <FL/Fl.H>
@@ -15,6 +19,9 @@
 
 namespace fl_imgtk
 {
+    ////////////////////////////////////////////////////////////////////////////
+    // enumerations, structures
+
     typedef enum
     {
         NONE = 0,
@@ -35,6 +42,7 @@ namespace fl_imgtk
     }kfconfig; /// Kernel Filter Configuration.
 
     ////////////////////////////////////////////////////////////////////////////
+    // Flip, Rotate
 
     Fl_RGB_Image* fliphorizontal( Fl_RGB_Image* img );
     Fl_RGB_Image* flipvertical( Fl_RGB_Image* img );
@@ -44,6 +52,9 @@ namespace fl_imgtk
     Fl_RGB_Image* rotate270( Fl_RGB_Image* img );
 
     Fl_RGB_Image* rotatefree( Fl_RGB_Image* img, float deg );
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Adjusting colors
 
     /***
     * these following methods: Gamma, Brightness, Contrast
@@ -60,28 +71,103 @@ namespace fl_imgtk
     // perc => -100 ~ 100
     Fl_RGB_Image* contrast( Fl_RGB_Image* img, double perc );
 
-    // Kernel matrix filter
-    Fl_RGB_Image* filtered( Fl_RGB_Image* img, kfconfig* kfc );
-
+    ////////////////////////////////////////////////////////////////////////////
     // Rescale(resize) with fl_smimg
-    Fl_RGB_Image* rescale( Fl_RGB_Image* img, unsigned w, unsigned h, rescaletype rst = NONE );
+
+    Fl_RGB_Image* rescale( Fl_RGB_Image* img, unsigned w, unsigned h,
+                           rescaletype rst = NONE );
 
     ////////////////////////////////////////////////////////////////////////////
+    // Get/Drawing images
 
     Fl_RGB_Image* draw_widgetimage( Fl_Widget* w );
-    Fl_RGB_Image* drawblurred_widgetimage( Fl_Widget* w, unsigned factor = 2);
+    Fl_RGB_Image* drawblurred_widgetimage( Fl_Widget* w, unsigned factor = 2 );
+    Fl_RGB_Image* blurredimage( Fl_RGB_Image* src, unsigned factor = 2 );
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Kernel matrix filter configurations
     /***
     * preset configs : blur, blurmore, sharpen, sharpenmore
     * null = empty one.
     ****/
     kfconfig* new_kfconfig( const char* preset );
 
+    // Kernel matrix filter
+    Fl_RGB_Image* filtered( Fl_RGB_Image* img, kfconfig* kfc );
+
     ////////////////////////////////////////////////////////////////////////////
     // Tone mapping
 
-    Fl_RGB_Image* tonemapping_reinhard( Fl_RGB_Image* src, float intensity, float contrast, float adaptation = 1.0f, float color_correction = 0.0f );
-    Fl_RGB_Image* tonemapping_drago( Fl_RGB_Image* src, float gamma = 1.0f , float exposure = 0.0f );
+	/***
+	** tonemapping_reinhard
+	** -------------------------------------------------------------------------
+	** Apply the global/local tone mapping operator to a Fl_RGB_Image.
+	** User parameters control intensity, contrast, and level of adaptation
+	**
+	** @param 'src': Input Fl_RGB_Image, depth requires at least 3.
+	** @param 'intensity': Overall intensity in range [-8:8] : default to 0
+	** @param 'contrast': Contrast in range [0.3:1) : default to 0
+	** @param 'adaptation': Adaptation in range [0:1] : default to 1
+	** @param 'color_correction': Color correction in range [0:1] : default to 0
+	***/
+    Fl_RGB_Image* tonemapping_reinhard( Fl_RGB_Image* src,
+	                                    float intensity, float contrast,
+										float adaptation = 1.0f,
+										float color_correction = 0.0f );
+
+	/***
+	** tonemapping_drago
+	** --------------------------------------------------------------------------
+	** Apply the Adaptive Logarithmic Mapping operator to a HDR image.
+	**
+	** @param 'src': Input Fl_RGB_Image, depth requires at least 3.
+	** @param 'gamma': Gamma correction (gamma > 0). 1 means no correction,
+	**                                               2.2 in the original paper.
+	** @param 'exposure': Exposure parameter
+	**                        (0 means no correction, 0 in the original paper)
+	***/
+    Fl_RGB_Image* tonemapping_drago( Fl_RGB_Image* src,
+                                     float gamma = 1.0f ,
+                                     float exposure = 0.0f );
+
+    ////////////////////////////////////////////////////////////////////////////
+    // More functions ...
+
+	typedef struct
+	{
+	    int src1putx;
+	    int src1puty;
+	    int src2putx;
+	    int src2puty;
+
+	    float src1ratio;    /// 0.0 to 1.0
+	    float src2ratio;    /// 0.0 to 1.0
+	                        /// src1ratio + src2ratio must be 1.0
+        bool  autoexpand;   /// expands maximum image size to bigger image.
+	}mergeconfig;
+
+	// Crop image to a new Fl_RGB_Image.
+    Fl_RGB_Image* crop( Fl_RGB_Image* src,
+                        unsigned sx, unsigned sy, unsigned w, unsigned h );
+
+    // Merge two different image to a new Image.
+	Fl_RGB_Image* merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2,
+                         mergeconfig* cfg = NULL );
+
+    // Makes alpha channel map.
+    unsigned makealphamap( uchar* &amap, Fl_RGB_Image* src, float val = 1.0f );
+    unsigned makealphamap( uchar* &amap, unsigned w, unsigned h, uchar val  = 255 );
+
+    // Apply alpha channel map to Fl_RGB_Image.
+    // return Fl_RGB_Image always became to 4 depth image.
+    Fl_RGB_Image* applyalpha( Fl_RGB_Image* src, float val = 1.0f );
+    Fl_RGB_Image* applyalpha( Fl_RGB_Image* src,
+                              uchar* alphamap = NULL , unsigned amsz = 0);
+
+    // Draws image to image with alpha value.
+    bool drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img,
+                      int x, int y, float alpha = 1.0f );
+
     ////////////////////////////////////////////////////////////////////////////
 
     void discard_user_rgb_image( Fl_RGB_Image* &img );
