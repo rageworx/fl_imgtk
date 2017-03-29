@@ -1,13 +1,26 @@
 # (lib)fl_imgtk
 
-* A small library for FLTK image toolkit
+* A small library for FLTK image toolkit.
 * Designed to use some useful effects in FLTK GUI.
 
 ## Lastest upate
 
-* Cropping image to a new Fl_RGB_Image.
-* Supporting LLVM-gcc for Apple Mac.
-* Fixed bugs on Tone mapping (HDR), now it runs well for Drago and Reinhard algorithms.
+* 2017-03-29-0
+    1. Now supports many drawing image functions.
+        - merge();
+        - makealphamap();
+        - applyalpha();
+        - drawonimage();
+
+## Previous update
+
+* 2017-03-28-0
+    1. Cropping image to a new Fl_RGB_Image.
+    2. Fixed bugs on Tone mapping (HDR), now it runs well for Drago and Reinhard algorithms.
+
+* 2017-03-24-0
+    1. First commit.
+    2. Supporting LLVM-gcc for Apple Mac.
 
 ## How to build ?
 
@@ -38,13 +51,20 @@
     1. DRAGO algorithm.
     2. REINHARD algorithm.
 * Kernel matrix filter ( 3x3 to NxN )
+* Crop Fl_RGB_Image to a new Fl_RGB_Image.
+* Merge two different Fl_RGB_Images to a new one.
+* Make alpha map, and apply to Fl_RGB_Image.
+* Draw Fl_RGB_Image to Fl_RGB_Image, it is same like Mix.
 
 ## Planned to next
 
-* Crop image, or copy image to image, or merge images
 * Crop image from polygonal vectors
-* Apply or remove alpha channel
-* Mix images
+
+## OpenMP supports
+
+* fl_imgtk designed for using OpenMP 3.x or above,
+* Some lower version of OpenMP may not work with unsigned loop.
+* Apple Mac, X-Code may not supports OpenMP, recommend to use HPC-GCC to build library.
 
 ## Supported compiler:
 
@@ -52,7 +72,7 @@
 * llvm-gcc (Apple)
 * (Maybe works on M$VC too, but no project file.)
 
-## External license:
+## External licenses:
 
 * FreeImage 3 (many codes belongs to this)
 * FLTK License

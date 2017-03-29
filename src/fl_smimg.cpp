@@ -1,3 +1,4 @@
+#include <FL/fl_draw.H>
 #include "fl_smimg.h"
 #include "fl_imgtk_minmax.h"
 

@@ -836,6 +836,344 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
     return NULL;
 }
 
+void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd,
+                              Fl_RGB_Image* img, int px, int py, float alpha )
+{
+    if ( ( buff != NULL ) && ( img != NULL ) )
+    {
+        if ( img->d() < 3 )
+            return;
+
+        uchar* rbuff = (uchar*)img->data()[0];
+
+        int minx = px;
+        int miny = py;
+        int imgx = 0;
+        int imgy = 0;
+
+        int maxw = MIN( img->w() + minx, bw );
+        int maxh = MIN( img->h() + miny, bh );
+
+        if ( px < 0 )
+        {
+            minx = 0;
+            maxw = MIN( img->w() + px, bw );
+            imgx = abs( px );
+            px   = 0;
+        }
+
+        if ( py < 0 )
+        {
+            miny = 0;
+            maxh = MIN ( img->h() + py, bh );
+            imgy = abs( py );
+            py   = 0;
+        }
+
+        int cntx = 0;
+        int cnty = 0;
+        int imgw = img->w();
+        int imgd = img->d();
+
+        #pragma omp parellel for private( cnty )
+        for( cnty=miny; cnty<maxh; cnty++ )
+        {
+            for( cntx=minx; cntx<maxw; cntx++ )
+            {
+                unsigned ipx = imgx + (cntx - minx);
+                unsigned ipy = imgy + (cnty - miny);
+
+                uchar* rptr = &rbuff[ ( ipy * imgw + ipx ) * imgd ];
+                uchar* wptr = &buff[ ( ( cnty * bw ) + cntx ) * bd ];
+
+                uchar alp = 255;
+
+                if ( imgd == 4 )
+                {
+                    alp = rptr[3];
+                }
+
+                float falp = ( (float)alp / 255.0f ) * alpha;
+
+                for( unsigned rpt=0; rpt<3; rpt++ )
+                {
+                    float fp = (float)wptr[ rpt ];
+
+                    // Check has alpha ...
+                    if ( falp > 0.0f )
+                    {
+                        // Scale down previous pixel.
+                        fp *= ( 1.0f - falp );
+                        // And now add new alpha pixel.
+                        fp += (float)rptr[ rpt ] * falp;
+
+                        // Cutoff maximum.
+                        fp = MIN( 255.0f, fp );
+                    }
+
+                    wptr[ rpt ] = (uchar)fp;
+
+                }
+
+                if ( bd == 4 )
+                {
+                    wptr[3] = 0xFF;
+                }
+            }
+        }
+    }
+}
+
+Fl_RGB_Image* fl_imgtk::merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2, mergeconfig* cfg )
+{
+    Fl_RGB_Image* newimg = NULL;
+
+    if ( ( src1 != NULL ) && ( src2 != NULL ) )
+    {
+        float fratios[2] = {0};
+
+        unsigned maxsz_w = src1->w();
+        unsigned maxsz_h = src1->h();
+        int      img1px  = 0;
+        int      img1py  = 0;
+        int      img2px  = 0;
+        int      img2py  = 0;
+
+        // Recognize working conditions  ....
+        if ( cfg != NULL )
+        {
+            fratios[0] = MIN( 1.0f, MAX( 0.0f, cfg->src1ratio ) );
+            fratios[1] = MIN( 1.0f, MAX( 0.0f, cfg->src2ratio ) );
+
+            if ( cfg->autoexpand == true )
+            {
+                int minx = MIN( cfg->src1putx, cfg->src2putx );
+                int miny = MIN( cfg->src1puty, cfg->src2puty );
+                int maxw = MAX( src1->w(), src2->w() );
+                int maxh = MAX( src1->h(), src2->h() );
+
+                maxsz_w = maxw - minx;
+                maxsz_h = maxh - miny;
+            }
+
+            img1px = cfg->src1putx;
+            img1py = cfg->src1puty;
+            img2px = cfg->src2putx;
+            img2py = cfg->src2puty;
+        }
+        else
+        {
+            fratios[0] = 1.0f;
+            fratios[1] = 1.0f;
+        }
+
+        uchar* obuff = new uchar[ maxsz_w * maxsz_h * 4 ];
+
+        if ( obuff == NULL )
+            return  NULL;
+
+        memset( obuff, 0, maxsz_w * maxsz_h * 4 );
+
+        fl_imgtk_putimgonbuffer( obuff, maxsz_w, maxsz_h, 4,
+                                 src1, img1px, img1py, fratios[0] );
+        fl_imgtk_putimgonbuffer( obuff, maxsz_w, maxsz_h, 4,
+                                 src2, img2px, img2py, fratios[1] );
+
+        newimg = new Fl_RGB_Image( obuff, maxsz_w, maxsz_h, 4 );
+    }
+
+    return newimg;
+}
+
+unsigned fl_imgtk::makealphamap( uchar* &amap, Fl_RGB_Image* src, float val )
+{
+    if ( src == NULL )
+        return 0;
+
+    if ( ( src->w() == 0 ) || ( src->h() == 0 ) || ( src->d() < 3 ) )
+        return 0;
+
+    val = MAX( 1.0f, MIN( 0.0f, val ) );
+
+    unsigned imgsz = src->w() * src->h();
+
+    uchar* refbuff = (uchar*)src->data()[0];
+    uchar* newbuff = new uchar[ imgsz ];
+
+    if ( newbuff != NULL )
+    {
+        if ( src->d() == 4 )
+        {
+            #pragma omp parellel for
+            for( unsigned cnt=0; cnt<imgsz; cnt++ )
+            {
+                uchar fillv = uchar( (float)refbuff[cnt * 4] * val );
+
+                newbuff[ cnt ] = fillv;
+            }
+        }
+        else
+        {
+            // Generate alphamap from RGB average.
+
+            #pragma omp parellel for
+            for( unsigned cnt=0; cnt<imgsz; cnt++ )
+            {
+                unsigned avrp = refbuff[cnt*3+0] + refbuff[cnt*3+1] + refbuff[cnt*3+2];
+                avrp /= 3;
+
+                newbuff[ cnt ] = uchar( (float)avrp * val );
+            }
+        }
+
+        amap = newbuff;
+        return imgsz;
+    }
+
+    return 0;
+}
+
+unsigned fl_imgtk::makealphamap( uchar* &amap, unsigned w, unsigned h, uchar val )
+{
+    unsigned imgsz = w * h;
+
+    val = MAX( 1.0f, MIN( 0.0f, val ) );
+
+    uchar* newbuff = new uchar[ imgsz ];
+
+    if ( newbuff != NULL )
+    {
+        uchar fillv = (uchar)( 255.0f * val );
+
+        memset( newbuff, fillv, imgsz );
+
+        amap = newbuff;
+        return imgsz;
+    }
+
+    return 0;
+}
+
+Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
+{
+    Fl_RGB_Image* newimg = NULL;
+
+    if ( src != NULL )
+    {
+        if ( src->d() < 3 )
+            return NULL;
+
+        unsigned img_w  = src->w();
+        unsigned img_h  = src->h();
+        unsigned img_sz = img_w * img_h;
+
+        uchar* sbuff = (uchar*)src->data()[0];
+        uchar* obuff = new uchar[ img_sz * 4 ];
+
+        if ( obuff == NULL )
+            return NULL;
+
+        val = MAX( 1.0f, MIN( 0.0f, val ) );
+
+        // Copy pixels from source image.
+        if ( src->d() == 4 )
+        {
+            memcpy( obuff, sbuff, img_sz * 4 );
+        }
+        else
+        {
+            #pragma omp parellel for
+            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            {
+                uchar* sbpos = &sbuff[ cnt * 3 ];
+                uchar* obpos = &obuff[ cnt * 4 ];
+
+                memcpy( obpos , sbpos, 3 );
+                obpos[3] = 0xFF;
+            }
+        }
+
+        #pragma omp parellel for
+        for( unsigned cnt=0; cnt<img_sz; cnt++ )
+        {
+            uchar* obp = &obuff[ cnt * 4 + 3 ];
+
+            *obp = (uchar)( (float)*obp * val );
+        }
+    }
+
+    return newimg;
+}
+
+Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, uchar* alphamap, unsigned amsz )
+{
+    Fl_RGB_Image* newimg = NULL;
+
+    if ( src != NULL )
+    {
+        if ( src->d() < 3 )
+            return NULL;
+
+        unsigned img_w  = src->w();
+        unsigned img_h  = src->h();
+        unsigned img_sz = img_w * img_h;
+
+        uchar* sbuff = (uchar*)src->data()[0];
+        uchar* obuff = new uchar[ img_sz * 4 ];
+
+        if ( obuff == NULL )
+            return NULL;
+
+        // Copy pixels from source image.
+        if ( src->d() == 4 )
+        {
+            memcpy( obuff, sbuff, img_sz * 4 );
+        }
+        else
+        {
+            #pragma omp parellel for
+            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            {
+                uchar* sbpos = &sbuff[ cnt * 3 ];
+                uchar* obpos = &obuff[ cnt * 4 ];
+
+                memcpy( obpos , sbpos, 3 );
+            }
+        }
+
+        // Apply alpha map.
+        if ( ( alphamap != NULL ) && ( amsz == img_sz ) )
+        {
+            #pragma omp parellel for
+            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            {
+                obuff[ cnt * 4 + 3 ] = alphamap[ cnt ];
+            }
+        }
+
+        newimg = new Fl_RGB_Image( obuff, img_w, img_h, 4 );
+    }
+
+    return newimg;
+}
+
+bool fl_imgtk::drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img, int x, int y, float alpha )
+{
+    if ( ( bgimg != NULL ) && ( img != NULL ) )
+    {
+        uchar* bgbuff = (uchar*)bgimg->data()[0];
+
+        fl_imgtk_putimgonbuffer( bgbuff, bgimg->w(), bgimg->h(), bgimg->d(),
+                                 img, x, y, alpha );
+
+        bgimg->uncache();
+
+        return true;
+    }
+
+    return false;
+}
+
 void fl_imgtk_t_set_kfconfig( fl_imgtk::kfconfig* kfc, uchar w, uchar h, float f, float b, const float* m )
 {
     if ( ( kfc != NULL ) && ( m != NULL ) )
@@ -905,10 +1243,6 @@ void fl_imgtk::discard_user_rgb_image( Fl_RGB_Image* &img )
 {
     if( img != NULL )
     {
-#ifdef DEBUG
-        printf( "img->array = 0x%08X, img->alloc_array = %d\n",
-                img->array, img->alloc_array );
-#endif // DEBUG
         if ( ( img->array != NULL ) && ( img->alloc_array == 0 ) )
         {
             delete[] img->array;
