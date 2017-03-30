@@ -97,6 +97,45 @@ Fl_RGB_Image* fl_imgtk::fliphorizontal( Fl_RGB_Image* img )
     return NULL;
 }
 
+bool fl_imgtk::fliphorizontal_ex( Fl_RGB_Image* img )
+{
+    if ( img == NULL )
+        return false;
+
+    uchar* ptr = (uchar*)img->data()[0];
+    unsigned w = img->w();
+    unsigned h = img->h();
+    unsigned d = img->d();
+
+    if ( ( w > 0 ) && ( h > 0 ) )
+    {
+        unsigned hcenter = h/2;
+        unsigned cnth = 0;
+        unsigned cntw = 0;
+
+        #pragma omp parallel for private(cntw)
+        for( cnth=0; cnth<hcenter; cnth++ )
+        {
+            for( cntw=0; cntw<w; cntw++ )
+            {
+                unsigned pos1 = ( w * ( h - 1 - cnth ) + cntw ) * d;
+                unsigned pos2 = ( w * cnth + cntw ) * d;
+
+                for( unsigned cntd=0; cntd<d; cntd++ )
+                {
+                    fl_imgtk_swap_uc( ptr[ pos1 + cntd ], ptr[ pos2 + cntd ] );
+                }
+            }
+        }
+
+        img->uncache();
+
+        return true;
+    }
+
+    return false;
+}
+
 Fl_RGB_Image* fl_imgtk::flipvertical( Fl_RGB_Image* img )
 {
     if ( img == NULL )
@@ -141,6 +180,45 @@ Fl_RGB_Image* fl_imgtk::flipvertical( Fl_RGB_Image* img )
     }
 
     return NULL;
+}
+
+bool fl_imgtk::flipvertical_ex( Fl_RGB_Image* img )
+{
+    if ( img == NULL )
+        return false;
+
+    uchar* ptr = (uchar*)img->data()[0];
+    unsigned w = img->w();
+    unsigned h = img->h();
+    unsigned d = img->d();
+
+    if ( ( w > 0 ) && ( h > 0 ) && ( ptr != NULL ) )
+    {
+        unsigned wcenter = w/2;
+        unsigned cntw = 0;
+        unsigned cnth = 0;
+
+        #pragma omp parallel for private(cnth)
+        for( cntw=0; cntw<wcenter; cntw++ )
+        {
+            for( cnth=0; cnth<h; cnth++ )
+            {
+                unsigned pos1 = ( w * cnth + ( w - cntw ) ) * d;
+                unsigned pos2 = ( w * cnth + cntw ) * d;
+
+                for( unsigned cntd=0; cntd<d; cntd++ )
+                {
+                    fl_imgtk_swap_uc( ptr[ pos1 + cntd ], ptr[ pos2 + cntd ] );
+                }
+            }
+        }
+
+        img->uncache();
+
+        return true;
+    }
+
+    return false;
 }
 
 Fl_RGB_Image* fl_imgtk::rotate90( Fl_RGB_Image* img )
@@ -415,11 +493,17 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
 
 Fl_RGB_Image* fl_imgtk_curve( Fl_RGB_Image* img, const uchar* LUT )
 {
+    if ( img == NULL )
+        return NULL;
+
     uchar* ptr = (uchar*)img->data()[0];
     unsigned w = img->w();
     unsigned h = img->h();
     unsigned d = img->d();
     unsigned imgsz = w*h;
+
+    if ( imgsz == 0 )
+        return NULL;
 
     uchar* buff = new uchar[ imgsz * d ];
 
@@ -438,6 +522,34 @@ Fl_RGB_Image* fl_imgtk_curve( Fl_RGB_Image* img, const uchar* LUT )
     }
 
     return new Fl_RGB_Image( buff, w, h, d );
+}
+
+bool fl_imgtk_curve_ex( Fl_RGB_Image* img, const uchar* LUT )
+{
+    if ( img == NULL )
+        return false;
+
+    uchar* ptr = (uchar*)img->data()[0];
+    unsigned w = img->w();
+    unsigned h = img->h();
+    unsigned d = img->d();
+    unsigned imgsz = w*h;
+
+    if ( imgsz == 0 )
+        return false;
+
+    #pragma omp parallel for
+    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    {
+        for( unsigned cntd=1; cntd<=d; cntd++ )
+        {
+            ptr[ cnt * d + cntd ] = LUT[ ptr[ cnt * d + cntd ] ];
+        }
+    }
+
+    img->uncache();
+
+    return true;
 }
 
 Fl_RGB_Image* fl_imgtk::gamma( Fl_RGB_Image* img, double gamma )
@@ -462,6 +574,28 @@ Fl_RGB_Image* fl_imgtk::gamma( Fl_RGB_Image* img, double gamma )
     return fl_imgtk_curve( img, lut );
 }
 
+bool fl_imgtk::gamma_ex( Fl_RGB_Image* img, double gamma )
+{
+    uchar lut[256] = {0};
+
+    double exponent = 1.0f / gamma;
+    double val = 255.0 * pow( 255, -exponent );
+
+    for( unsigned cnt=0; cnt<256; cnt++ )
+    {
+        double col = pow( (double)cnt, exponent ) * val;
+
+        if ( col > 255 )
+        {
+            col = 255;
+        }
+
+        lut[ cnt ] = (uchar)floor( col + 0.5 );
+    }
+
+    return fl_imgtk_curve_ex( img, lut );
+}
+
 Fl_RGB_Image* fl_imgtk::brightness( Fl_RGB_Image* img, double perc )
 {
     uchar lut[256] = {0};
@@ -479,6 +613,23 @@ Fl_RGB_Image* fl_imgtk::brightness( Fl_RGB_Image* img, double perc )
     return fl_imgtk_curve( img, lut );
 }
 
+bool fl_imgtk::brightbess_ex( Fl_RGB_Image* img, double perc )
+{
+    uchar lut[256] = {0};
+
+    const double scale = ( 100.0 + perc ) / 100.0;
+    double val = 0.0;
+
+    for( unsigned cnt=0; cnt<256; cnt++ )
+    {
+        val = (double)cnt * scale;
+        val = MAX( 0.0, MIN( val, 255.0 ) );
+        lut[ cnt ] = (uchar)floor( val + 0.5 );
+    }
+
+    return fl_imgtk_curve_ex( img, lut );
+}
+
 Fl_RGB_Image* fl_imgtk::contrast( Fl_RGB_Image* img, double perc )
 {
     uchar lut[256] = {0};
@@ -494,6 +645,23 @@ Fl_RGB_Image* fl_imgtk::contrast( Fl_RGB_Image* img, double perc )
     }
 
     return fl_imgtk_curve( img, lut );
+}
+
+bool fl_imgtk::contrast_ex(  Fl_RGB_Image* img, double perc )
+{
+    uchar lut[256] = {0};
+
+    const double scale = ( 100.0 + perc ) / 100.0;
+    double val = 0.0;
+
+    for( unsigned cnt=0; cnt<256; cnt++ )
+    {
+        val = 128.0 + ( (double)cnt - 128.0 ) * scale;
+        val = MAX( 0.0, MIN( val, 255.0 ) );
+        lut[ cnt ] = (uchar)floor( val + 0.5 );
+    }
+
+    return fl_imgtk_curve_ex( img, lut );
 }
 
 Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
@@ -558,6 +726,66 @@ Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
     }
 
     return NULL;
+}
+
+bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
+{
+    if ( ( img != NULL ) && ( kfc != NULL ) )
+    {
+        unsigned img_w = img->w();
+        unsigned img_h = img->h();
+        unsigned img_d = img->d();
+
+        if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
+            return NULL;
+
+        if ( ( kfc->w == 0 ) || ( kfc->h == 0 ) || ( kfc->msz == 0 ) || ( kfc->m == NULL ) )
+            return NULL;
+
+        uchar* pixels  = (uchar*)img->data()[0];
+
+        #pragma omp parallel for
+        for( unsigned cntx=0; cntx<img_w; cntx++ )
+        {
+            for( unsigned cnty=0; cnty<img_h; cnty++ )
+            {
+                double adj[4] = {0.0};
+
+                // -- applying matrix ---
+                for( unsigned fcntx=0; fcntx<kfc->w; fcntx++ )
+                {
+                    for( unsigned fcnty=0; fcnty<kfc->h; fcnty++ )
+                    {
+                        unsigned posX = ( cntx - kfc->w / 2 + fcntx + img_w )
+                                        % img_w;
+                        unsigned posY = ( cnty - kfc->h / 2 + fcnty + img_h )
+                                        % img_h;
+
+                        unsigned posM = posY * img_w + posX;
+
+                        if ( posM < ( img_w * img_h ) )
+                        {
+                            for( unsigned cntd=0; cntd<img_d; cntd ++ )
+                            {
+                                adj[ cntd ] += (double)pixels[ posM * img_d  + cntd ] *
+                                               (double)kfc->m[ fcnty * kfc->w + fcntx ];
+                            }
+                        }
+                    }
+                }
+
+                for( unsigned cntd=0; cntd<img_d; cntd++ )
+                {
+                    uchar rpixel = MIN( MAX( kfc->f * adj[ cntd ] + kfc->b, 0 ), 255 );
+                    pixels[ ( cnty * img_w + cntx ) * img_d + cntd ] = rpixel;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 Fl_RGB_Image* fl_imgtk::rescale( Fl_RGB_Image* img, unsigned w, unsigned h, rescaletype rst )
@@ -783,6 +1011,72 @@ Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
     return newimg;
 }
 
+bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, unsigned factor )
+{
+    if ( src != NULL )
+    {
+        // Calc scaling factor.
+        if ( factor ==  0 )
+            factor = 1;
+
+        unsigned scd_w = src->w() / factor;
+        unsigned scd_h = src->h() / factor;
+
+        if ( scd_w == 0 )
+            scd_w = 10;
+
+        if ( scd_h == 0 )
+            scd_h = 10;
+
+        bool retb = false;
+
+        BilinearFilter* blfilter = new BilinearFilter();
+        if ( blfilter != NULL )
+        {
+            ResizeEngine* redown = new ResizeEngine( blfilter );
+            if ( redown != NULL )
+            {
+                Fl_RGB_Image* sdimg = redown->scale( src, scd_w, scd_h );
+                if ( sdimg != NULL )
+                {
+                    BSplineFilter* bsfilter = new BSplineFilter();
+                    if ( bsfilter != NULL )
+                    {
+                        ResizeEngine* reup = new ResizeEngine( bsfilter );
+                        if (  reup != NULL )
+                        {
+                            Fl_RGB_Image* newimg = reup->scale( sdimg, src->w(), src->h() );
+
+                            if ( newimg != NULL )
+                            {
+                                uchar* pdst = (uchar*)src->data()[0];
+                                uchar* psrc = (uchar*)newimg->data()[0];
+
+                                memcpy( pdst, psrc, src->w() * src->h() * src->d() );
+                                src->uncache();
+
+                                discard_user_rgb_image( newimg );
+
+                                retb = true;
+                            }
+
+                            delete reup;
+                        }
+                        delete bsfilter;
+                    }
+                    discard_user_rgb_image( sdimg );
+                }
+                delete redown;
+            }
+            delete blfilter;
+        }
+
+        return retb;
+    }
+
+    return false;
+}
+
 Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsigned w, unsigned h )
 {
     if ( src != NULL )
@@ -924,6 +1218,95 @@ void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
     }
 }
 
+void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd,
+                              Fl_RGB_Image* img, int px, int py, float alpha )
+{
+    if ( ( buff != NULL ) && ( img != NULL ) )
+    {
+        if ( img->d() < 3 )
+            return;
+
+        uchar* rbuff = (uchar*)img->data()[0];
+
+        int minx = px;
+        int miny = py;
+        int imgx = 0;
+        int imgy = 0;
+
+        int maxw = MIN( img->w() + minx, bw );
+        int maxh = MIN( img->h() + miny, bh );
+
+        if ( px < 0 )
+        {
+            minx = 0;
+            maxw = MIN( img->w() + px, bw );
+            imgx = abs( px );
+            px   = 0;
+        }
+
+        if ( py < 0 )
+        {
+            miny = 0;
+            maxh = MIN ( img->h() + py, bh );
+            imgy = abs( py );
+            py   = 0;
+        }
+
+        int cntx = 0;
+        int cnty = 0;
+        int imgw = img->w();
+        int imgd = img->d();
+
+        #pragma omp parellel for private( cnty )
+        for( cnty=miny; cnty<maxh; cnty++ )
+        {
+            for( cntx=minx; cntx<maxw; cntx++ )
+            {
+                unsigned ipx = imgx + (cntx - minx);
+                unsigned ipy = imgy + (cnty - miny);
+
+                uchar* rptr = &rbuff[ ( ipy * imgw + ipx ) * imgd ];
+                uchar* wptr = &buff[ ( ( cnty * bw ) + cntx ) * bd ];
+
+                uchar alp = 255;
+
+                if ( imgd == 4 )
+                {
+                    alp = rptr[3];
+                }
+
+                float falp = ( (float)alp / 255.0f ) * alpha;
+
+                for( unsigned rpt=0; rpt<3; rpt++ )
+                {
+                    float fp = (float)wptr[ rpt ];
+
+                    // Check has alpha ...
+                    if ( falp > 0.0f )
+                    {
+                        // Scale down previous pixel.
+                        fp *= ( 1.0f - falp );
+                        // And now subtract new alpha pixel.
+                        fp -= (float)rptr[ rpt ] * falp;
+
+                        // Cutoff maximum.
+                        fp = MAX( 0.0f, fp );
+                    }
+
+                    wptr[ rpt ] = (uchar)fp;
+
+                }
+
+                if ( bd == 4 )
+                {
+                    wptr[3] = 0xFF;
+                }
+            }
+        }
+    }
+}
+
+
 Fl_RGB_Image* fl_imgtk::merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2, mergeconfig* cfg )
 {
     Fl_RGB_Image* newimg = NULL;
@@ -984,6 +1367,51 @@ Fl_RGB_Image* fl_imgtk::merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2, mergeconf
 
     return newimg;
 }
+
+Fl_RGB_Image* fl_imgtk::subtract( Fl_RGB_Image* src1, Fl_RGB_Image* src2, int px, int py, float sr )
+{
+    Fl_RGB_Image* newimg = NULL;
+
+    if ( ( src1 != NULL ) && ( src2 != NULL ) )
+    {
+        unsigned maxsz_w = src1->w();
+        unsigned maxsz_h = src1->h();
+
+        // Recognize working conditions  ....
+
+        uchar* obuff = new uchar[ maxsz_w * maxsz_h * 4 ];
+
+        if ( obuff == NULL )
+            return  NULL;
+
+        memset( obuff, 0, maxsz_w * maxsz_h * 4 );
+
+        fl_imgtk_putimgonbuffer( obuff, maxsz_w, maxsz_h, 4, src1, 0, 0, 1.0f );
+        fl_imgtk_subimgonbuffer( obuff, maxsz_w, maxsz_h, 4, src2, px, py, sr );
+
+        newimg = new Fl_RGB_Image( obuff, maxsz_w, maxsz_h, 4 );
+    }
+
+    return newimg;
+}
+
+bool fl_imgtk::sbutract_ex( Fl_RGB_Image* src1, Fl_RGB_Image* src2, int px, int py, float sr )
+{
+    if ( ( src1 != NULL ) && ( src2 != NULL ) )
+    {
+        uchar* obuff = (uchar*)src1->data()[0];
+
+        fl_imgtk_subimgonbuffer( obuff, src1->w(), src2->w(), src1->d(),
+                                 src2, px, py, sr );
+
+        src1->uncache();
+
+        return true;
+    }
+
+    return false;
+}
+
 
 unsigned fl_imgtk::makealphamap( uchar* &amap, Fl_RGB_Image* src, float val )
 {
@@ -1155,6 +1583,49 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, uchar* alphamap, unsigned
     }
 
     return newimg;
+}
+
+bool fl_imgtk::applyalpha_ex( Fl_RGB_Image* src, float val )
+{
+    if ( src != NULL )
+    {
+        if ( src->d() < 3 )
+            return NULL;
+
+        unsigned img_w  = src->w();
+        unsigned img_h  = src->h();
+        unsigned img_sz = img_w * img_h;
+
+        uchar* ptr = (uchar*)src->data()[0];
+
+        val = MAX( 1.0f, MIN( 0.0f, val ) );
+
+        if ( src->d() == 4 )
+        {
+            #pragma omp parellel for
+            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            {
+                uchar* obp = &ptr[ cnt * 4 + 3 ];
+
+                *obp = (uchar)( (float)*obp * val );
+            }
+        }
+        else
+        {
+            #pragma omp parellel for
+            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            {
+                uchar* obp = &ptr[ cnt * 3 ];
+
+                for( unsigned rpt=0; rpt<3; rpt++ )
+                {
+                    obp[rpt] = (uchar)( (float)obp[rpt] * val );
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 bool fl_imgtk::drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img, int x, int y, float alpha )

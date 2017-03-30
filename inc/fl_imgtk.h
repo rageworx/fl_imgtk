@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2017-03-29-0
+* fl_imgtk.H , version 2017-03-30-0
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2017 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -16,6 +16,22 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Image.H>
 #include <FL/Fl_RGB_Image.H>
+
+////////////////////////////////////////////////////////////////////////////////
+
+#define FL_IMGTK
+
+#define FL_IMGTK_VER_MJR    0
+#define FL_IMGTK_VER_MNR    3
+#define FL_IMGTK_VER_BLD    11
+#define FL_IMGTK_VER_REV    0
+
+#define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
+                              FL_IMGTK_VER_MNR * 100000 + \
+                              FL_IMGTK_VER_BLD * 1000 + \
+                              FL_IMGTK_VER_REV )
+
+////////////////////////////////////////////////////////////////////////////////
 
 namespace fl_imgtk
 {
@@ -45,7 +61,9 @@ namespace fl_imgtk
     // Flip, Rotate
 
     Fl_RGB_Image* fliphorizontal( Fl_RGB_Image* img );
+    bool          fliphorizontal_ex( Fl_RGB_Image* img );
     Fl_RGB_Image* flipvertical( Fl_RGB_Image* img );
+    bool          flipvertical_ex( Fl_RGB_Image* img );
 
     Fl_RGB_Image* rotate90( Fl_RGB_Image* img );
     Fl_RGB_Image* rotate180( Fl_RGB_Image* img );
@@ -66,10 +84,13 @@ namespace fl_imgtk
     ***/
     // Gamma default = 1.0
     Fl_RGB_Image* gamma( Fl_RGB_Image* img, double gamma );
+    bool          gamma_ex( Fl_RGB_Image* img, double gamma );
     // perc => -100 ~ 100
     Fl_RGB_Image* brightness( Fl_RGB_Image* img, double perc );
+    bool          brightbess_ex( Fl_RGB_Image* img, double perc );
     // perc => -100 ~ 100
     Fl_RGB_Image* contrast( Fl_RGB_Image* img, double perc );
+    bool          contrast_ex(  Fl_RGB_Image* img, double perc );
 
     ////////////////////////////////////////////////////////////////////////////
     // Rescale(resize) with fl_smimg
@@ -83,6 +104,7 @@ namespace fl_imgtk
     Fl_RGB_Image* draw_widgetimage( Fl_Widget* w );
     Fl_RGB_Image* drawblurred_widgetimage( Fl_Widget* w, unsigned factor = 2 );
     Fl_RGB_Image* blurredimage( Fl_RGB_Image* src, unsigned factor = 2 );
+    bool          blurredimage_ex( Fl_RGB_Image* src, unsigned factor = 2 );
 
     ////////////////////////////////////////////////////////////////////////////
     // Kernel matrix filter configurations
@@ -94,6 +116,7 @@ namespace fl_imgtk
 
     // Kernel matrix filter
     Fl_RGB_Image* filtered( Fl_RGB_Image* img, kfconfig* kfc );
+    bool          filtered_ex( Fl_RGB_Image* img, kfconfig* kfc );
 
     ////////////////////////////////////////////////////////////////////////////
     // Tone mapping
@@ -114,6 +137,10 @@ namespace fl_imgtk
 	                                    float intensity, float contrast,
 										float adaptation = 1.0f,
 										float color_correction = 0.0f );
+    bool       tonemapping_reinhard_ex( Fl_RGB_Image* src,
+	                                    float intensity, float contrast,
+										float adaptation = 1.0f,
+										float color_correction = 0.0f );
 
 	/***
 	** tonemapping_drago
@@ -129,6 +156,10 @@ namespace fl_imgtk
     Fl_RGB_Image* tonemapping_drago( Fl_RGB_Image* src,
                                      float gamma = 1.0f ,
                                      float exposure = 0.0f );
+    bool       tonemapping_drago_ex( Fl_RGB_Image* src,
+                                     float gamma = 1.0f ,
+                                     float exposure = 0.0f );
+
 
     ////////////////////////////////////////////////////////////////////////////
     // More functions ...
@@ -154,6 +185,13 @@ namespace fl_imgtk
 	Fl_RGB_Image* merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2,
                          mergeconfig* cfg = NULL );
 
+    // Subtract twro different image src1 - ( src2 * sr ) = result.
+    Fl_RGB_Image* subtract( Fl_RGB_Image* src1, Fl_RGB_Image* src2,
+                            int px, int py, float sr = 1.0f );
+    // Subtract src1 - ( src2 * sr ) = src1.
+    bool          sbutract_ex( Fl_RGB_Image* src1, Fl_RGB_Image* src2,
+                               int px, int py, float sr = 1.0f );
+
     // Makes alpha channel map.
     unsigned makealphamap( uchar* &amap, Fl_RGB_Image* src, float val = 1.0f );
     unsigned makealphamap( uchar* &amap, unsigned w, unsigned h, uchar val  = 255 );
@@ -163,6 +201,7 @@ namespace fl_imgtk
     Fl_RGB_Image* applyalpha( Fl_RGB_Image* src, float val = 1.0f );
     Fl_RGB_Image* applyalpha( Fl_RGB_Image* src,
                               uchar* alphamap = NULL , unsigned amsz = 0);
+    bool          applyalpha_ex( Fl_RGB_Image* src, float val = 1.0f );
 
     // Draws image to image with alpha value.
     bool drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img,

@@ -5,15 +5,30 @@
 
 ## Lastest upate
 
+* 2017-03-30-0
+    1. New features
+        - FL_IMGTK, FL_IMGTK_VERSION definitions
+        - fliphorizontal_ex();
+        - flipvertical_ex();
+        - gamma_ex();
+        - brightbess_ex();
+        - contrast_ex();
+        - blurredimage_ex();
+        - filtered_ex();
+        - tonemapping_reinhard_ex();
+        - tonemapping_drago_ex();
+        - subtract();
+        - sbutract_ex();
+        - applyalpha_ex();
+
+## Previous update
+
 * 2017-03-29-0
     1. Now supports many drawing image functions.
         - merge();
         - makealphamap();
         - applyalpha();
         - drawonimage();
-
-## Previous update
-
 * 2017-03-28-0
     1. Cropping image to a new Fl_RGB_Image.
     2. Fixed bugs on Tone mapping (HDR), now it runs well for Drago and Reinhard algorithms.
@@ -55,10 +70,12 @@
 * Merge two different Fl_RGB_Images to a new one.
 * Make alpha map, and apply to Fl_RGB_Image.
 * Draw Fl_RGB_Image to Fl_RGB_Image, it is same like Mix.
+* Subtracts two Fl_RGB_Image.
 
 ## Planned to next
 
-* Crop image from polygonal vectors
+* Channel mix
+* White balance
 
 ## OpenMP supports
 

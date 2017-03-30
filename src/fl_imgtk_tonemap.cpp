@@ -9,7 +9,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 // All source code referenced to FreeImage library 3.
 // related in tmoColorConvert, tmoReinhard05, tmpDrago03
-
+//
+// tmoDrago03, Tone mapping operator (Drago, 2003)
+// - Design and implementation by Herv?Drolon (drolon@infonie.fr)
+// - It belong to a part of FreeImage 3
+//
+// tmoReinhard05, Tone mapping operator (Reinhard, 2005)
+// - Design and implementation by
+//      * Herv?Drolon (drolon@infonie.fr)
+//      * Mihail Naydenov (mnaydenov@users.sourceforge.net)
+// - It belong to a part of FreeImage 3
+//
+////////////////////////////////////////////////////////////////////////////////
 #define F_EPSILON       1e-06f
 #define F_INFINITE      1e+10f
 
@@ -124,17 +135,23 @@ static const double  XYZ2RGB[3][3] =
 
 static inline double fl_imgtk_biasFunction(const double b, const double x)
 {
-	return pow (x, b);		// pow(x, log(bias)/log(0.5)
+    // pow(x, log(bias)/log(0.5)
+	return pow (x, b);
 }
 
 static inline double fl_imgtk_pade_log(const double x)
 {
-	if(x < 1) {
-		return (x * (6 + x) / (6 + 4 * x));
-	} else if(x < 2) {
-		return (x * (6 + 0.7662 * x) / (5.9897 + 3.7658 * x));
+	if( x < 1.0 )
+    {
+        return ( x * ( 6.0 + x ) / ( 6.0 + 4.0 * x ) );
 	}
-	return log(x + 1);
+	else
+    if( x < 2.0 )
+    {
+		return ( x * ( 6.0 + 0.7662 * x ) / ( 5.9897 + 3.7658 * x ) );
+	}
+
+	return log( x + 1.0 );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -234,6 +251,40 @@ Fl_RGB_Image* fl_imgtk_clamp_F2RGB( fl_imgtk_fimg* img )
     }
 
     return NULL;
+}
+
+bool fl_imgtk_clamp_F2RGB_ex( Fl_RGB_Image* dimg, fl_imgtk_fimg* fimg )
+{
+    if ( ( dimg == NULL ) || ( fimg == NULL ) )
+        return false;;
+
+    unsigned w = fimg->w;
+    unsigned h = fimg->h;
+    unsigned d = fimg->d;
+
+    if ( ( dimg->w() != fimg->w ) || ( dimg->h() != fimg->h )
+         || ( dimg->d() != fimg->d ) )
+    {
+        return false;
+    }
+
+    uchar* buff = (uchar*)dimg->data()[0];
+
+    if ( ( w > 0 ) && ( h > 0 ) && ( buff != NULL ) )
+    {
+        unsigned imgsz = w*h*d;
+
+        #pragma omp parallel for
+        for( unsigned cnt=0; cnt<imgsz; cnt++ )
+        {
+            float conv = ( fimg->pixels[ cnt ] > 1.0f ) ? 1.0f : fimg->pixels[ cnt ];
+            buff[ cnt ] = (uchar)( conv * 255.0f + 0.5f );
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 
@@ -688,6 +739,48 @@ Fl_RGB_Image* fl_imgtk::tonemapping_reinhard( Fl_RGB_Image* src, float intensity
     return NULL;
 }
 
+bool fl_imgtk::tonemapping_reinhard_ex( Fl_RGB_Image* src, float intensity, float contrast, float adaptation, float color_correction )
+{
+    if ( src != NULL )
+    {
+        fl_imgtk_fimg* fimg = fl_imgtk_RGB2F( src );
+        if ( fimg != NULL )
+        {
+            fl_imgtk_fimg* yimg = fl_imgtk_F2Y( fimg );
+            if ( yimg != NULL )
+            {
+                bool retb = fl_imgtk_tonemappingreinhard( fimg, yimg,
+                                                          intensity,
+                                                          contrast,
+                                                          adaptation,
+                                                          color_correction );
+
+                if ( retb == true )
+                {
+                    bool retb = fl_imgtk_clamp_F2RGB_ex( src, fimg );
+
+                    if ( retb == true )
+                    {
+                        src->uncache();
+                    }
+
+                    fl_imgtk_discard_fimg( fimg );
+                    fl_imgtk_discard_fimg( yimg );
+
+                    return retb;
+                }
+
+                fl_imgtk_discard_fimg( yimg );
+            }
+
+            fl_imgtk_discard_fimg( fimg );
+        }
+    }
+
+    return false;
+}
+
+
 Fl_RGB_Image* fl_imgtk::tonemapping_drago( Fl_RGB_Image* src, float gamma, float exposure )
 {
     if ( src == NULL )
@@ -729,4 +822,52 @@ Fl_RGB_Image* fl_imgtk::tonemapping_drago( Fl_RGB_Image* src, float gamma, float
     }
 
     return retimg;
+}
+
+bool fl_imgtk::tonemapping_drago_ex( Fl_RGB_Image* src, float gamma, float exposure )
+{
+    if ( src == NULL )
+        return false;
+
+    fl_imgtk_fimg* convimg = fl_imgtk_RGB2F( src );
+
+    bool retb = false;
+
+    if ( convimg != NULL )
+    {
+        float biasparam = 0.85f;
+        float exposparam = (float)pow(2.0, exposure);
+
+        if ( fl_imgtk_F2YXY( convimg ) == true )
+        {
+            float lumimax = 0.0f;
+            float lumimin = 0.0f;
+            float lumiavg = 0.0f;
+
+            if ( fl_imgtk_luminancefromYXY( convimg, lumimax, lumimin, lumiavg ) == true )
+            {
+                if ( fl_imgtk_tonemappingdrago( convimg, lumimax, lumiavg, biasparam, exposparam ) == true )
+                {
+                    if ( fl_imgtk_YXY2F( convimg ) == true )
+                    {
+                        if ( gamma != 1.0 )
+                        {
+                            fl_imgtk_rec709gammacorrect( convimg, gamma );
+                        }
+
+                        retb = fl_imgtk_clamp_F2RGB_ex( src, convimg );
+
+                        if ( retb == true )
+                        {
+                            src->uncache();
+                        }
+                    }
+                }
+            }
+        }
+
+        fl_imgtk_discard_fimg( convimg );
+    }
+
+    return retb;
 }
