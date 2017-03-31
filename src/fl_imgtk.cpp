@@ -1645,6 +1645,131 @@ bool fl_imgtk::drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img, int x, int y
     return false;
 }
 
+Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulong col2, bool dither )
+{
+    uchar* buffer = new unsigned char[ w * h * 3 ];
+    if ( buffer != NULL )
+    {
+        float downscale_f = 2559.0f / ( float( h ) * 10.0f );
+        float col1g     = 0.0f;
+        float col2g     = 0.0f;
+        float randfv    = 0.0f;
+        uchar fill_r    = 0;
+        uchar fill_g    = 0;
+        uchar fill_b    = 0;
+        uchar ref_c1r   = ( col1 & 0xFF000000 ) >> 24;
+        uchar ref_c1g   = ( col1 & 0x00FF0000 ) >> 16;
+        uchar ref_c1b   = ( col1 & 0x0000FF00 ) >> 8;
+        uchar ref_c2r   = ( col2 & 0xFF000000 ) >> 24;
+        uchar ref_c2g   = ( col2 & 0x00FF0000 ) >> 16;
+        uchar ref_c2b   = ( col2 & 0x0000FF00 ) >> 8;
+
+        #pragma omp parellel for
+        for ( int cy=0; cy<h; cy++ )
+        {
+            uchar* sbuf = &buffer[ cy * w * 3 ];
+
+            col1g = ( ( float( h*10 ) - float( cy*10 )  ) * downscale_f ) / 2559.0f;
+            col2g = 1.0f - col1g;
+
+            fill_r = ( (float)ref_c1r * col1g ) + ( (float)ref_c2r * col2g );
+            fill_g = ( (float)ref_c1g * col1g ) + ( (float)ref_c2g * col2g );
+            fill_b = ( (float)ref_c1b * col1g ) + ( (float)ref_c2b * col2g );
+
+            for ( int cx=0; cx<w; cx++ )
+            {
+                if ( dither == true )
+                {
+                    if ( h > 255 )
+                    {
+                        // A simple trick to ...
+                        // Make dithered color !
+                        randfv = float( rand() % 256 ) / 5120.0f;
+                    }
+
+                    sbuf[0] = fill_r - uchar( ref_c2r * col2g * randfv );
+                    sbuf[1] = fill_g - uchar( ref_c2g * col2g * randfv );
+                    sbuf[2] = fill_b - uchar( ref_c2b * col2g * randfv );
+                }
+                else
+                {
+                    sbuf[0] = fill_r;
+                    sbuf[1] = fill_g;
+                    sbuf[2] = fill_b;
+                }
+                sbuf += 3;
+            }
+        }
+
+        return new Fl_RGB_Image( buffer, w, h, 3 );
+    }
+
+    return NULL;
+}
+
+Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulong col2, bool dither )
+{
+    uchar* buffer = new unsigned char[ w * h * 3 ];
+    if ( buffer != NULL )
+    {
+        float downscale_f = 2559.0f / ( float( h ) * 10.0f );
+        float col1g     = 0.0f;
+        float col2g     = 0.0f;
+        float randfv    = 0.0f;
+        uchar fill_r    = 0;
+        uchar fill_g    = 0;
+        uchar fill_b    = 0;
+        uchar ref_c1r   = ( col1 & 0xFF000000 ) >> 24;
+        uchar ref_c1g   = ( col1 & 0x00FF0000 ) >> 16;
+        uchar ref_c1b   = ( col1 & 0x0000FF00 ) >> 8;
+        uchar ref_c2r   = ( col2 & 0xFF000000 ) >> 24;
+        uchar ref_c2g   = ( col2 & 0x00FF0000 ) >> 16;
+        uchar ref_c2b   = ( col2 & 0x0000FF00 ) >> 8;
+
+        #pragma omp parellel for
+        for ( int cx=0; cx<w; cx++ )
+        {
+            for ( int cy=0; cy<h; cy++ )
+            {
+                uchar* sbuf = &buffer[ cy * w * 3 ];
+
+                col1g = ( ( float( h*10 ) - float( cy*10 )  ) * downscale_f ) / 2559.0f;
+                col2g = 1.0f - col1g;
+
+                fill_r = ( (float)ref_c1r * col1g ) + ( (float)ref_c2r * col2g );
+                fill_g = ( (float)ref_c1g * col1g ) + ( (float)ref_c2g * col2g );
+                fill_b = ( (float)ref_c1b * col1g ) + ( (float)ref_c2b * col2g );
+
+                if ( dither == true )
+                {
+                    if ( h > 255 )
+                    {
+                        // A simple trick to ...
+                        // Make dithered color !
+                        randfv = float( rand() % 256 ) / 5120.0f;
+                    }
+
+                    sbuf[0] = fill_r - uchar( ref_c2r * col2g * randfv );
+                    sbuf[1] = fill_g - uchar( ref_c2g * col2g * randfv );
+                    sbuf[2] = fill_b - uchar( ref_c2b * col2g * randfv );
+                }
+                else
+                {
+                    sbuf[0] = fill_r;
+                    sbuf[1] = fill_g;
+                    sbuf[2] = fill_b;
+                }
+                sbuf += 3;
+            }
+        }
+
+        return new Fl_RGB_Image( buffer, w, h, 3 );
+    }
+
+    return NULL;
+}
+
+
 void fl_imgtk_t_set_kfconfig( fl_imgtk::kfconfig* kfc, uchar w, uchar h, float f, float b, const float* m )
 {
     if ( ( kfc != NULL ) && ( m != NULL ) )

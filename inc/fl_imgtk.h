@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2017-03-30-0
+* fl_imgtk.H , version 2017-03-31-0
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2017 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -23,7 +23,7 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    11
+#define FL_IMGTK_VER_BLD    14
 #define FL_IMGTK_VER_REV    0
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
@@ -206,6 +206,13 @@ namespace fl_imgtk
     // Draws image to image with alpha value.
     bool drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img,
                       int x, int y, float alpha = 1.0f );
+
+    // Make a RGB image from gradation col1 to col2.
+    // Use col1, col2 to 0xRRGGBB00 channel alignment, not Fl_Color !
+    Fl_RGB_Image* makegradation_h( unsigned w, unsigned h,
+                                   ulong col1, ulong col2, bool dither );
+    Fl_RGB_Image* makegradation_v( unsigned w, unsigned h,
+                                   ulong col1, ulong col2, bool dither );
 
     ////////////////////////////////////////////////////////////////////////////
 
