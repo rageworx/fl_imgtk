@@ -5,14 +5,19 @@
 
 ## Lastest upate
 
+* 2017-04-05-0
+    1. New feature
+        - invert();
+        - invert_ex();
+
+## Previous update
+
 * 2017-03-31-0
     1. New features
         - makegradation_h();
         - makegradation_v();
 
-## Previous update
-
-* 2017-03-30-0
+* * 2017-03-30-0
     1. New features
         - FL_IMGTK, FL_IMGTK_VERSION definitions
         - fliphorizontal_ex();

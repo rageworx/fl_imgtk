@@ -664,6 +664,78 @@ bool fl_imgtk::contrast_ex(  Fl_RGB_Image* img, double perc )
     return fl_imgtk_curve_ex( img, lut );
 }
 
+Fl_RGB_Image* fl_imgtk::invert( Fl_RGB_Image* img )
+{
+    if ( img != NULL )
+    {
+        unsigned img_w = img->w();
+        unsigned img_h = img->h();
+        unsigned img_d = img->d();
+
+        if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
+            return NULL;
+
+        unsigned buffsz = img_w * img_h;
+        uchar* newbuff = new uchar[ buffsz * img_d ];
+
+        if ( newbuff != NULL )
+        {
+            uchar* refbuff = (uchar*)img->data()[0];
+
+            #pragma omp parallel for
+            for( unsigned cnt=0; cnt<buffsz; cnt++ )
+            {
+                uchar* psrc = &refbuff[ cnt * img_d ];
+                uchar* pdst = &newbuff[ cnt * img_d ];
+
+                // alpha channel will skipped to invert.
+                for( unsigned rpt=0; rpt<3; rpt++ )
+                {
+                    pdst[ rpt ] = 0xFF - psrc[ rpt ];
+                }
+            }
+
+            return new Fl_RGB_Image( newbuff, img_w, img_h, img_d );
+        }
+    }
+
+    return NULL;
+}
+
+bool fl_imgtk::invert_ex( Fl_RGB_Image* img )
+{
+    if ( img != NULL )
+    {
+        unsigned img_w = img->w();
+        unsigned img_h = img->h();
+        unsigned img_d = img->d();
+
+        if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
+            return NULL;
+
+        unsigned buffsz = img_w * img_h;
+
+        uchar* refbuff = (uchar*)img->data()[0];
+
+        #pragma omp parallel for
+        for( unsigned cnt=0; cnt<buffsz; cnt++ )
+        {
+            uchar* psrc = &refbuff[ cnt * img_d ];
+
+            // alpha channel will skipped to invert.
+            for( unsigned rpt=0; rpt<3; rpt++ )
+            {
+                psrc[ rpt ] = 0xFF - psrc[ rpt ];
+            }
+        }
+		
+		img->uncache();
+		
+        return true;
+    }
+    return false;
+}
+
 Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
 {
     if ( ( img != NULL ) && ( kfc != NULL ) )

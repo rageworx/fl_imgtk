@@ -23,7 +23,7 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    14
+#define FL_IMGTK_VER_BLD    15
 #define FL_IMGTK_VER_REV    0
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
@@ -91,6 +91,12 @@ namespace fl_imgtk
     // perc => -100 ~ 100
     Fl_RGB_Image* contrast( Fl_RGB_Image* img, double perc );
     bool          contrast_ex(  Fl_RGB_Image* img, double perc );
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Color conversion
+
+    Fl_RGB_Image* invert( Fl_RGB_Image* img );
+    bool          invert_ex( Fl_RGB_Image* img );
 
     ////////////////////////////////////////////////////////////////////////////
     // Rescale(resize) with fl_smimg
