@@ -5,12 +5,16 @@
 
 ## Lastest upate
 
+* 2017-04-06-0
+	1. Bug fixed
+		- applyalpha_ex();
+
+## Previous update
+
 * 2017-04-05-0
     1. New feature
         - invert();
         - invert_ex();
-
-## Previous update
 
 * 2017-03-31-0
     1. New features

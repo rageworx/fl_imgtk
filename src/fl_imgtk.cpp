@@ -1573,7 +1573,7 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
         if ( obuff == NULL )
             return NULL;
 
-        val = MAX( 1.0f, MIN( 0.0f, val ) );
+        val = MIN( 1.0f, MAX( 0.0f, val ) );
 
         // Copy pixels from source image.
         if ( src->d() == 4 )
@@ -1600,6 +1600,8 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
 
             *obp = (uchar)( (float)*obp * val );
         }
+		
+		newimg = new Fl_RGB_Image( obuff, img_w, img_h, 4 );
     }
 
     return newimg;
