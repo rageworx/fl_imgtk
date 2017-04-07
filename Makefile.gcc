@@ -39,10 +39,19 @@ DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
 OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
 CPUARCHOPT    = -mavx
 
+
+# About 32bit, 64bit parameters,
+# It is some special case, use if compiler is 64bit and need make 32bit.
 ifeq (64bit,$(firstword $(MAKECMDGOALS)))
 	OBJDIR = ./obj64/Release
 	OUTDIR = ./lib64
 	CPUARCHOPT += -m64
+endif
+
+ifeq (32bit,$(firstword $(MAKECMDGOALS)))
+	OBJDIR = ./obj32/Release
+	OUTDIR = ./lib32
+	CPUARCHOPT += -m32
 endif
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
@@ -52,10 +61,11 @@ endif
 
 CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT) $(FLTKLIBS)
 
-.PHONY: 64bit
+.PHONY: 64bit 32bit
 
 all: prepare clean ${OUTDIR}/${OUTBIN}
 
+32bit: all
 64bit: all
 debug: all
 
