@@ -1162,12 +1162,12 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
         if ( ( rsx > src->w() ) || ( rsy > src->h() ) )
             return NULL;
 
-        if ( src->w() > ( rw + rsx ) )
+        if ( src->w() < ( rw + rsx ) )
         {
             rw = src->w() - rsx;
         }
 
-        if ( src->h() > ( rh + rsy ) )
+        if ( src->h() < ( rh + rsy ) )
         {
             rh = src->h() - rsy;
         }
