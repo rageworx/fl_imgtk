@@ -728,9 +728,9 @@ bool fl_imgtk::invert_ex( Fl_RGB_Image* img )
                 psrc[ rpt ] = 0xFF - psrc[ rpt ];
             }
         }
-		
+
 		img->uncache();
-		
+
         return true;
     }
     return false;
@@ -858,6 +858,264 @@ bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
     }
 
     return false;
+}
+
+bool fl_imgtk_gen_lowfreq( uchar** out, uchar* src, unsigned w, unsigned h, unsigned d, unsigned sz )
+{
+    if ( src == NULL )
+        return false;
+
+    if ( ( w == 0 ) || ( h == 0 ) || ( d < 3 ) )
+        return false;
+
+    if ( sz < 2 )
+        return false;
+
+    long startpos = sz / 2;
+    long endposw  = w - startpos;
+    long endposh  = h - startpos;
+
+    uchar* outbuff = new uchar[ w * h * d ];
+
+    if ( outbuff == NULL )
+        return false;
+
+    long cnty;
+    long cntx;
+
+    #pragma omp parallel for private( cntx )
+    for( cnty=startpos; cnty<endposh; cnty++ )
+    {
+	    for( cntx=startpos; cntx<endposw; cntx++ )
+        {
+		    unsigned sum[4] = {0};
+
+		    for( long ry = -startpos; ry<(startpos+1); ry++ )
+            {
+			    for( long rx = -startpos; rx<(startpos+1); rx++ )
+                {
+                    for( long rpt=0; rpt<d; rpt++ )
+                    {
+                        sum[rpt] += src[ ( ( cnty + ry ) * w + ( cntx + rx ) ) * d + rpt ];
+                    }
+			    }
+		    }
+
+            for( long rpt=0; rpt<d; rpt++ )
+            {
+                outbuff[ ( cnty * w + cntx ) * d + rpt ] \
+                 = MIN( 255, sum[rpt] / ( sz * sz ) );
+            }
+	    }
+    }
+
+    *out = outbuff;
+
+    return true;
+}
+
+Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor )
+{
+    if ( img != NULL )
+    {
+        unsigned imgsz = img->w() * img->h() * img->d();
+        uchar* outbuff = new uchar[ imgsz ];
+
+        if ( outbuff == NULL )
+            return NULL;
+
+        uchar* rbuff  = (uchar*)img->data()[0];
+        uchar* lfimg5 = NULL;
+        uchar* lfimg9 = NULL;
+
+        if ( fl_imgtk_gen_lowfreq( &lfimg5, rbuff,
+                                   img->w(), img->h(), img->d(), 5 ) == false )
+            return NULL;
+
+        if ( fl_imgtk_gen_lowfreq( &lfimg9, rbuff,
+                                   img->w(), img->h(), img->d(), 9 ) == false )
+        {
+            delete[] lfimg5;
+            return NULL;
+        }
+
+        float fedgev = (float)factor / 8.0f;
+
+        #pragma omp parallel for
+	    for( unsigned cnty=0; cnty<img->h(); cnty++ )
+	    {
+		    for( unsigned cntx=0; cntx<img->w(); cntx++ )
+            {
+                for( unsigned rpt=0; rpt<img->d(); rpt++ )
+                {
+                    float dlv = (float)lfimg5[ ( cnty * img->w() + cntx ) * img->d() + rpt ]
+                                - (float)lfimg9[ ( cnty * img->w() + cntx ) * img->d() + rpt ];
+
+                    unsigned pv = std::abs( (float)rbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ]
+                                            + (float)dlv *  fedgev );
+
+                    outbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ] = MIN( 255, pv );
+                }
+		    }
+	    }
+
+	    delete[] lfimg5;
+	    delete[] lfimg9;
+
+	    return new Fl_RGB_Image( outbuff, img->w(), img->h(), img->d() );
+    }
+
+    return NULL;
+}
+
+bool fl_imgtk::edgeenhance_ex( Fl_RGB_Image* img, unsigned factor )
+{
+    if ( img != NULL )
+    {
+        uchar* rbuff  = (uchar*)img->data()[0];
+        uchar* lfimg5 = NULL;
+        uchar* lfimg9 = NULL;
+
+        if ( fl_imgtk_gen_lowfreq( &lfimg5, rbuff,
+                                   img->w(), img->h(), img->d(), 5 ) == false )
+            return NULL;
+
+        if ( fl_imgtk_gen_lowfreq( &lfimg9, rbuff,
+                                   img->w(), img->h(), img->d(), 9 ) == false )
+        {
+            delete[] lfimg5;
+            return NULL;
+        }
+
+        float fedgev = (float)factor / 8.0f;
+
+        #pragma omp parallel for
+	    for( unsigned cnty=0; cnty<img->h(); cnty++ )
+	    {
+		    for( unsigned cntx=0; cntx<img->w(); cntx++ )
+            {
+                for( unsigned rpt=0; rpt<img->d(); rpt++ )
+                {
+                    float dlv = (float)lfimg5[ ( cnty * img->w() + cntx ) * img->d() + rpt ]
+                                - (float)lfimg9[ ( cnty * img->w() + cntx ) * img->d() + rpt ];
+
+                    unsigned pv = std::abs( (float)rbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ]
+                                            + (float)dlv *  fedgev );
+
+                    rbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ] = MIN( 255, pv );
+                }
+		    }
+	    }
+
+	    delete[] lfimg5;
+	    delete[] lfimg9;
+
+        img->uncache();
+    }
+
+    return NULL;
+}
+
+Fl_RGB_Image* fl_imgtk::gaussian( Fl_RGB_Image* img, unsigned str, unsigned par )
+{
+    if ( img != NULL )
+    {
+        if ( par > 30 )
+        {
+            par = 30;
+        }
+
+        unsigned imgsz = img->w() * img->h() * img->d();
+        uchar* outbuff = new uchar[ imgsz ];
+
+        if ( outbuff == NULL )
+            return NULL;
+
+        unsigned masksz = 2 * str + 1;
+
+        float* masks = new float[ masksz * masksz ];
+
+        if ( masks == NULL )
+        {
+            delete[] outbuff;
+            return NULL;
+        }
+
+        float masksum = 0;
+
+        long cntx;
+        long cnty;
+
+        #pragma omp parellel for private( cntx )
+        for( cnty=-(long)str; cnty<(long)str; cnty++ )
+        {
+            unsigned py = cnty + str;
+
+            for( cntx=-(long)str; cntx<(long)str; cntx++ )
+            {
+                unsigned px = cntx + str;
+                double dist = sqrt( (double)( cntx * cntx + cnty * cnty ) );
+                float div1  = exp( (float)( 31 - par ) );
+                float div2  = 10.0f * dist;
+
+                masks[ py * masksz + px ] = (float)( 1.0f / div1 / div2 );
+
+                masksum += masks[ py * masksz + px ];
+            }
+        }
+
+        if ( masksum < 1.0f )
+        {
+            masksum = 1.0f;
+        }
+
+        uchar* rbuff = (uchar*)img->data()[0];
+
+        #pragma omp parallel for private ( cntx )
+        for( cnty = str; cnty<(img->h() - str); cnty++ )
+        {
+            for( cntx = str; cntx<(img->w() - str); cntx++ )
+            {
+                float asum[4] = {0.0f};
+
+                for ( long cnt1 = -(long)str; cnt1<=(long)str; cnt1++ )
+                {
+                    for ( long cnt2 = -(long)str ; cnt2<=(long)str; cnt2++)
+                    {
+                        unsigned rpos = ( cnty + cnt1 ) * img->w() + ( cntx + cnt2 );
+                        unsigned mpos = ( cnt1 + str ) * masksz + cnt2 + str;
+
+                        for( unsigned rpt=0; rpt<3; rpt++ )
+                        {
+                            asum[rpt] += (float)rbuff[ rpos * img->d() + rpt ]
+                                         * masks[ mpos ];
+                        }
+                    }
+                }
+
+                for( unsigned rpt=0; rpt<3; rpt++ )
+                {
+                    unsigned wpos = ( cnty * img->w() + cntx ) * img->d() + rpt;
+
+                    if ( wpos < imgsz )
+                    {
+                        outbuff[ wpos ] = MIN( 255.0f, (float)asum[ rpt ] / masksum );
+                    }
+                }
+            }
+        }
+
+        delete[] masks;
+
+        return new Fl_RGB_Image( outbuff, img->w(), img->h(), img->d() );
+
+    }
+
+    return NULL;
+}
+
+bool fl_imgtk::gaussian_ex( Fl_RGB_Image* img, unsigned str, unsigned par )
+{
 }
 
 Fl_RGB_Image* fl_imgtk::rescale( Fl_RGB_Image* img, unsigned w, unsigned h, rescaletype rst )
@@ -1600,7 +1858,7 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
 
             *obp = (uchar)( (float)*obp * val );
         }
-		
+
 		newimg = new Fl_RGB_Image( obuff, img_w, img_h, 4 );
     }
 
