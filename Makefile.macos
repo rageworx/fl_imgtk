@@ -1,4 +1,4 @@
-# Makefile for fl_imgtk, LLVM
+# Makefile for fl_imgtk, LLVM for MAC-OS
 # (C)2017 Raphael Kim / rageworx@gmail.com
 #
 
@@ -20,11 +20,11 @@ CCPATH = llvm-
 # Compiler configure.
 GCC = ${CCPATH}gcc
 GPP = ${CCPATH}g++
-AR  = ${CCPATH}ar
+AR  = ar
 
 # FLTK place
-FLTKDIR    = /usr/include
-FLTKLIBDIR = /usr/lib
+FLTKDIR    = /usr/local
+FLTKLIBDIR = /usr/local/lib
 FLTKLIBS   = -L$(FLTKLIBDIR) -lfltk -lfltk_images -lfltk_png -lfltk_jpeg
 
 # Sources and how it built
