@@ -124,11 +124,10 @@ namespace fl_imgtk
     Fl_RGB_Image* filtered( Fl_RGB_Image* img, kfconfig* kfc );
     bool          filtered_ex( Fl_RGB_Image* img, kfconfig* kfc );
 
-    // Some others
-    Fl_RGB_Image* edgeenhance( Fl_RGB_Image* img, unsigned factor = 10 );
-    bool          edgeenhance_ex( Fl_RGB_Image* img, unsigned factor = 10 );
-    Fl_RGB_Image* gaussian( Fl_RGB_Image* img, unsigned str, unsigned par );
-    bool          gaussian_ex( Fl_RGB_Image* img, unsigned str, unsigned par );
+    // edgeenhance, factor : strength of edge signal boosting.
+    //              margin : Skipping processing image pixel size of each edges
+    Fl_RGB_Image* edgeenhance( Fl_RGB_Image* img, unsigned factor = 10, unsigned margin = 4 );
+    bool          edgeenhance_ex( Fl_RGB_Image* img, unsigned factor = 10, unsigned margin = 4 );
 
     ////////////////////////////////////////////////////////////////////////////
     // Tone mapping
