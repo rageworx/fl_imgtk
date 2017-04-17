@@ -948,25 +948,36 @@ Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor, unsigne
 
         unsigned cnty;
         unsigned cntx;
+        unsigned cntw = img->w();
+        unsigned cnth = img->h();
         unsigned mgnx = margin;
         unsigned mgny = margin;
         unsigned mgnw = img->w() - ( margin * 2 );
         unsigned mgnh = img->h() - ( margin * 2 );
 
         #pragma omp parallel for private( cntx )
-	    for( cnty=mgny; cnty<mgnh; cnty++ )
+	    for( cnty=0; cnty<cnth; cnty++ )
 	    {
-		    for( cntx=mgnx; cntx<mgnw; cntx++ )
+		    for( cntx=0; cntx<cntw; cntx++ )
             {
                 for( unsigned rpt=0; rpt<img->d(); rpt++ )
                 {
-                    float dlv = (float)lfimg5[ ( cnty * img->w() + cntx ) * img->d() + rpt ]
-                                - (float)lfimg9[ ( cnty * img->w() + cntx ) * img->d() + rpt ];
+                    if ( ( cntx > mgnx ) && ( cntx < (mgnx+mgnw) ) && \
+                         ( cnty > mgny ) && ( cnty < (mgny+mgnh) ) )
+                    {
+                        float dlv = (float)lfimg5[ ( cnty * img->w() + cntx ) * img->d() + rpt ]
+                                    - (float)lfimg9[ ( cnty * img->w() + cntx ) * img->d() + rpt ];
 
-                    unsigned pv = std::abs( (float)rbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ]
-                                            + (float)dlv *  fedgev );
+                        unsigned pv = std::abs( (float)rbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ]
+                                                + (float)dlv *  fedgev );
 
-                    outbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ] = MIN( 255, pv );
+                        outbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ] = MIN( 255, pv );
+                    }
+                    else
+                    {
+                        outbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ] \
+                        = rbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ];
+                    }
                 }
 		    }
 	    }
