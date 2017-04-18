@@ -171,6 +171,12 @@ namespace fl_imgtk
                                      float gamma = 1.0f ,
                                      float exposure = 0.0f );
 
+    /***
+    ** color CLAHE
+    ** -------------------------------------------------------------------------
+    **/
+    Fl_RGB_Image* CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit );
+    bool          CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit );
 
     ////////////////////////////////////////////////////////////////////////////
     // More functions ...
