@@ -8,8 +8,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define CLAHE_MAX_REG_W             16
-#define CLAHE_MAX_REG_H             16
+#define CLAHE_MAX_REG_W             256
+#define CLAHE_MAX_REG_H             256
 
 ////////////////////////////////////////////////////////////////////////////////
 // Some CLAHE depends functions here:
@@ -134,7 +134,7 @@ void CLAHE_MakeHistogram ( uchar* pImage,
 		}
 
 		pImgPtr += imgWidth;
-		pImage = &pImgPtr[-rgnszW];
+		pImage = &pImgPtr[-(long)rgnszW];
     }
 }
 
@@ -339,8 +339,8 @@ bool applyCLAHE( uchar* pImage,
     if ( fCliplimit == 1.0f )
 		return true;	    /// is OK, immediately returns original image.
 
-    if ( fCliplimit < 1.0f )
-        fCliplimit = 1.0f;
+    if ( ( fCliplimit > 0.0f ) && ( fCliplimit < 1.1f ) )
+        fCliplimit = 1.1f;
 
     if ( ranges == 0 )
 		ranges = 128;	    /// default value when not specified
@@ -605,11 +605,10 @@ bool fl_imgtk::CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
     applyCLAHE( data_g, imgWidth, imgHeight, min_rgb[1], max_rgb[1], regionW, regionH, 255, cliplimit );
     applyCLAHE( data_b, imgWidth, imgHeight, min_rgb[2], max_rgb[2], regionW, regionH, 255, cliplimit );
 
-
 	#pragma omp parellel for
 	for( unsigned cnt=0; cnt<imgsz; cnt++ )
 	{
-		uchar* ptr = &rbuff[ cnt * newimg->d() ];
+		uchar* ptr = &rbuff[ cnt * src->d() ];
 		ptr[ 0 ] = data_r[ cnt ];
 		ptr[ 1 ] = data_g[ cnt ];
 		ptr[ 2 ] = data_b[ cnt ];
@@ -618,8 +617,163 @@ bool fl_imgtk::CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
     delete[] data_r;
     delete[] data_g;
     delete[] data_b;
-	
+
 	src->uncache();
+
+    return true;
+}
+
+Fl_RGB_Image* fl_imgtk::noire( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit, float bright )
+{
+    if ( src == NULL )
+        return NULL;
+
+    if ( src->d() < 3 )
+        return NULL;
+
+    unsigned imgWidth = src->w();
+    unsigned imgHeight = src->h();
+
+    if ( ( imgWidth == 0 ) || ( imgHeight == 0 ) )
+        return NULL;
+
+    if ( bright < 0.1f )
+        bright = 0.1f;
+
+    if ( cliplimit < 1.0f )
+        cliplimit = 1.1f;
+
+    unsigned imgsz = imgWidth * imgHeight;
+
+    uchar* rbuff = (uchar*)src->data()[0];
+
+    // RGB average
+    uchar* data_rgb_avr = new uchar[ imgsz ];
+
+    if ( data_rgb_avr == NULL )
+        return NULL;
+
+    uchar min_rgb = 255;
+    uchar max_rgb = 0;
+
+    #pragma omp parellel for
+    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    {
+        uchar* ptr = &rbuff[ cnt * src->d() ];
+
+        float rgb_avr = (float)( ptr[ 0 ] + ptr[ 1 ] + ptr[ 2 ] ) / 3.0f;
+
+        data_rgb_avr[ cnt ] = (unsigned)rgb_avr;
+
+        if ( min_rgb > rgb_avr ) min_rgb = rgb_avr;
+        else
+        if ( max_rgb < rgb_avr ) max_rgb = rgb_avr;
+    }
+
+    bool retb = \
+    applyCLAHE( data_rgb_avr, imgWidth, imgHeight, min_rgb, max_rgb, regionW, regionH, 255, cliplimit );
+
+    if ( retb == false )
+    {
+        delete[] data_rgb_avr;
+        return NULL;
+    }
+
+    Fl_RGB_Image* newimg = (Fl_RGB_Image*)src->copy();
+
+    if ( newimg != NULL )
+    {
+        rbuff = (uchar*)newimg->data()[0];
+
+        #pragma omp parellel for
+        for( unsigned cnt=0; cnt<imgsz; cnt++ )
+        {
+            uchar* ptr = &rbuff[ cnt * newimg->d() ];
+
+            float lumif = ( (float)data_rgb_avr[cnt] / 255.0f ) * bright;
+
+            for( unsigned rpt=0; rpt<3; rpt++ )
+            {
+                ptr[ rpt ] = (uchar) MIN( 255.0f,  (float)ptr[ rpt ] * lumif + 0.5f );
+            }
+        }
+    }
+
+    delete[] data_rgb_avr;
+
+    return newimg;
+}
+
+bool fl_imgtk::noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit, float bright )
+{
+    if ( src == NULL )
+        return false;
+
+    if ( src->d() < 3 )
+        return false;
+
+    unsigned imgWidth = src->w();
+    unsigned imgHeight = src->h();
+
+    if ( ( imgWidth == 0 ) || ( imgHeight == 0 ) )
+        return false;
+
+    if ( bright < 0.1f )
+        bright = 0.1f;
+
+    if ( cliplimit < 1.0f )
+        cliplimit = 1.1f;
+
+    unsigned imgsz = imgWidth * imgHeight;
+
+    uchar* rbuff = (uchar*)src->data()[0];
+
+    // RGB average
+    uchar* data_rgb_avr = new uchar[ imgsz ];
+
+    if ( data_rgb_avr == NULL )
+        return NULL;
+
+    uchar min_rgb = 255;
+    uchar max_rgb = 0;
+
+    #pragma omp parellel for
+    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    {
+        uchar* ptr = &rbuff[ cnt * src->d() ];
+
+        float rgb_avr = (float)( ptr[ 0 ] + ptr[ 1 ] + ptr[ 2 ] ) / 3.0f;
+
+        data_rgb_avr[ cnt ] = (unsigned)rgb_avr;
+
+        if ( min_rgb > rgb_avr ) min_rgb = rgb_avr;
+        else
+        if ( max_rgb < rgb_avr ) max_rgb = rgb_avr;
+    }
+
+    bool retb = \
+    applyCLAHE( data_rgb_avr, imgWidth, imgHeight, min_rgb, max_rgb, regionW, regionH, 255, cliplimit );
+
+    if ( retb == false )
+    {
+        delete[] data_rgb_avr;
+        return false;
+    }
+
+    #pragma omp parellel for
+    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    {
+        uchar* ptr = &rbuff[ cnt * src->d() ];
+
+        float lumif = ( (float)data_rgb_avr[cnt] / 255.0f ) * bright;
+
+        for( unsigned rpt=0; rpt<3; rpt++ )
+        {
+            ptr[ rpt ] = (uchar) MIN( 255.0f,  (float)ptr[ rpt ] * lumif + 0.5f );
+        }
+    }
+
+    delete[] data_rgb_avr;
 
     return true;
 }

@@ -172,11 +172,18 @@ namespace fl_imgtk
                                      float exposure = 0.0f );
 
     /***
-    ** color CLAHE
+    ** color CLAHE, recommend to use on uncompressed images.
     ** -------------------------------------------------------------------------
-    **/
+    ***/
     Fl_RGB_Image* CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit );
     bool          CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit );
+
+    /***
+    ** noire, makes image to American drama.
+    ** -------------------------------------------------------------------------
+    ***/
+    Fl_RGB_Image* noire( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit, float bright );
+    bool          noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit, float bright );
 
     ////////////////////////////////////////////////////////////////////////////
     // More functions ...
