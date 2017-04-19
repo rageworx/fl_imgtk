@@ -2,25 +2,10 @@
 # (C)2017 Raphael Kim / rageworx@gmail.com
 #
 
-#########################################################################
-# About cross compiler, or other platform :
-#
-# To enable build for embedded linux, you may encomment next 2 lines.
-# Or, may need to change your cross compiler path with environments.
-# It is up to developer !
-
-# CCPREPATH = ${ARM_LINUX_GCC_PATH}
-# CCPREFIX  = arm-linux-
-
-# To enable build for embedded linux, change following line.
-# CCPATH    = ${CCPREPATH}/${CCPREFIX}
-CCPATH = llvm-
-#########################################################################
-
 # Compiler configure.
-GCC = ${CCPATH}gcc
-GPP = ${CCPATH}g++
-AR  = ${CCPATH}ar
+GCC = llvm-gcc
+GPP = llvm-g++
+AR  = ar
 
 # FLTK place
 FLTKDIR    = /usr/include
@@ -36,7 +21,7 @@ OBJDIR    = ./obj/Release
 OUTBIN    = libfl_imgtk.a
 OUTDIR    = ./lib
 DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE
-OPTIMIZEOPT = -ffast-math -O3 -s
+OPTIMIZEOPT = -ffast-math -O3
 CPUARCHOPT    = -mavx
 
 ifeq (64bit,$(firstword $(MAKECMDGOALS)))
