@@ -5,11 +5,24 @@
 
 ## Lastest upate
 
+* 2017-04-19-0
+	1. Fixed wrong pointer addressing in
+		- CLAHE();
+		- CLAHE_ex();
+	1. Added new effect belong to CLAHE.
+	    - noire();
+	    - noire_ex();
+
+## Previous update
+
+* 2017-04-18-0
+	1. Added a feature
+		- CLAHE();
+		- CLAHE_ex();
+
 * 2017-04-06-0
 	1. Bug fixed
 		- applyalpha_ex();
-
-## Previous update
 
 * 2017-04-05-0
     1. New feature
@@ -80,6 +93,7 @@
 * Tone mapping (HDR)
     1. DRAGO algorithm.
     2. REINHARD algorithm.
+* Color CLAHE
 * Kernel matrix filter ( 3x3 to NxN )
 * Crop Fl_RGB_Image to a new Fl_RGB_Image.
 * Merge two different Fl_RGB_Images to a new one.
