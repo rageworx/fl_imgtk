@@ -1154,7 +1154,7 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
             w->show();
         }
 
-        Fl_Image_Surface* imgsurf = new Fl_Image_Surface( w->w(), w->h(), 0 );
+        Fl_Image_Surface* imgsurf = new Fl_Image_Surface( w->w(), w->h() );
 
         if ( imgsurf != NULL )
         {

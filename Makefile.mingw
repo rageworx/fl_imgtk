@@ -47,6 +47,7 @@ endif
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
 	DEFINEOPT += -DDEBUG
+	OPTIMIZEOPT = -ffast-math -fopenmp -g
 	OUTBIN = libfl_imgtk_d.a
 endif
 
