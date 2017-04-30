@@ -711,7 +711,7 @@ bool fl_imgtk::invert_ex( Fl_RGB_Image* img )
         unsigned img_d = img->d();
 
         if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
-            return NULL;
+            return false;
 
         unsigned buffsz = img_w * img_h;
 
@@ -809,10 +809,10 @@ bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
         unsigned img_d = img->d();
 
         if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
-            return NULL;
+            return false;
 
         if ( ( kfc->w == 0 ) || ( kfc->h == 0 ) || ( kfc->msz == 0 ) || ( kfc->m == NULL ) )
-            return NULL;
+            return false;
 
         uchar* pixels  = (uchar*)img->data()[0];
 
@@ -1001,13 +1001,13 @@ bool fl_imgtk::edgeenhance_ex( Fl_RGB_Image* img, unsigned factor, unsigned marg
 
         if ( fl_imgtk_gen_lowfreq( &lfimg5, rbuff,
                                    img->w(), img->h(), img->d(), 5 ) == false )
-            return NULL;
+            return false;
 
         if ( fl_imgtk_gen_lowfreq( &lfimg9, rbuff,
                                    img->w(), img->h(), img->d(), 9 ) == false )
         {
             delete[] lfimg5;
-            return NULL;
+            return false;
         }
 
         float fedgev = (float)factor / 8.0f;
@@ -1041,9 +1041,11 @@ bool fl_imgtk::edgeenhance_ex( Fl_RGB_Image* img, unsigned factor, unsigned marg
 	    delete[] lfimg9;
 
         img->uncache();
+
+		return true;
     }
 
-    return NULL;
+    return false;
 }
 
 Fl_RGB_Image* fl_imgtk::rescale( Fl_RGB_Image* img, unsigned w, unsigned h, rescaletype rst )
@@ -1850,7 +1852,7 @@ bool fl_imgtk::applyalpha_ex( Fl_RGB_Image* src, float val )
     if ( src != NULL )
     {
         if ( src->d() < 3 )
-            return NULL;
+            return false;
 
         unsigned img_w  = src->w();
         unsigned img_h  = src->h();

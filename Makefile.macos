@@ -36,7 +36,7 @@ OBJDIR    = ./obj/Release
 OUTBIN    = libfl_imgtk.a
 OUTDIR    = ./lib
 DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE
-OPTIMIZEOPT = -ffast-math -O3 -s
+OPTIMIZEOPT = -ffast-math -O3
 CPUARCHOPT    = -mavx
 
 ifeq (64bit,$(firstword $(MAKECMDGOALS)))
@@ -50,7 +50,8 @@ ifeq (debug,$(firstword $(MAKECMDGOALS)))
 	OUTBIN = libfl_imgtk_d.a
 endif
 
-CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT) $(FLTKLIBS)
+CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
+LFLAGS    = $(FLTKLIBS)
 
 .PHONY: 64bit
 
@@ -71,7 +72,6 @@ ${OBJDIR}/fl_smimg.o:
 
 ${OBJDIR}/fl_imgtk.o:
 	@$(GPP) -c ${SOURCEDIR}/fl_imgtk.cpp ${CFLAGS} -o $@
-
 
 ${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}/fl_imgtk.o
 	@echo "Generating $@ ..."
