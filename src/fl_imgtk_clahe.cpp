@@ -482,11 +482,36 @@ Fl_RGB_Image* fl_imgtk::CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned reg
         return NULL;
     }
 
+    uchar min_rgb[3] = {255,255,255};
+    uchar max_rgb[3] = {0,0,0};
+
+    #pragma omp parellel for
+    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    {
+        uchar* ptr = &rbuff[ cnt * src->d() ];
+        data_r[ cnt ] = ptr[ 0 ];
+        data_g[ cnt ] = ptr[ 1 ];
+        data_b[ cnt ] = ptr[ 2 ];
+
+        if ( min_rgb[ 0 ] > data_r[ cnt ] ) min_rgb[ 0 ] = data_r[ cnt ];
+        else
+        if ( max_rgb[ 0 ] < data_r[ cnt ] ) max_rgb[ 0 ] = data_r[ cnt ];
+
+        if ( min_rgb[ 1 ] > data_g[ cnt ] ) min_rgb[ 1 ] = data_g[ cnt ];
+        else
+        if ( max_rgb[ 1 ] < data_g[ cnt ] ) max_rgb[ 1 ] = data_g[ cnt ];
+
+        if ( min_rgb[ 2 ] > data_b[ cnt ] ) min_rgb[ 2 ] = data_b[ cnt ];
+        else
+        if ( max_rgb[ 2 ] < data_b[ cnt ] ) max_rgb[ 2 ] = data_b[ cnt ];
+
+    }
+
     // RED->GREEN->BLUE
     // Skip failure.
-    applyCLAHE( data_r, imgWidth, imgHeight, 0, 255, regionW, regionH, 256, cliplimit );
-    applyCLAHE( data_g, imgWidth, imgHeight, 0, 255, regionW, regionH, 256, cliplimit );
-    applyCLAHE( data_b, imgWidth, imgHeight, 0, 255, regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_r, imgWidth, imgHeight, min_rgb[0], max_rgb[0], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_g, imgWidth, imgHeight, min_rgb[1], max_rgb[1], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_b, imgWidth, imgHeight, min_rgb[2], max_rgb[2], regionW, regionH, 256, cliplimit );
 
     Fl_RGB_Image* newimg = (Fl_RGB_Image*)src->copy();
 
@@ -502,6 +527,8 @@ Fl_RGB_Image* fl_imgtk::CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned reg
             ptr[ 1 ] = data_g[ cnt ];
             ptr[ 2 ] = data_b[ cnt ];
         }
+
+        newimg->uncache();
     }
 
     delete[] data_r;
@@ -577,9 +604,9 @@ bool fl_imgtk::CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
 
     // RED->GREEN->BLUE
     // Skip failure.
-    applyCLAHE( data_r, imgWidth, imgHeight, min_rgb[0], max_rgb[0], regionW, regionH, 255, cliplimit );
-    applyCLAHE( data_g, imgWidth, imgHeight, min_rgb[1], max_rgb[1], regionW, regionH, 255, cliplimit );
-    applyCLAHE( data_b, imgWidth, imgHeight, min_rgb[2], max_rgb[2], regionW, regionH, 255, cliplimit );
+    applyCLAHE( data_r, imgWidth, imgHeight, min_rgb[0], max_rgb[0], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_g, imgWidth, imgHeight, min_rgb[1], max_rgb[1], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_b, imgWidth, imgHeight, min_rgb[2], max_rgb[2], regionW, regionH, 256, cliplimit );
 
 	#pragma omp parellel for
 	for( unsigned cnt=0; cnt<imgsz; cnt++ )
