@@ -112,7 +112,7 @@
 * fl_imgtk designed for using OpenMP 3.x or above,
 * Some lower version of OpenMP may not work with unsigned loop.
 * Apple Mac, X-Code may not supports OpenMP, recommend to use HPC-GCC to build library.
-* To enable using OpenMP, define "USE_OMP" when compile and link, or decide openmp with make.
+* To disable using OpenMP, remove -DUSING_OMP in makefile.
 
 ## Supported compiler:
 
