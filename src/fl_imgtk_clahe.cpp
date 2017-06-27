@@ -509,9 +509,12 @@ Fl_RGB_Image* fl_imgtk::CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned reg
 
     // RED->GREEN->BLUE
     // Skip failure.
-    applyCLAHE( data_r, imgWidth, imgHeight, min_rgb[0], max_rgb[0], regionW, regionH, 256, cliplimit );
-    applyCLAHE( data_g, imgWidth, imgHeight, min_rgb[1], max_rgb[1], regionW, regionH, 256, cliplimit );
-    applyCLAHE( data_b, imgWidth, imgHeight, min_rgb[2], max_rgb[2], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_r, imgWidth, imgHeight,
+                min_rgb[0], max_rgb[0], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_g, imgWidth, imgHeight,
+                min_rgb[1], max_rgb[1], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_b, imgWidth, imgHeight,
+                min_rgb[2], max_rgb[2], regionW, regionH, 256, cliplimit );
 
     Fl_RGB_Image* newimg = (Fl_RGB_Image*)src->copy();
 
@@ -604,9 +607,12 @@ bool fl_imgtk::CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
 
     // RED->GREEN->BLUE
     // Skip failure.
-    applyCLAHE( data_r, imgWidth, imgHeight, min_rgb[0], max_rgb[0], regionW, regionH, 256, cliplimit );
-    applyCLAHE( data_g, imgWidth, imgHeight, min_rgb[1], max_rgb[1], regionW, regionH, 256, cliplimit );
-    applyCLAHE( data_b, imgWidth, imgHeight, min_rgb[2], max_rgb[2], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_r, imgWidth, imgHeight,
+                min_rgb[0], max_rgb[0], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_g, imgWidth, imgHeight,
+                min_rgb[1], max_rgb[1], regionW, regionH, 256, cliplimit );
+    applyCLAHE( data_b, imgWidth, imgHeight,
+                min_rgb[2], max_rgb[2], regionW, regionH, 256, cliplimit );
 
 	#pragma omp parellel for
 	for( unsigned cnt=0; cnt<imgsz; cnt++ )
@@ -673,8 +679,9 @@ Fl_RGB_Image* fl_imgtk::noire( Fl_RGB_Image* src, unsigned regionW, unsigned reg
         if ( max_rgb < rgb_avr ) max_rgb = rgb_avr;
     }
 
-    bool retb = \
-    applyCLAHE( data_rgb_avr, imgWidth, imgHeight, min_rgb, max_rgb, regionW, regionH, 255, cliplimit );
+    bool retb = applyCLAHE( data_rgb_avr, imgWidth, imgHeight,
+                            min_rgb, max_rgb, regionW, regionH,
+                            255, cliplimit );
 
     if ( retb == false )
     {
@@ -754,8 +761,9 @@ bool fl_imgtk::noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
         if ( max_rgb < rgb_avr ) max_rgb = rgb_avr;
     }
 
-    bool retb = \
-    applyCLAHE( data_rgb_avr, imgWidth, imgHeight, min_rgb, max_rgb, regionW, regionH, 255, cliplimit );
+    bool retb = applyCLAHE( data_rgb_avr, imgWidth, imgHeight,
+                            min_rgb, max_rgb, regionW, regionH,
+                            255, cliplimit );
 
     if ( retb == false )
     {
