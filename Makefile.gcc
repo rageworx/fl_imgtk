@@ -23,8 +23,8 @@ GPP = ${CCPATH}g++
 AR  = ${CCPATH}ar
 
 # FLTK place
-FLTKDIR    = /usr/include
-FLTKLIBDIR = /usr/lib
+FLTKDIR    = /usr/local/include
+FLTKLIBDIR = /usr/local/lib
 FLTKLIBS   = -L$(FLTKLIBDIR) -lfltk -lfltk_images -lfltk_png -lfltk_jpeg
 
 # Sources and how it built
