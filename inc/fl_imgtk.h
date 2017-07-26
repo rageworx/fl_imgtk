@@ -245,6 +245,13 @@ namespace fl_imgtk
 	// Code referenced to https://rosettacode.org/wiki/Xiaolin_Wu%27s_line_algorithm
 	void draw_smooth_line( Fl_RGB_Image* img,
                            int x1, int y1, int x2, int y2, Fl_Color col );
+						
+	// Polygon fill , non-anti-aliased.
+	typedef struct { int x; int y; } vecpoint;
+	
+	void draw_polygon( Fl_RGB_Image* img, 
+	                   const vecpoint* points = NULL, unsigned pointscnt = 0,
+                       Fl_Color col = 0 );
 	
     ////////////////////////////////////////////////////////////////////////////
 
