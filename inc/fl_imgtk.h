@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2017-03-31-0
+* fl_imgtk.H , version 2017-07-07-0
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2017 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -23,7 +23,7 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    15
+#define FL_IMGTK_VER_BLD    18
 #define FL_IMGTK_VER_REV    0
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
@@ -238,6 +238,21 @@ namespace fl_imgtk
     Fl_RGB_Image* makegradation_v( unsigned w, unsigned h,
                                    ulong col1, ulong col2, bool dither );
 
+    ////////////////////////////////////////////////////////////////////////////
+	// Enhanced drawing :
+	
+	// Smoothen drawing line algorithm theory by Ph.D Xiaolin Wu.
+	// Code referenced to https://rosettacode.org/wiki/Xiaolin_Wu%27s_line_algorithm
+	void draw_smooth_line( Fl_RGB_Image* img,
+                           int x1, int y1, int x2, int y2, Fl_Color col );
+						
+	// Polygon fill , non-anti-aliased.
+	typedef struct { int x; int y; } vecpoint;
+	
+	void draw_polygon( Fl_RGB_Image* img, 
+	                   const vecpoint* points = NULL, unsigned pointscnt = 0,
+                       Fl_Color col = 0 );
+	
     ////////////////////////////////////////////////////////////////////////////
 
     void discard_user_rgb_image( Fl_RGB_Image* &img );

@@ -608,5 +608,4 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
         }
         break;
     }
-
 }

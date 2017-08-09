@@ -6,6 +6,11 @@
 
 #include "fl_smimg.h"
 
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
 #ifdef USING_OMP
 #include <omp.h>
 #endif /// of USING_OMP
@@ -375,8 +380,9 @@ float fl_imgtk_max4(float a, float b, float c, float d)
 }
 
 // rotatefree() Code inspired from
-// http://www.codeguru.com/cpp/g-m/gdi/article.php/c3693/Rotate-a-Bitmap-at-Any-Angle-Without-GetPixelSetPixel.htm
-// Maybe, it will slowly works !
+// http://www.codeguru.com/cpp/g-m/gdi/article.php/c3693/ ...
+// Rotate-a-Bitmap-at-Any-Angle-Without-GetPixelSetPixel.htm
+// Maybe, it will slowly works if not enable openMP.
 Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
 {
     if ( ( img == NULL ) || ( img->d() < 3 ) )
@@ -2095,6 +2101,226 @@ fl_imgtk::kfconfig* fl_imgtk::new_kfconfig( const char* preset )
     }
 
     return newcfg;
+}
+
+inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, float br )
+{
+    uchar col_r = ( col & 0x0000FF00 ) >> 8;
+    uchar col_g = ( col & 0x00FF0000 ) >> 16;
+    uchar col_b = ( col & 0xFF000000 ) >> 24;
+
+    int w = img->w();
+    int h = img->h();
+    int d = img->d();
+
+    if ( ( x >= 0 ) && ( y >= 0 ) && ( x < w ) && ( y < h ) )
+    {
+        unsigned pos  = ( y * w + x ) * d;
+        float revbr = 1.0f - br;
+
+        uchar* ptrimg = (uchar*)img->data()[0];
+
+        ptrimg[ pos + 0 ] = ( ptrimg[ pos + 0 ] * revbr ) + ( (float)col_r * br );
+        ptrimg[ pos + 1 ] = ( ptrimg[ pos + 1 ] * revbr ) + ( (float)col_g * br );
+        ptrimg[ pos + 2 ] = ( ptrimg[ pos + 2 ] * revbr ) + ( (float)col_b * br );
+    }
+}
+
+#define fl_imgtk_ipart(X) ((int)(X))
+#define fl_imgtk_roundi(X) ((int)(((double)(X))+0.5))
+#define fl_imgtk_fpart(X) (((double)(X))-(double)fl_imgtk_ipart(X))
+#define fl_imgtk_rfpart(X) (1.0 - fl_imgtk_fpart(X))
+#define fl_imgtk_swap(a, b) { __typeof__(a) tmp;  tmp = a; a = b; b = tmp; }
+
+void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_Color col )
+{
+    float dx = (float)x2 - (float)x1;
+    float dy = (float)y2 - (float)y1;
+
+    if ( fabs(dx) > fabs(dy) )
+    {
+        if ( x2 < x1 )
+        {
+            fl_imgtk_swap( x1, x2 );
+            fl_imgtk_swap( y1, y2 );
+        }
+
+        float gradient = dy / dx;
+        float xend = fl_imgtk_roundi( x1 );
+        float yend = y1 + gradient*( xend - x1 );
+        float xgap = fl_imgtk_rfpart( xend );
+
+        int xpxl1 = xend;
+        int ypxl1 = fl_imgtk_ipart( yend );
+
+        fl_imgtk_dla_plot( img, xpxl1, ypxl1, col, fl_imgtk_rfpart(yend)*xgap );
+        fl_imgtk_dla_plot( img, xpxl1, ypxl1+1, col, fl_imgtk_fpart(yend)*xgap );
+
+        float intery = yend + gradient;
+
+        xend = fl_imgtk_roundi( x2 );
+        yend = y2 + gradient*( xend - x2 );
+        xgap = fl_imgtk_fpart( xend );
+
+        int xpxl2 = xend;
+        int ypxl2 = fl_imgtk_ipart( yend );
+
+        fl_imgtk_dla_plot( img, xpxl2, ypxl2, col, fl_imgtk_rfpart(yend) * xgap );
+        fl_imgtk_dla_plot( img, xpxl2 + 1, ypxl2, col, fl_imgtk_fpart(yend) * xgap );
+
+		#pragma parallel for private( intery, gradient )
+        for( int x=xpxl1+1; x<xpxl2; x++ )
+        {
+            fl_imgtk_dla_plot( img, x, fl_imgtk_ipart(intery), col, fl_imgtk_rfpart(intery) );
+            fl_imgtk_dla_plot( img, x, fl_imgtk_ipart(intery) + 1, col, fl_imgtk_fpart(intery) );
+            intery += gradient;
+        }
+    }
+    else
+    {
+        if ( y2 < y1 )
+        {
+            fl_imgtk_swap( x1, x2 );
+            fl_imgtk_swap( y1, y2 );
+        }
+
+        float gradient = dx / dy;
+        float yend = fl_imgtk_roundi( y1 );
+        float xend = x1 + gradient*( yend - y1 );
+        float ygap = fl_imgtk_rfpart( yend );
+
+        int ypxl1 = yend;
+        int xpxl1 = fl_imgtk_ipart(xend);
+
+        fl_imgtk_dla_plot( img, xpxl1, ypxl1, col, fl_imgtk_rfpart(xend)*ygap );
+        fl_imgtk_dla_plot( img, xpxl1, ypxl1+1, col, fl_imgtk_fpart(xend)*ygap );
+
+        float interx = xend + gradient;
+
+        yend = fl_imgtk_roundi( y2 );
+        xend = x2 + gradient*( yend - y2);
+        ygap = fl_imgtk_fpart( yend );
+
+        int ypxl2 = yend;
+        int xpxl2 = fl_imgtk_ipart( xend );
+
+        fl_imgtk_dla_plot( img, xpxl2, ypxl2, col, fl_imgtk_rfpart(xend) * ygap );
+        fl_imgtk_dla_plot( img, xpxl2, ypxl2 + 1, col, fl_imgtk_fpart(xend) * ygap );
+
+		#pragma parallel for private( interx, gradient )
+        for( int y=ypxl1+1; y<ypxl2; y++ )
+        {
+            fl_imgtk_dla_plot( img, fl_imgtk_ipart(interx), y, col, fl_imgtk_rfpart(interx) );
+            fl_imgtk_dla_plot( img, fl_imgtk_ipart(interx) + 1, y, col, fl_imgtk_fpart(interx) );
+            interx += gradient;
+        }
+    }
+}
+
+bool fl_imgtk_sortcondition (int i,int j)
+{
+    return ( i < j );
+}
+
+void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points, unsigned pointscnt, Fl_Color col )
+{
+	if ( img == NULL )
+		return;
+	
+	if ( ( points == NULL ) || ( pointscnt < 3 ) )
+		return;
+	
+	if ( img->d() < 3 )
+		return;
+	
+    uchar col_r = ( col & 0x0000FF00 ) >> 8;
+    uchar col_g = ( col & 0x00FF0000 ) >> 16;
+    uchar col_b = ( col & 0xFF000000 ) >> 24;
+
+	uchar* ptrimg = (uchar*)img->data()[0];
+	
+	const unsigned max_y = img->h();
+	const unsigned max_x = img->w();
+
+	vector< double > node_x;
+
+	for( unsigned cur_y=0; cur_y<max_y; cur_y++ )
+	{
+		unsigned    ptsz        = pointscnt;
+		unsigned    rcnt        = ptsz - 1;
+		unsigned    node_count  = 0;
+
+		for( unsigned cnt=0; cnt<ptsz; cnt++ )
+		{
+			double pt_x  = (double)points[ cnt ].x;
+			double pt_y  = (double)points[ cnt ].y;
+			double pt_rx = (double)points[ rcnt ].x;
+			double pt_ry = (double)points[ rcnt ].y;
+			double dc_y  = (double)cur_y;
+
+			if ( ( pt_y  < dc_y ) && ( pt_ry >= dc_y ) ||
+				 ( pt_ry < dc_y ) && ( pt_y  >= dc_y ) )
+			{
+				double newv = pt_x + ( dc_y - pt_y ) /
+							  ( pt_ry - pt_y ) * ( pt_rx - pt_x );
+
+				node_x.push_back( newv );
+			}
+
+			rcnt = cnt;
+		}
+
+		unsigned node_x_sz = node_x.size();
+
+		// sort nodes ..
+		if ( node_x_sz > 1 )
+		{
+			sort( node_x.begin(),
+				  node_x.begin() + node_x_sz,
+				  fl_imgtk_sortcondition );
+
+			for( unsigned ncnt=0; ncnt<node_x_sz; ncnt++ )
+			{
+				printf("%.2f, ", node_x[ncnt] );
+			}
+			printf("\n");
+
+		}
+
+		#pragma parallel for
+		for( unsigned dcnt=0; dcnt<node_x_sz; dcnt+=2 )
+		{
+			if ( node_x[dcnt] >= max_x )
+				break;
+
+			if ( node_x[dcnt+1] > 0 )
+			{
+				if ( node_x[dcnt] < 0 )
+				{
+					node_x[dcnt] = 0;
+				}
+
+				if ( node_x[dcnt+1] > max_x )
+				{
+					node_x[dcnt+1] = max_x;
+				}
+
+				for( int cur_x=node_x[dcnt]; cur_x<=node_x[dcnt+1]; cur_x++ )
+				{
+					int buffpos = ( max_x * cur_y + cur_x ) * img->d();
+					
+					ptrimg[ buffpos + 0 ] = col_r;
+					ptrimg[ buffpos + 1 ] = col_g;
+					ptrimg[ buffpos + 2 ] = col_b;
+				}
+			}
+		}
+
+		node_x.clear();
+
+	} /// of for( y .. )
+
+	img->uncache();
 }
 
 void fl_imgtk::discard_user_rgb_image( Fl_RGB_Image* &img )

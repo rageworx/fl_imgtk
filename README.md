@@ -5,6 +5,18 @@
 
 ## Lastest upate
 
+* 2017-07-27-0
+    1. OpenMP applied drawing to 
+	    - smooth line.
+	    - polygon.
+	
+## Previous update
+
+* 2017-07-26-0
+    1. New functions included !
+	    - drawing smooth line.
+        - drawing polygon.		
+
 * 2017-04-19-0
 	1. Fixed wrong pointer addressing in
 		- CLAHE();
@@ -12,8 +24,6 @@
 	1. Added new effect belong to CLAHE.
 	    - noire();
 	    - noire_ex();
-
-## Previous update
 
 * 2017-04-18-0
 	1. Added a feature
@@ -24,7 +34,7 @@
 	1. Bug fixed
 		- applyalpha_ex();
 
-* 2017-04-05-0
+* 2017-04-05-0 
     1. New feature
         - invert();
         - invert_ex();
