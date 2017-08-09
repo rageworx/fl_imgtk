@@ -422,7 +422,7 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
     if ( obuff == NULL )
         return NULL;
 
-    //memset( obuff, 0, dstW * dstH * img_d );
+    memset( obuff, 0, dstW * dstH * img_d );
 
     uchar* psrc = (uchar*)img->data()[0];
 
