@@ -30,14 +30,15 @@ FLTKLIBS   = -L$(FLTKLIBDIR) -lfltk -lfltk_images -lfltk_png -lfltk_jpeg
 # Sources and how it built
 # Optimization issue: recommend to build with using -ffast-math option.
 # Change if your CPU architecture supports more high technologies.
-INCDIR    = ./inc
-SOURCEDIR = ./src
-OBJDIR    = ./obj/Release
-OUTBIN    = libfl_imgtk.a
-OUTDIR    = ./lib
-DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
+INCDIR      = ./inc
+SOURCEDIR   = ./src
+OBJDIR      = ./obj/Release
+OUTBIN      = libfl_imgtk.a
+OUTDIR      = ./lib
+DEFINEOPT   = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
+DEFINEOPT  += -DFLTK_ABI_VERISON=10304
 OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
-CPUARCHOPT    = -mavx
+CPUARCHOPT  = -mavx
 
 
 # About 32bit, 64bit parameters,
