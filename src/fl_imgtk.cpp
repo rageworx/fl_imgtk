@@ -1913,9 +1913,20 @@ bool fl_imgtk::drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img, int x, int y
     return false;
 }
 
+// Now it handles alpha channels !
 Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulong col2, bool dither )
 {
-    uchar* buffer = new unsigned char[ w * h * 3 ];
+	// sens alpha channel using.
+	unsigned d = 3;
+	uchar alpha1 = col1 & 0x000000FF;
+	uchar alpha2 = col2 & 0x000000FF;
+
+	if ( ( alpha1 > 0 ) || ( alpha2 > 0 ) )
+	{
+		d = 4;
+	}
+
+    uchar* buffer = new unsigned char[ w * h * d ];
     if ( buffer != NULL )
     {
         float downscale_f = 2559.0f / ( float( h ) * 10.0f );
@@ -1925,17 +1936,20 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
         uchar fill_r    = 0;
         uchar fill_g    = 0;
         uchar fill_b    = 0;
+		uchar fill_a    = 0;
         uchar ref_c1r   = ( col1 & 0xFF000000 ) >> 24;
         uchar ref_c1g   = ( col1 & 0x00FF0000 ) >> 16;
         uchar ref_c1b   = ( col1 & 0x0000FF00 ) >> 8;
+		uchar ref_c1a   = ( col1 & 0x000000FF );
         uchar ref_c2r   = ( col2 & 0xFF000000 ) >> 24;
         uchar ref_c2g   = ( col2 & 0x00FF0000 ) >> 16;
         uchar ref_c2b   = ( col2 & 0x0000FF00 ) >> 8;
+		uchar ref_c2a   = ( col2 & 0x000000FF );
 
         #pragma omp parellel for
         for ( int cy=0; cy<h; cy++ )
         {
-            uchar* sbuf = &buffer[ cy * w * 3 ];
+            uchar* sbuf = &buffer[ cy * w * d ];
 
             col1g = ( ( float( h*10 ) - float( cy*10 )  ) * downscale_f ) / 2559.0f;
             col2g = 1.0f - col1g;
@@ -1943,6 +1957,10 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
             fill_r = ( (float)ref_c1r * col1g ) + ( (float)ref_c2r * col2g );
             fill_g = ( (float)ref_c1g * col1g ) + ( (float)ref_c2g * col2g );
             fill_b = ( (float)ref_c1b * col1g ) + ( (float)ref_c2b * col2g );
+			if ( d > 3 )
+			{
+				fill_a = ( (float)ref_c1a * col1g ) + ( (float)ref_c2a * col2g );
+			}
 
             for ( int cx=0; cx<w; cx++ )
             {
@@ -1958,18 +1976,26 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
                     sbuf[0] = fill_r - uchar( ref_c2r * col2g * randfv );
                     sbuf[1] = fill_g - uchar( ref_c2g * col2g * randfv );
                     sbuf[2] = fill_b - uchar( ref_c2b * col2g * randfv );
+					if ( d > 3 )
+					{
+						sbuf[3] = fill_a - uchar( ref_c2a * col2g * randfv );
+					}
                 }
                 else
                 {
                     sbuf[0] = fill_r;
                     sbuf[1] = fill_g;
                     sbuf[2] = fill_b;
+					if ( d > 3 )
+					{
+						sbuf[3] = fill_a;
+					}
                 }
-                sbuf += 3;
+                sbuf += d;
             }
         }
 
-        return new Fl_RGB_Image( buffer, w, h, 3 );
+        return new Fl_RGB_Image( buffer, w, h, d );
     }
 
     return NULL;
