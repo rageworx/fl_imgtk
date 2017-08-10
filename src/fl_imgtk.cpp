@@ -392,29 +392,29 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
     int img_h = img->h();
     int img_d = img->d();
 
-	float CtX = ( (float) img_w ) / 2.0f;
-	float CtY = ( (float) img_h ) / 2.0f;
+    float CtX = ( (float) img_w ) / 2.0f;
+    float CtY = ( (float) img_h ) / 2.0f;
 
     float fdeg = fl_imgtk_degree2f( deg );
 
-	float cA = (float)cos( fdeg );
-	float sA = (float)sin( fdeg );
+    float cA = (float)cos( fdeg );
+    float sA = (float)sin( fdeg );
 
-	float x1 = CtX + (-CtX) * cA - (-CtY) * sA;
-	float x2 = CtX + (img_w - CtX) * cA - (-CtY) * sA;
-	float x3 = CtX + (img_w - CtX) * cA - (img_h - CtY) * sA;
-	float x4 = CtX + (-CtX) * cA - (img_h - CtY) * sA;
+    float x1 = CtX + (-CtX) * cA - (-CtY) * sA;
+    float x2 = CtX + (img_w - CtX) * cA - (-CtY) * sA;
+    float x3 = CtX + (img_w - CtX) * cA - (img_h - CtY) * sA;
+    float x4 = CtX + (-CtX) * cA - (img_h - CtY) * sA;
 
-	float y1 = CtY + (-CtY) * cA + (-CtX) * sA;
-	float y2 = CtY + (img_h - CtY) * cA + (-CtX) * sA;
-	float y3 = CtY + (img_h - CtY) * cA + (img_w - CtX) * sA;
-	float y4 = CtY + (-CtY) * cA + (img_w - CtX) * sA;
+    float y1 = CtY + (-CtY) * cA + (-CtX) * sA;
+    float y2 = CtY + (img_h - CtY) * cA + (-CtX) * sA;
+    float y3 = CtY + (img_h - CtY) * cA + (img_w - CtX) * sA;
+    float y4 = CtY + (-CtY) * cA + (img_w - CtX) * sA;
 
-	int OfX = ((int)floor(fl_imgtk_min4(x1, x2, x3, x4)));
-	int OfY = ((int)floor(fl_imgtk_min4(y1, y2, y3, y4)));
+    int OfX = ((int)floor(fl_imgtk_min4(x1, x2, x3, x4)));
+    int OfY = ((int)floor(fl_imgtk_min4(y1, y2, y3, y4)));
 
-	int dstW = ((int)ceil(fl_imgtk_max4(x1, x2, x3, x4))) - OfX;
-	int dstH = ((int)ceil(fl_imgtk_max4(y1, y2, y3, y4))) - OfY;
+    int dstW = ((int)ceil(fl_imgtk_max4(x1, x2, x3, x4))) - OfX;
+    int dstH = ((int)ceil(fl_imgtk_max4(y1, y2, y3, y4))) - OfY;
 
     // Now new image !
     uchar* obuff = new uchar[ dstW * dstH * img_d ];
@@ -432,11 +432,11 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
     // pointer to destination.
     uchar* dst = obuff;
 
-	#pragma omp parellel for private( stepX )
-	for ( stepY = 0; stepY<dstH; stepY++ )
-	{
-		for ( stepX = 0; stepX<dstW; stepX++ )
-		{
+    #pragma omp parellel for private( stepX )
+    for ( stepY = 0; stepY<dstH; stepY++ )
+    {
+        for ( stepX = 0; stepX<dstW; stepX++ )
+        {
 #if USING_INTERPOLATED_ROTATE_FREE
             float CtX2 = CtX - OfX;
             float CtY2 = CtY - OfY;
@@ -444,8 +444,8 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
             float orgX = ( cA*(stepX-CtX2) + sA*(stepY-CtY2)) + CtX;
             float orgY = (-sA*(stepX-CtX2) + cA*(stepY-CtY2)) + CtY;
 
-			int iorgX  = (int) orgX;
-			int iorgY  = (int) orgY;
+            int iorgX  = (int) orgX;
+            int iorgY  = (int) orgY;
 
             float diffX = (orgX - iorgX);
             float diffY = (orgY - iorgY);
@@ -478,21 +478,21 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
             float orgY = CtY - sA * ((float)stepX + OfX - CtX) + cA * ((float)stepY + OfY - CtY);
             float nxtY = CtY - sA * ((float)stepX + OfX - CtX) + cA * ((float)stepY + OfY - CtY - 1);
 
-			int iorgX = (int)orgX;
-			int iorgY = (int)orgY;
-			int inxtY = (int)nxtY;
+            int iorgX = (int)orgX;
+            int iorgY = (int)orgY;
+            int inxtY = (int)nxtY;
 
-			if ((iorgX >= 0) && (iorgY >= 0) && (iorgX < img_w) && (iorgY < img_h))
+            if ((iorgX >= 0) && (iorgY >= 0) && (iorgX < img_w) && (iorgY < img_h))
             {
-				memcpy( &dst[ stepX * img_d ],
+                memcpy( &dst[ stepX * img_d ],
                         &psrc[ ( iorgX + iorgY * img_w ) * img_d ],
                         img_d );
-			}
+            }
 #endif
-		}
+        }
 
-		dst += dstW * img_d;
-	}
+        dst += dstW * img_d;
+    }
 
     return new Fl_RGB_Image( obuff, dstW, dstH, img->d() );
 }
@@ -735,7 +735,7 @@ bool fl_imgtk::invert_ex( Fl_RGB_Image* img )
             }
         }
 
-		img->uncache();
+        img->uncache();
 
         return true;
     }
@@ -892,27 +892,27 @@ bool fl_imgtk_gen_lowfreq( uchar** out, uchar* src, unsigned w, unsigned h, unsi
     #pragma omp parallel for private( cntx )
     for( cnty=startpos; cnty<endposh; cnty++ )
     {
-	    for( cntx=startpos; cntx<endposw; cntx++ )
+        for( cntx=startpos; cntx<endposw; cntx++ )
         {
-		    unsigned sum[4] = {0};
+            unsigned sum[4] = {0};
 
-		    for( long ry = -startpos; ry<(startpos+1); ry++ )
+            for( long ry = -startpos; ry<(startpos+1); ry++ )
             {
-			    for( long rx = -startpos; rx<(startpos+1); rx++ )
+                for( long rx = -startpos; rx<(startpos+1); rx++ )
                 {
                     for( long rpt=0; rpt<d; rpt++ )
                     {
                         sum[rpt] += src[ ( ( cnty + ry ) * w + ( cntx + rx ) ) * d + rpt ];
                     }
-			    }
-		    }
+                }
+            }
 
             for( long rpt=0; rpt<d; rpt++ )
             {
                 outbuff[ ( cnty * w + cntx ) * d + rpt ] \
                  = MIN( 255, sum[rpt] / ( sz * sz ) );
             }
-	    }
+        }
     }
 
     *out = outbuff;
@@ -962,9 +962,9 @@ Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor, unsigne
         unsigned mgnh = img->h() - ( margin * 2 );
 
         #pragma omp parallel for private( cntx )
-	    for( cnty=0; cnty<cnth; cnty++ )
-	    {
-		    for( cntx=0; cntx<cntw; cntx++ )
+        for( cnty=0; cnty<cnth; cnty++ )
+        {
+            for( cntx=0; cntx<cntw; cntx++ )
             {
                 for( unsigned rpt=0; rpt<img->d(); rpt++ )
                 {
@@ -985,13 +985,13 @@ Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor, unsigne
                         = rbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ];
                     }
                 }
-		    }
-	    }
+            }
+        }
 
-	    delete[] lfimg5;
-	    delete[] lfimg9;
+        delete[] lfimg5;
+        delete[] lfimg9;
 
-	    return new Fl_RGB_Image( outbuff, img->w(), img->h(), img->d() );
+        return new Fl_RGB_Image( outbuff, img->w(), img->h(), img->d() );
     }
 
     return NULL;
@@ -1026,9 +1026,9 @@ bool fl_imgtk::edgeenhance_ex( Fl_RGB_Image* img, unsigned factor, unsigned marg
         unsigned mgnh = img->h() - ( margin * 2 );
 
         #pragma omp parallel for private( cntx )
-	    for( cnty=mgny; cnty<mgnh; cnty++ )
-	    {
-		    for( cntx=mgnx; cntx<mgnw; cntx++ )
+        for( cnty=mgny; cnty<mgnh; cnty++ )
+        {
+            for( cntx=mgnx; cntx<mgnw; cntx++ )
             {
                 for( unsigned rpt=0; rpt<img->d(); rpt++ )
                 {
@@ -1040,15 +1040,15 @@ bool fl_imgtk::edgeenhance_ex( Fl_RGB_Image* img, unsigned factor, unsigned marg
 
                     rbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ] = MIN( 255, pv );
                 }
-		    }
-	    }
+            }
+        }
 
-	    delete[] lfimg5;
-	    delete[] lfimg9;
+        delete[] lfimg5;
+        delete[] lfimg9;
 
         img->uncache();
 
-		return true;
+        return true;
     }
 
     return false;
@@ -1795,7 +1795,7 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
             *obp = (uchar)( (float)*obp * val );
         }
 
-		newimg = new Fl_RGB_Image( obuff, img_w, img_h, 4 );
+        newimg = new Fl_RGB_Image( obuff, img_w, img_h, 4 );
     }
 
     return newimg;
@@ -1916,15 +1916,15 @@ bool fl_imgtk::drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img, int x, int y
 // Now it handles alpha channels !
 Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulong col2, bool dither )
 {
-	// sens alpha channel using.
-	unsigned d = 3;
-	uchar alpha1 = col1 & 0x000000FF;
-	uchar alpha2 = col2 & 0x000000FF;
+    // sens alpha channel using.
+    unsigned d = 3;
+    uchar alpha1 = col1 & 0x000000FF;
+    uchar alpha2 = col2 & 0x000000FF;
 
-	if ( ( alpha1 > 0 ) || ( alpha2 > 0 ) )
-	{
-		d = 4;
-	}
+    if ( ( alpha1 > 0 ) || ( alpha2 > 0 ) )
+    {
+        d = 4;
+    }
 
     uchar* buffer = new unsigned char[ w * h * d ];
     if ( buffer != NULL )
@@ -1936,15 +1936,15 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
         uchar fill_r    = 0;
         uchar fill_g    = 0;
         uchar fill_b    = 0;
-		uchar fill_a    = 0;
+        uchar fill_a    = 0;
         uchar ref_c1r   = ( col1 & 0xFF000000 ) >> 24;
         uchar ref_c1g   = ( col1 & 0x00FF0000 ) >> 16;
         uchar ref_c1b   = ( col1 & 0x0000FF00 ) >> 8;
-		uchar ref_c1a   = ( col1 & 0x000000FF );
+        uchar ref_c1a   = alpha1;
         uchar ref_c2r   = ( col2 & 0xFF000000 ) >> 24;
         uchar ref_c2g   = ( col2 & 0x00FF0000 ) >> 16;
         uchar ref_c2b   = ( col2 & 0x0000FF00 ) >> 8;
-		uchar ref_c2a   = ( col2 & 0x000000FF );
+        uchar ref_c2a   = alpha2;
 
         #pragma omp parellel for
         for ( int cy=0; cy<h; cy++ )
@@ -1957,10 +1957,10 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
             fill_r = ( (float)ref_c1r * col1g ) + ( (float)ref_c2r * col2g );
             fill_g = ( (float)ref_c1g * col1g ) + ( (float)ref_c2g * col2g );
             fill_b = ( (float)ref_c1b * col1g ) + ( (float)ref_c2b * col2g );
-			if ( d > 3 )
-			{
-				fill_a = ( (float)ref_c1a * col1g ) + ( (float)ref_c2a * col2g );
-			}
+            if ( d > 3 )
+            {
+                fill_a = ( (float)ref_c1a * col1g ) + ( (float)ref_c2a * col2g );
+            }
 
             for ( int cx=0; cx<w; cx++ )
             {
@@ -1976,20 +1976,20 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
                     sbuf[0] = fill_r - uchar( ref_c2r * col2g * randfv );
                     sbuf[1] = fill_g - uchar( ref_c2g * col2g * randfv );
                     sbuf[2] = fill_b - uchar( ref_c2b * col2g * randfv );
-					if ( d > 3 )
-					{
-						sbuf[3] = fill_a - uchar( ref_c2a * col2g * randfv );
-					}
+                    if ( d > 3 )
+                    {
+                        sbuf[3] = fill_a - uchar( ref_c2a * col2g * randfv );
+                    }
                 }
                 else
                 {
                     sbuf[0] = fill_r;
                     sbuf[1] = fill_g;
                     sbuf[2] = fill_b;
-					if ( d > 3 )
-					{
-						sbuf[3] = fill_a;
-					}
+                    if ( d > 3 )
+                    {
+                        sbuf[3] = fill_a;
+                    }
                 }
                 sbuf += d;
             }
@@ -2003,36 +2003,53 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
 
 Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulong col2, bool dither )
 {
-    uchar* buffer = new unsigned char[ w * h * 3 ];
+    // sens alpha channel using.
+    unsigned d = 3;
+    uchar alpha1 = col1 & 0x000000FF;
+    uchar alpha2 = col2 & 0x000000FF;
+
+    if ( ( alpha1 > 0 ) || ( alpha2 > 0 ) )
+    {
+        d = 4;
+    }
+
+    uchar* buffer = new unsigned char[ w * h * d ];
     if ( buffer != NULL )
     {
-        float downscale_f = 2559.0f / ( float( h ) * 10.0f );
+        float downscale_f = 2559.0f / ( float( w ) * 10.0f );
         float col1g     = 0.0f;
         float col2g     = 0.0f;
         float randfv    = 0.0f;
         uchar fill_r    = 0;
         uchar fill_g    = 0;
         uchar fill_b    = 0;
+        uchar fill_a    = 0;
         uchar ref_c1r   = ( col1 & 0xFF000000 ) >> 24;
         uchar ref_c1g   = ( col1 & 0x00FF0000 ) >> 16;
         uchar ref_c1b   = ( col1 & 0x0000FF00 ) >> 8;
+        uchar ref_c1a   = alpha1;
         uchar ref_c2r   = ( col2 & 0xFF000000 ) >> 24;
         uchar ref_c2g   = ( col2 & 0x00FF0000 ) >> 16;
         uchar ref_c2b   = ( col2 & 0x0000FF00 ) >> 8;
+        uchar ref_c2a   = alpha2;
 
-        #pragma omp parellel for
+        #pragma omp parellel for private( cy )
         for ( int cx=0; cx<w; cx++ )
         {
+            col1g = ( ( float( w*10 ) - float( cx*10 )  ) * downscale_f ) / 2559.0f;
+            col2g = 1.0f - col1g;
+
+            fill_r = ( (float)ref_c1r * col1g ) + ( (float)ref_c2r * col2g );
+            fill_g = ( (float)ref_c1g * col1g ) + ( (float)ref_c2g * col2g );
+            fill_b = ( (float)ref_c1b * col1g ) + ( (float)ref_c2b * col2g );
+            if ( d > 3 )
+            {
+                fill_a = ( (float)ref_c1a * col1g ) + ( (float)ref_c2a * col2g );
+            }
+
             for ( int cy=0; cy<h; cy++ )
             {
-                uchar* sbuf = &buffer[ cy * w * 3 ];
-
-                col1g = ( ( float( h*10 ) - float( cy*10 )  ) * downscale_f ) / 2559.0f;
-                col2g = 1.0f - col1g;
-
-                fill_r = ( (float)ref_c1r * col1g ) + ( (float)ref_c2r * col2g );
-                fill_g = ( (float)ref_c1g * col1g ) + ( (float)ref_c2g * col2g );
-                fill_b = ( (float)ref_c1b * col1g ) + ( (float)ref_c2b * col2g );
+                uchar* sbuf = &buffer[ ( ( w * cy ) + cx ) * d ];
 
                 if ( dither == true )
                 {
@@ -2046,18 +2063,26 @@ Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulo
                     sbuf[0] = fill_r - uchar( ref_c2r * col2g * randfv );
                     sbuf[1] = fill_g - uchar( ref_c2g * col2g * randfv );
                     sbuf[2] = fill_b - uchar( ref_c2b * col2g * randfv );
+                    if ( d > 3 )
+                    {
+                        sbuf[3] = fill_a - uchar( ref_c2a * col2g * randfv );
+                    }
                 }
                 else
                 {
                     sbuf[0] = fill_r;
                     sbuf[1] = fill_g;
                     sbuf[2] = fill_b;
+                    if ( d > 3 )
+                    {
+                        sbuf[3] = fill_a;
+                    }
                 }
-                sbuf += 3;
+                sbuf += d;
             }
         }
 
-        return new Fl_RGB_Image( buffer, w, h, 3 );
+        return new Fl_RGB_Image( buffer, w, h, d );
     }
 
     return NULL;
@@ -2194,7 +2219,7 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
         fl_imgtk_dla_plot( img, xpxl2, ypxl2, col, fl_imgtk_rfpart(yend) * xgap );
         fl_imgtk_dla_plot( img, xpxl2 + 1, ypxl2, col, fl_imgtk_fpart(yend) * xgap );
 
-		#pragma parallel for private( intery, gradient )
+        #pragma parallel for private( intery, gradient )
         for( int x=xpxl1+1; x<xpxl2; x++ )
         {
             fl_imgtk_dla_plot( img, x, fl_imgtk_ipart(intery), col, fl_imgtk_rfpart(intery) );
@@ -2233,7 +2258,7 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
         fl_imgtk_dla_plot( img, xpxl2, ypxl2, col, fl_imgtk_rfpart(xend) * ygap );
         fl_imgtk_dla_plot( img, xpxl2, ypxl2 + 1, col, fl_imgtk_fpart(xend) * ygap );
 
-		#pragma parallel for private( interx, gradient )
+        #pragma parallel for private( interx, gradient )
         for( int y=ypxl1+1; y<ypxl2; y++ )
         {
             fl_imgtk_dla_plot( img, fl_imgtk_ipart(interx), y, col, fl_imgtk_rfpart(interx) );
@@ -2250,103 +2275,103 @@ bool fl_imgtk_sortcondition (int i,int j)
 
 void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points, unsigned pointscnt, Fl_Color col )
 {
-	if ( img == NULL )
-		return;
-	
-	if ( ( points == NULL ) || ( pointscnt < 3 ) )
-		return;
-	
-	if ( img->d() < 3 )
-		return;
-	
+    if ( img == NULL )
+        return;
+    
+    if ( ( points == NULL ) || ( pointscnt < 3 ) )
+        return;
+    
+    if ( img->d() < 3 )
+        return;
+    
     uchar col_r = ( col & 0x0000FF00 ) >> 8;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
     uchar col_b = ( col & 0xFF000000 ) >> 24;
 
-	uchar* ptrimg = (uchar*)img->data()[0];
-	
-	const unsigned max_y = img->h();
-	const unsigned max_x = img->w();
+    uchar* ptrimg = (uchar*)img->data()[0];
+    
+    const unsigned max_y = img->h();
+    const unsigned max_x = img->w();
 
-	vector< double > node_x;
+    vector< double > node_x;
 
-	for( unsigned cur_y=0; cur_y<max_y; cur_y++ )
-	{
-		unsigned    ptsz        = pointscnt;
-		unsigned    rcnt        = ptsz - 1;
-		unsigned    node_count  = 0;
+    for( unsigned cur_y=0; cur_y<max_y; cur_y++ )
+    {
+        unsigned    ptsz        = pointscnt;
+        unsigned    rcnt        = ptsz - 1;
+        unsigned    node_count  = 0;
 
-		for( unsigned cnt=0; cnt<ptsz; cnt++ )
-		{
-			double pt_x  = (double)points[ cnt ].x;
-			double pt_y  = (double)points[ cnt ].y;
-			double pt_rx = (double)points[ rcnt ].x;
-			double pt_ry = (double)points[ rcnt ].y;
-			double dc_y  = (double)cur_y;
+        for( unsigned cnt=0; cnt<ptsz; cnt++ )
+        {
+            double pt_x  = (double)points[ cnt ].x;
+            double pt_y  = (double)points[ cnt ].y;
+            double pt_rx = (double)points[ rcnt ].x;
+            double pt_ry = (double)points[ rcnt ].y;
+            double dc_y  = (double)cur_y;
 
-			if ( ( pt_y  < dc_y ) && ( pt_ry >= dc_y ) ||
-				 ( pt_ry < dc_y ) && ( pt_y  >= dc_y ) )
-			{
-				double newv = pt_x + ( dc_y - pt_y ) /
-							  ( pt_ry - pt_y ) * ( pt_rx - pt_x );
+            if ( ( pt_y  < dc_y ) && ( pt_ry >= dc_y ) ||
+                 ( pt_ry < dc_y ) && ( pt_y  >= dc_y ) )
+            {
+                double newv = pt_x + ( dc_y - pt_y ) /
+                              ( pt_ry - pt_y ) * ( pt_rx - pt_x );
 
-				node_x.push_back( newv );
-			}
+                node_x.push_back( newv );
+            }
 
-			rcnt = cnt;
-		}
+            rcnt = cnt;
+        }
 
-		unsigned node_x_sz = node_x.size();
+        unsigned node_x_sz = node_x.size();
 
-		// sort nodes ..
-		if ( node_x_sz > 1 )
-		{
-			sort( node_x.begin(),
-				  node_x.begin() + node_x_sz,
-				  fl_imgtk_sortcondition );
+        // sort nodes ..
+        if ( node_x_sz > 1 )
+        {
+            sort( node_x.begin(),
+                  node_x.begin() + node_x_sz,
+                  fl_imgtk_sortcondition );
 
-			for( unsigned ncnt=0; ncnt<node_x_sz; ncnt++ )
-			{
-				printf("%.2f, ", node_x[ncnt] );
-			}
-			printf("\n");
+            for( unsigned ncnt=0; ncnt<node_x_sz; ncnt++ )
+            {
+                printf("%.2f, ", node_x[ncnt] );
+            }
+            printf("\n");
 
-		}
+        }
 
-		#pragma parallel for
-		for( unsigned dcnt=0; dcnt<node_x_sz; dcnt+=2 )
-		{
-			if ( node_x[dcnt] >= max_x )
-				break;
+        #pragma parallel for
+        for( unsigned dcnt=0; dcnt<node_x_sz; dcnt+=2 )
+        {
+            if ( node_x[dcnt] >= max_x )
+                break;
 
-			if ( node_x[dcnt+1] > 0 )
-			{
-				if ( node_x[dcnt] < 0 )
-				{
-					node_x[dcnt] = 0;
-				}
+            if ( node_x[dcnt+1] > 0 )
+            {
+                if ( node_x[dcnt] < 0 )
+                {
+                    node_x[dcnt] = 0;
+                }
 
-				if ( node_x[dcnt+1] > max_x )
-				{
-					node_x[dcnt+1] = max_x;
-				}
+                if ( node_x[dcnt+1] > max_x )
+                {
+                    node_x[dcnt+1] = max_x;
+                }
 
-				for( int cur_x=node_x[dcnt]; cur_x<=node_x[dcnt+1]; cur_x++ )
-				{
-					int buffpos = ( max_x * cur_y + cur_x ) * img->d();
-					
-					ptrimg[ buffpos + 0 ] = col_r;
-					ptrimg[ buffpos + 1 ] = col_g;
-					ptrimg[ buffpos + 2 ] = col_b;
-				}
-			}
-		}
+                for( int cur_x=node_x[dcnt]; cur_x<=node_x[dcnt+1]; cur_x++ )
+                {
+                    int buffpos = ( max_x * cur_y + cur_x ) * img->d();
+                    
+                    ptrimg[ buffpos + 0 ] = col_r;
+                    ptrimg[ buffpos + 1 ] = col_g;
+                    ptrimg[ buffpos + 2 ] = col_b;
+                }
+            }
+        }
 
-		node_x.clear();
+        node_x.clear();
 
-	} /// of for( y .. )
+    } /// of for( y .. )
 
-	img->uncache();
+    img->uncache();
 }
 
 void fl_imgtk::discard_user_rgb_image( Fl_RGB_Image* &img )
