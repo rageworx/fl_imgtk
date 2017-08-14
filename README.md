@@ -5,12 +5,16 @@
 
 ## Lastest upate
 
+* 2017-08-14-0
+    1. Updated header for drawonimage method.
+	1. drawonimage condition changed for alpha channel.
+
+## Previous update
+
 * 2017-08-10-0
     1. Fixed bugs in makegradation_h and v methods.
 	1. Now makegradation_h/v() methods support alpha channel.
 		
-## Previous update
-
 * 2017-07-27-0
     1. OpenMP applied drawing to 
 	    - smooth line.

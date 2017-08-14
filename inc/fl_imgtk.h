@@ -228,8 +228,8 @@ namespace fl_imgtk
     bool          applyalpha_ex( Fl_RGB_Image* src, float val = 1.0f );
 
     // Draws image to image with alpha value.
-    bool drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img,
-                      int x, int y, float alpha = 1.0f );
+    bool drawonimage( Fl_RGB_Image* bgimg = NULL, Fl_RGB_Image* img = NULL,
+                      int x = 0, int y = 0, float alpha = 1.0f );
 
     // Make a RGB image from gradation col1 to col2.
     // Use col1, col2 to 0xRRGGBB00 channel alignment, not Fl_Color !

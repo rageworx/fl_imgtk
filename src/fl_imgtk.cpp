@@ -1477,7 +1477,8 @@ void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
 
                 if ( bd == 4 )
                 {
-                    wptr[3] = 0xFF;
+                    //wptr[3] = MAX( rptr[3], wptr[3] );
+                    //wptr[3] = 0xFF;
                 }
             }
         }
@@ -1565,7 +1566,7 @@ void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
 
                 if ( bd == 4 )
                 {
-                    wptr[3] = 0xFF;
+                    //wptr[3] = 0xFF;
                 }
             }
         }
