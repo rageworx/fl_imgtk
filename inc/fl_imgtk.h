@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2017-07-07-0
+* fl_imgtk.H , version 2017-08-14-1
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2017 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -56,6 +56,11 @@ namespace fl_imgtk
         uchar   msz;    /// Matrix size
         float*  m;      /// Matrix array (dynamical allocation)
     }kfconfig; /// Kernel Filter Configuration.
+
+    // Makes empty image
+	// d(depth) only for 3 or 4.
+    Fl_RGB_Image* makeanempty( unsigned w, unsigned h, unsigned d, 
+	                           ulong color = 0xFFFFFFFF );
 
     ////////////////////////////////////////////////////////////////////////////
     // Flip, Rotate
@@ -132,38 +137,38 @@ namespace fl_imgtk
     ////////////////////////////////////////////////////////////////////////////
     // Tone mapping
 
-	/***
-	** tonemapping_reinhard
-	** -------------------------------------------------------------------------
-	** Apply the global/local tone mapping operator to a Fl_RGB_Image.
-	** User parameters control intensity, contrast, and level of adaptation
-	**
-	** @param 'src': Input Fl_RGB_Image, depth requires at least 3.
-	** @param 'intensity': Overall intensity in range [-8:8] : default to 0
-	** @param 'contrast': Contrast in range [0.3:1) : default to 0
-	** @param 'adaptation': Adaptation in range [0:1] : default to 1
-	** @param 'color_correction': Color correction in range [0:1] : default to 0
-	***/
+    /***
+    ** tonemapping_reinhard
+    ** -------------------------------------------------------------------------
+    ** Apply the global/local tone mapping operator to a Fl_RGB_Image.
+    ** User parameters control intensity, contrast, and level of adaptation
+    **
+    ** @param 'src': Input Fl_RGB_Image, depth requires at least 3.
+    ** @param 'intensity': Overall intensity in range [-8:8] : default to 0
+    ** @param 'contrast': Contrast in range [0.3:1) : default to 0
+    ** @param 'adaptation': Adaptation in range [0:1] : default to 1
+    ** @param 'color_correction': Color correction in range [0:1] : default to 0
+    ***/
     Fl_RGB_Image* tonemapping_reinhard( Fl_RGB_Image* src,
-	                                    float intensity, float contrast,
-										float adaptation = 1.0f,
-										float color_correction = 0.0f );
+                                        float intensity, float contrast,
+                                        float adaptation = 1.0f,
+                                        float color_correction = 0.0f );
     bool       tonemapping_reinhard_ex( Fl_RGB_Image* src,
-	                                    float intensity, float contrast,
-										float adaptation = 1.0f,
-										float color_correction = 0.0f );
+                                        float intensity, float contrast,
+                                        float adaptation = 1.0f,
+                                        float color_correction = 0.0f );
 
-	/***
-	** tonemapping_drago
-	** --------------------------------------------------------------------------
-	** Apply the Adaptive Logarithmic Mapping operator to a HDR image.
-	**
-	** @param 'src': Input Fl_RGB_Image, depth requires at least 3.
-	** @param 'gamma': Gamma correction (gamma > 0). 1 means no correction,
-	**                                               2.2 in the original paper.
-	** @param 'exposure': Exposure parameter
-	**                        (0 means no correction, 0 in the original paper)
-	***/
+    /***
+    ** tonemapping_drago
+    ** --------------------------------------------------------------------------
+    ** Apply the Adaptive Logarithmic Mapping operator to a HDR image.
+    **
+    ** @param 'src': Input Fl_RGB_Image, depth requires at least 3.
+    ** @param 'gamma': Gamma correction (gamma > 0). 1 means no correction,
+    **                                               2.2 in the original paper.
+    ** @param 'exposure': Exposure parameter
+    **                        (0 means no correction, 0 in the original paper)
+    ***/
     Fl_RGB_Image* tonemapping_drago( Fl_RGB_Image* src,
                                      float gamma = 1.0f ,
                                      float exposure = 0.0f );
@@ -188,25 +193,25 @@ namespace fl_imgtk
     ////////////////////////////////////////////////////////////////////////////
     // More functions ...
 
-	typedef struct
-	{
-	    int src1putx;
-	    int src1puty;
-	    int src2putx;
-	    int src2puty;
+    typedef struct
+    {
+        int src1putx;
+        int src1puty;
+        int src2putx;
+        int src2puty;
 
-	    float src1ratio;    /// 0.0 to 1.0
-	    float src2ratio;    /// 0.0 to 1.0
-	                        /// src1ratio + src2ratio must be 1.0
+        float src1ratio;    /// 0.0 to 1.0
+        float src2ratio;    /// 0.0 to 1.0
+                            /// src1ratio + src2ratio must be 1.0
         bool  autoexpand;   /// expands maximum image size to bigger image.
-	}mergeconfig;
+    }mergeconfig;
 
-	// Crop image to a new Fl_RGB_Image.
+    // Crop image to a new Fl_RGB_Image.
     Fl_RGB_Image* crop( Fl_RGB_Image* src,
                         unsigned sx, unsigned sy, unsigned w, unsigned h );
 
     // Merge two different image to a new Image.
-	Fl_RGB_Image* merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2,
+    Fl_RGB_Image* merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2,
                          mergeconfig* cfg = NULL );
 
     // Subtract twro different image src1 - ( src2 * sr ) = result.
@@ -215,7 +220,7 @@ namespace fl_imgtk
     // Subtract src1 - ( src2 * sr ) = src1.
     bool          sbutract_ex( Fl_RGB_Image* src1, Fl_RGB_Image* src2,
                                int px, int py, float sr = 1.0f );
-
+    
     // Makes alpha channel map.
     unsigned makealphamap( uchar* &amap, Fl_RGB_Image* src, float val = 1.0f );
     unsigned makealphamap( uchar* &amap, unsigned w, unsigned h, uchar val  = 255 );
@@ -239,20 +244,20 @@ namespace fl_imgtk
                                    ulong col1, ulong col2, bool dither );
 
     ////////////////////////////////////////////////////////////////////////////
-	// Enhanced drawing :
-	
-	// Smoothen drawing line algorithm theory by Ph.D Xiaolin Wu.
-	// Code referenced to https://rosettacode.org/wiki/Xiaolin_Wu%27s_line_algorithm
-	void draw_smooth_line( Fl_RGB_Image* img,
+    // Enhanced drawing :
+    
+    // Smoothen drawing line algorithm theory by Ph.D Xiaolin Wu.
+    // Code referenced to https://rosettacode.org/wiki/Xiaolin_Wu%27s_line_algorithm
+    void draw_smooth_line( Fl_RGB_Image* img,
                            int x1, int y1, int x2, int y2, Fl_Color col );
-						
-	// Polygon fill , non-anti-aliased.
-	typedef struct { int x; int y; } vecpoint;
-	
-	void draw_polygon( Fl_RGB_Image* img, 
-	                   const vecpoint* points = NULL, unsigned pointscnt = 0,
+                        
+    // Polygon fill , non-anti-aliased.
+    typedef struct { int x; int y; } vecpoint;
+    
+    void draw_polygon( Fl_RGB_Image* img, 
+                       const vecpoint* points = NULL, unsigned pointscnt = 0,
                        Fl_Color col = 0 );
-	
+    
     ////////////////////////////////////////////////////////////////////////////
 
     void discard_user_rgb_image( Fl_RGB_Image* &img );

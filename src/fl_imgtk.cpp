@@ -56,6 +56,31 @@ const float matrixdata_sharpenmore[] =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+
+Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong color )
+{
+	if ( ( w > 0 ) && ( h > 0 ) && ( d >= 3 ) )
+	{
+		ulong  resz   = w * h;
+		ulong  datasz = resz * d;
+		uchar* pdata  = new uchar[ datasz ];
+		
+		if ( pdata != NULL )
+		{
+			#pragma omp parallel for
+			for( ulong cnt=0; cnt<resz; cnt++ )
+			{
+				memcpy( &pdata[ cnt * d ], &color, d );
+			}
+			
+			return new Fl_RGB_Image( pdata, w, h, d );
+		}
+	}
+	
+	return NULL;
+}
+
+
 Fl_RGB_Image* fl_imgtk::fliphorizontal( Fl_RGB_Image* img )
 {
     if ( img == NULL )

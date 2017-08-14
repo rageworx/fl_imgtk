@@ -5,11 +5,14 @@
 
 ## Lastest upate
 
+* 2017-08-14-1
+    1. New method : makeanempty(), for create new image.
+
+## Previous update
+
 * 2017-08-14-0
     1. Updated header for drawonimage method.
 	1. drawonimage condition changed for alpha channel.
-
-## Previous update
 
 * 2017-08-10-0
     1. Fixed bugs in makegradation_h and v methods.
