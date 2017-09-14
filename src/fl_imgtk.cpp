@@ -1380,6 +1380,9 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
 
         if ( ( rsx > src->w() ) || ( rsy > src->h() ) )
             return NULL;
+		
+		if ( ( ( rsx + w ) > src->w() ) || ( ( rsy + h ) > src->h() ) )
+			return NULL;
 
         if ( src->w() < ( rw + rsx ) )
         {
@@ -1396,25 +1399,32 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
 
         if ( ( rbuff != NULL ) && ( obuff != NULL ) )
         {
-            unsigned srcw = src->w();
-            unsigned srch = src->h();
-            unsigned dsth = srch - rsy;
+            unsigned srcw = rsx + w;
+            unsigned srch = rsy + h;
             unsigned cnty;
             unsigned cntx;
+			unsigned putx;
+			unsigned puty;
 
             #pragma omp parellel for private( cntx )
             for( cnty=rsy; cnty<srch; cnty++ )
             {
                 for( cntx=rsx; cntx<srcw; cntx ++ )
                 {
-                    uchar* rptr = &rbuff[ ( cnty * srcw + cntx ) * sd ];
-                    uchar* wptr = &obuff[ ( (cnty - rsy) * rw + ( cntx - rsx) ) * sd ];
+					putx = cntx - rsx;
+					puty = cnty - rsy;
+                    uchar* rptr = &rbuff[ ( cnty * src->w() + cntx ) * sd ];
+                    uchar* wptr = &obuff[ ( puty * rw + putx ) * sd ];
 
                     memcpy( wptr, rptr, sd );
                 }
             }
-
+#ifdef DEBUG
+			Fl_RGB_Image* retimg = new Fl_RGB_Image( obuff, rw, rh , sd );
+			return retimg;
+#else
             return new Fl_RGB_Image( obuff, rw, rh , sd );
+#endif		
         }
     }
 
