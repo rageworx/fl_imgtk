@@ -19,6 +19,11 @@ using namespace std;
 
 #define FLOAT_PI        3.141592654
 
+#define FLIMGTK_BI_RGB       0	/// No compression - straight BGR data
+#define FLIMGTK_BI_RLE8      1  /// 8-bit run-length compression
+#define FLIMGTK_BI_RLE4      2  /// 4-bit run-length compression
+#define FLIMGTK_BI_BITFIELDS 3  /// RGB bitmap with RGB masks
+
 #define fl_imgtk_degree2f( _x_ )      ( ( 360.0 - _x_ ) / 360.0 * 100.0 )
 #define fl_imgtk_swap_uc( _a_, _b_ )   uchar t=_a_; _a_=_b_; _b_=t;
 
@@ -80,6 +85,558 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
 	return NULL;
 }
 
+UINT16 flimgtk_memread_word( const char* buffer, unsigned* que = NULL )
+{
+	UINT16 retus = 0;
+	memcpy( &retus, buffer, 2 );
+	
+	if ( que != NULL )
+	{
+		*que += 2;
+	}
+	
+	return retus;
+}
+
+UINT32 flimgtk_memread_dword( const char* buffer, unsigned* que = NULL )
+{
+	UINT32 retui = 0;
+	memcpy( &retui, buffer, 4 );
+	
+	if ( que != NULL )
+	{
+		*que += 4;
+	}
+	
+	return retui;
+}
+
+int flimgtk_memread_int( const char* buffer, unsigned* que = NULL )
+{
+	int reti = 0;
+	memcpy( &reti, buffer, 4 );
+	
+	if ( que != NULL )
+	{
+		*que += 4;
+	}
+	
+	return reti;
+}
+
+// Reading BMP code from Fl_BMP_Image.cxx
+Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
+{
+	if ( ( buffer != NULL ) && ( buffersz > 32 ) )
+	{
+		unsigned buffque = 0;
+		
+		// Check 'BM'.
+		if ( ( buffer[buffque++] != 'B' ) || ( buffer[buffque++] != 'M' ) )
+			return NULL;
+		
+		// Skips uselesses.
+		buffque += 4;   /// skip size.
+		buffque += 2;	/// skip reserved something.
+		buffque += 2;
+		
+		int info_size;		/// Size of info header
+		UINT16 depth;		/// Depth of image (bits)
+		int bDepth = 3;		/// Depth of image (bytes)
+		UINT32 compression;	/// Type of compression
+		UINT32 colors_used;	/// Number of colors used
+		int x, y;			/// Looping vars
+		UINT32 color = 0;	/// Color of RLE pixel
+		int repcount;		/// Number of times to repeat
+		int temp;			/// Temporary color
+		int align;			/// Alignment bytes
+		UINT32 dataSize;	/// number of bytes in image data set
+		int row_order=-1;	/// 1 = normal;  -1 = flipped row order
+		int start_y;		/// Beginning Y
+		int end_y;			/// Ending Y
+		int	offbits;		// Offset to image data
+		uchar bit;			/// Bits in image
+		uchar byte;			/// Bytes in image
+		uchar*ptr;			/// Pointer into pixels
+		uchar colormap[256][3];/// Colormap
+		uchar havemask = 0;	/// Single bit mask follows image data
+		int	use_5_6_5 = 0;	/// Use 5:6:5 for R:G:B channels in 16 bit images
+		UINT32 w = 0;
+		UINT32 h = 0;
+		
+		// Read offset to image data
+		memcpy( &offbits, &buffer[buffque], 4 );
+		buffque += 4;
+		
+		// Then the bitmap information...
+		memcpy( &info_size, &buffer[buffque], 4 );
+		buffque += 4;
+		
+		if (info_size < 40) 
+		{
+			// Old Windows/OS2 BMP header...
+			w = flimgtk_memread_word( &buffer[buffque], &buffque );
+			h = flimgtk_memread_word( &buffer[buffque], &buffque );
+			
+			// skip a WORD
+			buffque += 2;
+
+			depth = flimgtk_memread_word( &buffer[buffque], &buffque );
+			
+			compression = FLIMGTK_BI_RGB;
+			colors_used = 0;
+
+			repcount = info_size - 12;
+		} 
+		else 
+		{
+			// New BMP header...
+			w = flimgtk_memread_dword( &buffer[buffque], &buffque );
+			
+			// If the height is negative, the row order is flipped
+			temp = flimgtk_memread_int( &buffer[buffque], &buffque );
+			
+			if (temp < 0)
+			{
+				row_order = 1;
+			}
+			
+			h = std::abs(temp);
+			
+			// Skip a WORD
+			buffque += 2;
+			
+			depth = flimgtk_memread_word( &buffer[buffque], &buffque );
+			compression = flimgtk_memread_dword( &buffer[buffque], &buffque );
+			dataSize = flimgtk_memread_dword( &buffer[buffque], &buffque );
+			
+			// Skip a couple of DWORD
+			buffque += 8;
+
+			colors_used = flimgtk_memread_dword( &buffer[buffque], &buffque );
+			
+			// Skip DWORD
+			buffque += 4;
+
+			repcount = info_size - 40;
+
+			if (!compression && depth>=8 && w>32/depth) 
+			{
+				int Bpp = depth/8;
+				int maskSize = (((w*Bpp+3)&~3)*h) + (((((w+7)/8)+3)&~3)*h);
+				if (maskSize==2*dataSize) 
+				{
+					havemask = 1;
+					h /= 2;
+					bDepth = 4;
+				}
+			}
+		}
+		
+		// Buffer skip by repcount.
+		if ( repcount > 0 )
+		{
+			buffque += repcount;
+			repcount = 0;
+		}
+
+		// check w,h,d
+		if ( ( w == 0 ) || ( h == 0 ) || ( depth == 0 ) )
+		{
+			return NULL;
+		}
+		
+		// Color map ?
+		if (colors_used == 0 && depth <= 8)
+		{
+			colors_used = 1 << depth;
+		}
+		
+		for (repcount = 0; repcount < colors_used; repcount ++) 
+		{
+			// Read BGR color palette...
+			memcpy( &colormap[repcount], &buffer[buffque], 3 );
+			buffque += 3;
+			
+			// Skip pad byte for new BMP files...
+			if (info_size > 12)
+			{
+				buffque++;
+			}
+		}
+		
+		// Read first dword of colormap. It tells us if 5:5:5 or 5:6:5 for 16 bit
+		if (depth == 16)
+		{
+			UINT32 tmpdw = flimgtk_memread_dword( &buffer[buffque], &buffque );
+			if ( tmpdw == 0x0000f800 )
+			{
+				use_5_6_5 = 1;
+			}
+		}
+
+		// Set byte depth for RGBA images
+		if ( depth == 32 )
+		{
+			bDepth=4;
+		}
+
+		// Setup image and buffers...
+		if ( offbits > 0 ) 
+		{
+			buffque = offbits;
+		}
+
+		//---------------
+		
+		uchar* array = new uchar[ w * h * bDepth ];
+		
+		if ( array == NULL )
+		{
+			return NULL;
+		}
+		
+		// Read the image data...
+		color = 0;
+		repcount = 0;
+		align = 0;
+		byte  = 0;
+		temp  = 0;
+
+		if (row_order < 0) 
+		{
+			start_y = h - 1;
+			end_y   = -1;
+		} 
+		else 
+		{
+			start_y = 0;
+			end_y   = h;
+		}
+
+		for (y = start_y; y != end_y; y += row_order) 
+		{
+			ptr = (uchar*)array + y * w * bDepth;
+
+			switch( depth )
+			{
+				case 1 : // Bitmap
+					for ( x = w, bit = 128; x>0; x-- ) 
+					{
+						if ( bit == 128 ) 
+						{
+							byte = buffer[buffque++];
+						}
+
+						if (byte & bit) 
+						{
+							*ptr++ = colormap[1][2];
+							*ptr++ = colormap[1][1];
+							*ptr++ = colormap[1][0];
+						} 
+						else 
+						{
+							*ptr++ = colormap[0][2];
+							*ptr++ = colormap[0][1];
+							*ptr++ = colormap[0][0];
+						}
+
+						if ( bit > 1 )
+						{
+							bit >>= 1;
+						}
+						else
+						{
+							bit = 128;
+						}
+					}
+
+					// Read remaining bytes to align to 32 bits...
+					for ( temp = ( w + 7 ) / 8; temp & 3; temp++ )
+					{
+						buffque++;
+					}
+					
+					break;
+
+				case 4 : // 16-color
+					for ( x = w, bit = 0xf0; x>0; x-- ) 
+					{
+						// Get a new repcount as needed...
+						if (repcount == 0) 
+						{
+							if (compression != FLIMGTK_BI_RLE4) 
+							{
+								repcount = 2;
+								color = -1;
+							} 
+							else 
+							{
+								while (align > 0) 
+								{
+									align --;
+									buffque++;
+								}
+
+								if ( (repcount = buffer[buffque++]) == 0) 
+								{
+									if ( (repcount = buffer[buffque++]) == 0) 
+									{
+										// End of line...
+											x ++;
+										continue;
+									} 
+									else if (repcount == 1) 
+									{
+										// End of image...
+										break;
+									} 
+									else if (repcount == 2) 
+									{
+										// Delta...
+										repcount = buffer[buffque++] *
+										           buffer[buffque++] *
+												   w;
+										color = 0;
+									} 
+									else 
+									{
+										// Absolute...
+										color = -1;
+										align = ((4 - (repcount & 3)) / 2) & 1;
+									}
+								} 
+								else 
+								{
+									color = buffer[buffque++];
+								}
+							}
+						}
+
+						// Get a new color as needed...
+						repcount --;
+
+						// Extract the next pixel...
+						if (bit == 0xf0) 
+						{
+							// Get the next color byte as needed...
+							if (color < 0) 
+							{
+								temp = buffer[buffque++];
+							}
+							else
+							{
+								temp = color;
+							}
+
+							// Copy the color value...
+							*ptr++ = colormap[(temp >> 4) & 15][2];
+							*ptr++ = colormap[(temp >> 4) & 15][1];
+							*ptr++ = colormap[(temp >> 4) & 15][0];
+
+							bit  = 0x0f;
+						} 
+						else 
+						{
+							bit  = 0xf0;
+
+							  // Copy the color value...
+							*ptr++ = colormap[temp & 15][2];
+							*ptr++ = colormap[temp & 15][1];
+							*ptr++ = colormap[temp & 15][0];
+						}
+
+					}
+
+					if (!compression) 
+					{
+						// Read remaining bytes to align to 32 bits...
+						for (temp = (w + 1) / 2; temp & 3; temp ++) 
+						{
+							buffque++;
+						}
+					}
+					break;
+
+				case 8 : // 256-color
+					for ( x=w; x>0; x-- ) 
+					{
+						// Get a new repcount as needed...
+						if ( compression != FLIMGTK_BI_RLE8 ) 
+						{
+							repcount = 1;
+							color = -1;
+						}
+
+						if (repcount == 0) 
+						{
+							while (align > 0) 
+							{
+								align --;
+								buffque++;
+							}
+
+							if ((repcount = buffer[buffque++]) == 0) 
+							{
+								if ((repcount = buffer[buffque++]) == 0) 
+								{
+									// End of line...
+									x ++;
+									continue;
+								} else if (repcount == 1) 
+								{
+									// End of image...
+									break;
+								} else if (repcount == 2) 
+								{
+									// Delta...
+									repcount = buffer[buffque++] * 
+									           buffer[buffque++] * 
+											   w;
+									color = 0;
+								} 
+								else 
+								{
+									// Absolute...
+									color = -1;
+									align = (2 - (repcount & 1)) & 1;
+								}
+							} 
+							else 
+							{
+								color = buffer[buffque++];
+							}
+						}
+
+						// Get a new color as needed...
+						if (color < 0) 
+						{
+							temp = buffer[buffque++];
+						}
+						else 
+						{
+							temp = color;
+						}
+
+						repcount --;
+
+						// Copy the color value...
+						*ptr++ = colormap[temp][2];
+						*ptr++ = colormap[temp][1];
+						*ptr++ = colormap[temp][0];
+						
+						if (havemask) 
+						{
+							ptr++;
+						}
+					}
+
+					if (!compression) 
+					{
+						// Read remaining bytes to align to 32 bits...
+						for ( temp=w; temp & 3; temp++ ) 
+						{
+							buffque++;
+						}
+					}
+					break;
+
+				case 16 : // 16-bit 5:5:5 or 5:6:5 RGB
+					for ( x=w; x>0; x--, ptr+=bDepth ) 
+					{
+						uchar b = buffer[buffque++];
+						uchar a = buffer[buffque++];
+						
+						if (use_5_6_5) 
+						{
+							ptr[2] = (uchar)(( b << 3 ) & 0xf8);
+							ptr[1] = (uchar)(((a << 5) & 0xe0) | ((b >> 3) & 0x1c));
+							ptr[0] = (uchar)(a & 0xf8);
+						} else {
+							ptr[2] = (uchar)((b << 3) & 0xf8);
+							ptr[1] = (uchar)(((a << 6) & 0xc0) | ((b >> 2) & 0x38));
+							ptr[0] = (uchar)((a<<1) & 0xf8);
+						}
+					}
+
+					// Read remaining bytes to align to 32 bits...
+					for ( temp=w * 2; temp & 3; temp ++ ) 
+					{
+						buffque++;
+					}
+					break;
+
+				case 24 : // 24-bit RGB
+					for ( x=w; x>0; x--, ptr += bDepth ) 
+					{
+						ptr[2] = (uchar)buffer[buffque++];
+						ptr[1] = (uchar)buffer[buffque++];
+						ptr[0] = (uchar)buffer[buffque++];
+					}
+
+					// Read remaining bytes to align to 32 bits...
+					for (temp = w * 3; temp & 3; temp ++) 
+					{
+						buffque++;
+					}
+					break;
+
+				case 32 : // 32-bit RGBA
+					for ( x=w; x>0; x--, ptr += bDepth ) 
+					{
+						ptr[2] = (uchar)buffer[buffque++];
+						ptr[1] = (uchar)buffer[buffque++];
+						ptr[0] = (uchar)buffer[buffque++];
+						ptr[3] = (uchar)buffer[buffque++];
+					}
+					break;
+			} /// of switch(depth) ...
+		} /// of for() ...
+  
+		if (havemask) 
+		{
+			for (y = h - 1; y >= 0; y --) 
+			{
+				ptr = (uchar *)array + y * w * bDepth + 3;
+				
+				for( x = w, bit = 128; x > 0; x --, ptr+=bDepth ) 
+				{
+					if (bit == 128) 
+					{
+						byte = (uchar)buffer[buffque++];
+					}
+					
+					if (byte & bit)
+					{
+						*ptr = 0;
+					}
+					else
+					{
+						*ptr = 255;
+					}
+					
+					if (bit > 1)
+					{
+						bit >>= 1;
+					}
+					else
+					{
+						bit = 128;
+					}
+				}
+				// Read remaining bytes to align to 32 bits...
+				for (temp = (w + 7) / 8; temp & 3; temp ++)
+				{
+					buffque++;
+				}
+			}
+		}
+		
+		return new Fl_RGB_Image( array, w, h, bDepth );
+	}
+		
+	return NULL;
+}
 
 Fl_RGB_Image* fl_imgtk::fliphorizontal( Fl_RGB_Image* img )
 {

@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2017-08-14-1
+* fl_imgtk.H , version 2017-10-11-01
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2017 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -23,8 +23,8 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    18
-#define FL_IMGTK_VER_REV    0
+#define FL_IMGTK_VER_BLD    25
+#define FL_IMGTK_VER_REV    1
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \
@@ -61,6 +61,9 @@ namespace fl_imgtk
 	// d(depth) only for 3 or 4.
     Fl_RGB_Image* makeanempty( unsigned w, unsigned h, unsigned d, 
 	                           ulong color = 0xFFFFFFFF );
+	
+	// Create BMP Image From memory
+	Fl_RGB_Image* createBMPmemory( const char* buffer, unsigned buffersz );
 
     ////////////////////////////////////////////////////////////////////////////
     // Flip, Rotate
