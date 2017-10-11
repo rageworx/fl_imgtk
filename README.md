@@ -5,10 +5,14 @@
 
 ## Lastest upate
 
-* 2017-08-14-1
-    1. New method : makeanempty(), for create new image.
+* 2017-10-11-1
+    1. New method : createBMPmemory(), for create new BMP image from memory.
+	1. Version updated to 0.3.25.1
 
 ## Previous update
+
+* 2017-08-14-1
+    1. New method : makeanempty(), for create new image.
 
 * 2017-08-14-0
     1. Updated header for drawonimage method.
