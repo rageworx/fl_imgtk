@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2017-10-11-01
+* fl_imgtk.H , version 2017-10-12-1
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2017 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -23,8 +23,8 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    25
-#define FL_IMGTK_VER_REV    1
+#define FL_IMGTK_VER_BLD    26
+#define FL_IMGTK_VER_REV    0
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \
@@ -95,7 +95,7 @@ namespace fl_imgtk
     bool          gamma_ex( Fl_RGB_Image* img, double gamma );
     // perc => -100 ~ 100
     Fl_RGB_Image* brightness( Fl_RGB_Image* img, double perc );
-    bool          brightbess_ex( Fl_RGB_Image* img, double perc );
+    bool          brightness_ex( Fl_RGB_Image* img, double perc );
     // perc => -100 ~ 100
     Fl_RGB_Image* contrast( Fl_RGB_Image* img, double perc );
     bool          contrast_ex(  Fl_RGB_Image* img, double perc );
@@ -113,9 +113,10 @@ namespace fl_imgtk
                            rescaletype rst = NONE );
 
     ////////////////////////////////////////////////////////////////////////////
-    // Get/Drawing images
+    // Drawing(Get) images
 
     Fl_RGB_Image* draw_widgetimage( Fl_Widget* w );
+	Fl_RGB_Image* draw_currentwindow( void* w = NULL );
     Fl_RGB_Image* drawblurred_widgetimage( Fl_Widget* w, unsigned factor = 2 );
     Fl_RGB_Image* blurredimage( Fl_RGB_Image* src, unsigned factor = 2 );
     bool          blurredimage_ex( Fl_RGB_Image* src, unsigned factor = 2 );

@@ -5,11 +5,16 @@
 
 ## Lastest upate
 
+* 2017-10-12-1
+    1. Fixed a wrong method name, "brightbess_ex" to "brightness_ex".
+	1. Added new function for "draw_currentwindow()".
+	1. Version updated to 0.3.26.0
+
+## Previous update
+
 * 2017-10-11-1
     1. New method : createBMPmemory(), for create new BMP image from memory.
 	1. Version updated to 0.3.25.1
-
-## Previous update
 
 * 2017-08-14-1
     1. New method : makeanempty(), for create new image.

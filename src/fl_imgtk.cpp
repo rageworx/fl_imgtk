@@ -1,6 +1,8 @@
 #include "fl_imgtk.h"
 #include "fl_imgtk_minmax.h"
 
+#include <FL/Fl_Widget.H>
+#include <FL/Fl_Window.H>
 #include <FL/Fl_Image_Surface.H>
 #include <FL/fl_draw.H>
 
@@ -1201,7 +1203,7 @@ Fl_RGB_Image* fl_imgtk::brightness( Fl_RGB_Image* img, double perc )
     return fl_imgtk_curve( img, lut );
 }
 
-bool fl_imgtk::brightbess_ex( Fl_RGB_Image* img, double perc )
+bool fl_imgtk::brightness_ex( Fl_RGB_Image* img, double perc )
 {
     uchar lut[256] = {0};
 
@@ -1724,6 +1726,41 @@ Fl_RGB_Image* fl_imgtk::draw_widgetimage( Fl_Widget* w )
     }
 
     return newimg;
+}
+
+Fl_RGB_Image* fl_imgtk::draw_currentwindow( void* w )
+{
+	Fl_Window* cwin = (Fl_Window*)w;
+	
+	if ( cwin == NULL )
+	{
+		cwin = Fl::first_window();
+	}
+	
+	if ( cwin != NULL )
+	{
+		uchar* widgetbuff = new uchar[ cwin->w() * cwin->h() * 3 ];
+		if ( widgetbuff != NULL )
+		{
+			// Read current window pixels to buffer for create a new Fl_RGB_Image.
+			fl_read_image( widgetbuff, cwin->x(), cwin->y(),
+									   cwin->w(), cwin->h() );
+
+			Fl_RGB_Image* retimg =  new Fl_RGB_Image( widgetbuff,
+ 													  cwin->w(),
+													  cwin->h(),
+													  3 );
+													  
+			if ( retimg == NULL )
+			{
+				delete[] widgetbuff;
+			}
+			
+			return retimg;
+		}
+	}
+	
+	return NULL;
 }
 
 Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
