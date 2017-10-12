@@ -280,7 +280,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
 		// Set byte depth for RGBA images
 		if ( depth == 32 )
 		{
-			bDepth=4;
+			bDepth = 4;
 		}
 
 		// Setup image and buffers...
@@ -2786,13 +2786,16 @@ fl_imgtk::kfconfig* fl_imgtk::new_kfconfig( const char* preset )
 
 inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, float br )
 {
-    uchar col_r = ( col & 0x0000FF00 ) >> 8;
+    float alpha = (float)( col & 0x000000FF ) / 255.f;
+	uchar col_r = ( col & 0x0000FF00 ) >> 8;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
     uchar col_b = ( col & 0xFF000000 ) >> 24;
 
     int w = img->w();
     int h = img->h();
     int d = img->d();
+
+	br *= alpha;
 
     if ( ( x >= 0 ) && ( y >= 0 ) && ( x < w ) && ( y < h ) )
     {
