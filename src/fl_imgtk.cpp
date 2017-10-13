@@ -1744,7 +1744,7 @@ Fl_RGB_Image* fl_imgtk::draw_currentwindow( void* w )
 		unsigned cwin_w = cwin->w();
 		unsigned cwin_h = cwin->h();
 
-		uchar* widgetbuff = new uchar[ cwin_w * cwin_h * 3 ];
+		uchar* widgetbuff = new uchar[ cwin_w * cwin_h * 3 + 1 ];
 		if ( widgetbuff != NULL )
 		{
 			// Read current window pixels to buffer for create a new Fl_RGB_Image.
