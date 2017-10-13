@@ -1715,7 +1715,7 @@ Fl_RGB_Image* fl_imgtk::draw_widgetimage( Fl_Widget* w )
             if ( prev_visible == 0 )
             {
                 w->hide();
-            }
+           	}
 
             Fl_Display_Device::display_device()->set_current();
 
@@ -1739,16 +1739,21 @@ Fl_RGB_Image* fl_imgtk::draw_currentwindow( void* w )
 	
 	if ( cwin != NULL )
 	{
-		uchar* widgetbuff = new uchar[ cwin->w() * cwin->h() * 3 ];
+		unsigned cwin_x = cwin->x();
+		unsigned cwin_y = cwin->y();
+		unsigned cwin_w = cwin->w();
+		unsigned cwin_h = cwin->h();
+
+		uchar* widgetbuff = new uchar[ cwin_w * cwin_h * 3 ];
 		if ( widgetbuff != NULL )
 		{
 			// Read current window pixels to buffer for create a new Fl_RGB_Image.
-			fl_read_image( widgetbuff, cwin->x(), cwin->y(),
-									   cwin->w(), cwin->h() );
+			fl_read_image( widgetbuff, cwin_x, cwin_y,
+									   cwin_w, cwin_h );
 
 			Fl_RGB_Image* retimg =  new Fl_RGB_Image( widgetbuff,
- 													  cwin->w(),
-													  cwin->h(),
+ 													  cwin_w,
+													  cwin_h,
 													  3 );
 													  
 			if ( retimg == NULL )
@@ -2547,13 +2552,16 @@ bool fl_imgtk::drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img, int x, int y
 Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulong col2, bool dither )
 {
     // sens alpha channel using.
-    unsigned d = 3;
+    unsigned d = 4;
     uchar alpha1 = col1 & 0x000000FF;
     uchar alpha2 = col2 & 0x000000FF;
 
-    if ( ( alpha1 > 0 ) || ( alpha2 > 0 ) )
+    if ( ( alpha1 == 0 ) || ( alpha2 == 0 ) )
     {
-        d = 4;
+        d = 3;
+		
+		alpha1 = 0xFF;
+		alpha2 = 0xFF;
     }
 
     uchar* buffer = new unsigned char[ w * h * d ];
@@ -2634,13 +2642,15 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
 Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulong col2, bool dither )
 {
     // sens alpha channel using.
-    unsigned d = 3;
+    unsigned d = 4;
     uchar alpha1 = col1 & 0x000000FF;
     uchar alpha2 = col2 & 0x000000FF;
 
-    if ( ( alpha1 > 0 ) || ( alpha2 > 0 ) )
+    if ( ( alpha1 == 0 ) || ( alpha2 == 0 ) )
     {
-        d = 4;
+        d = 3;
+		alpha1 = 0xFF;
+		alpha2 = 0xFF;
     }
 
     uchar* buffer = new unsigned char[ w * h * d ];
