@@ -8,8 +8,11 @@
 
 #include "fl_smimg.h"
 
+#include "stdint.h"
+
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -87,9 +90,9 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
     return NULL;
 }
 
-UINT16 flimgtk_memread_word( const char* buffer, unsigned* que = NULL )
+uint16_t flimgtk_memread_word( const char* buffer, unsigned* que = NULL )
 {
-    UINT16 retus = 0;
+    uint16_t retus = 0;
     memcpy( &retus, buffer, 2 );
     
     if ( que != NULL )
@@ -100,9 +103,9 @@ UINT16 flimgtk_memread_word( const char* buffer, unsigned* que = NULL )
     return retus;
 }
 
-UINT32 flimgtk_memread_dword( const char* buffer, unsigned* que = NULL )
+uint32_t flimgtk_memread_dword( const char* buffer, unsigned* que = NULL )
 {
-    UINT32 retui = 0;
+    uint32_t retui = 0;
     memcpy( &retui, buffer, 4 );
     
     if ( que != NULL )
@@ -143,16 +146,16 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
         buffque += 2;
         
         int info_size;      /// Size of info header
-        UINT16 depth;       /// Depth of image (bits)
+        uint16_t depth;     /// Depth of image (bits)
         int bDepth = 3;     /// Depth of image (bytes)
-        UINT32 compression; /// Type of compression
-        UINT32 colors_used; /// Number of colors used
+        uint16_t compression; /// Type of compression
+        uint32_t colors_used; /// Number of colors used
         int x, y;           /// Looping vars
-        UINT32 color = 0;   /// Color of RLE pixel
+        uint32_t color = 0;   /// Color of RLE pixel
         int repcount;       /// Number of times to repeat
         int temp;           /// Temporary color
         int align;          /// Alignment bytes
-        UINT32 dataSize;    /// number of bytes in image data set
+        uint32_t dataSize;    /// number of bytes in image data set
         int row_order=-1;   /// 1 = normal;  -1 = flipped row order
         int start_y;        /// Beginning Y
         int end_y;          /// Ending Y
@@ -163,8 +166,8 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
         uchar colormap[256][3];/// Colormap
         uchar havemask = 0; /// Single bit mask follows image data
         int use_5_6_5 = 0;  /// Use 5:6:5 for R:G:B channels in 16 bit images
-        UINT32 w = 0;
-        UINT32 h = 0;
+        uint32_t w = 0;
+        uint32_t h = 0;
         
         // Read offset to image data
         memcpy( &offbits, &buffer[buffque], 4 );
@@ -203,7 +206,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                 row_order = 1;
             }
             
-            h = std::abs(temp);
+            h = abs(temp);
             
             // Skip a WORD
             buffque += 2;
@@ -270,7 +273,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
         // Read first dword of colormap. It tells us if 5:5:5 or 5:6:5 for 16 bit
         if (depth == 16)
         {
-            UINT32 tmpdw = flimgtk_memread_dword( &buffer[buffque], &buffque );
+            uint32_t tmpdw = flimgtk_memread_dword( &buffer[buffque], &buffque );
             if ( tmpdw == 0x0000f800 )
             {
                 use_5_6_5 = 1;
