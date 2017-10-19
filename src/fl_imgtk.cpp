@@ -1,3 +1,10 @@
+#ifdef _MSC_VER
+#pragma warning(disable : 4018)  
+#pragma warning(disable : 4068)  
+#pragma warning(disable : 4244)  
+#pragma warning(disable : 4996)  
+#endif
+
 #include "fl_imgtk.h"
 #include "fl_imgtk_minmax.h"
 
@@ -2827,7 +2834,11 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, fl
 #define fl_imgtk_roundi(X) ((int)(((double)(X))+0.5))
 #define fl_imgtk_fpart(X) (((double)(X))-(double)fl_imgtk_ipart(X))
 #define fl_imgtk_rfpart(X) (1.0 - fl_imgtk_fpart(X))
-#define fl_imgtk_swap(a, b) { __typeof__(a) tmp;  tmp = a; a = b; b = tmp; }
+#ifdef _MSC_VER /// godam M$VC !!
+	#define fl_imgtk_swap(a, b) { auto tmp = a; a = b; b = tmp; }
+#else
+	#define fl_imgtk_swap(a, b) { __typeof__(a) tmp;  tmp = a; a = b; b = tmp; }
+#endif
 
 void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_Color col )
 {

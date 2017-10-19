@@ -674,9 +674,9 @@ Fl_RGB_Image* fl_imgtk::noire( Fl_RGB_Image* src, unsigned regionW, unsigned reg
 
         data_rgb_avr[ cnt ] = (unsigned)rgb_avr;
 
-        if ( min_rgb > rgb_avr ) min_rgb = rgb_avr;
+        if ( (float)min_rgb > rgb_avr ) min_rgb = (uchar)rgb_avr;
         else
-        if ( max_rgb < rgb_avr ) max_rgb = rgb_avr;
+        if ( (float)max_rgb < rgb_avr ) max_rgb = (uchar)rgb_avr;
     }
 
     bool retb = applyCLAHE( data_rgb_avr, imgWidth, imgHeight,
@@ -756,9 +756,9 @@ bool fl_imgtk::noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
 
         data_rgb_avr[ cnt ] = (unsigned)rgb_avr;
 
-        if ( min_rgb > rgb_avr ) min_rgb = rgb_avr;
+        if ( (float)min_rgb > rgb_avr ) min_rgb = (uchar)rgb_avr;
         else
-        if ( max_rgb < rgb_avr ) max_rgb = rgb_avr;
+        if ( (float)max_rgb < rgb_avr ) max_rgb = (uchar)rgb_avr;
     }
 
     bool retb = applyCLAHE( data_rgb_avr, imgWidth, imgHeight,

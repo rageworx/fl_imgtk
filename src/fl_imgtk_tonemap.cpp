@@ -1,3 +1,10 @@
+#ifdef _MSC_VER
+#pragma warning(disable : 4018)  
+#pragma warning(disable : 4068)  
+#pragma warning(disable : 4244)  
+#pragma warning(disable : 4996)  
+#endif
+
 #include "fl_imgtk.h"
 #include "fl_imgtk_minmax.h"
 
@@ -302,9 +309,9 @@ bool fl_imgtk_F2YXY( fl_imgtk_fimg* img )
 
             for ( unsigned rpt=0; rpt<3; rpt++ )
             {
-                tf[rpt] += RGB2XYZ[rpt][0] * psrc[0];
-                tf[rpt] += RGB2XYZ[rpt][1] * psrc[1];
-                tf[rpt] += RGB2XYZ[rpt][2] * psrc[2];
+                tf[rpt] += (float)(RGB2XYZ[rpt][0] * psrc[0]);
+                tf[rpt] += (float)(RGB2XYZ[rpt][1] * psrc[1]);
+                tf[rpt] += (float)(RGB2XYZ[rpt][2] * psrc[2]);
             }
 
             float fW = tf[0] + tf[1] + tf[2];
@@ -413,9 +420,9 @@ bool fl_imgtk_YXY2F( fl_imgtk_fimg* img )
 
             for( unsigned rpt=0; rpt<3; rpt++ )
             {
-                tf[rpt] += XYZ2RGB[rpt][0] * psrc[0];
-                tf[rpt] += XYZ2RGB[rpt][1] * psrc[1];
-                tf[rpt] += XYZ2RGB[rpt][2] * psrc[2];
+                tf[rpt] += (float)(XYZ2RGB[rpt][0] * psrc[0]);
+                tf[rpt] += (float)(XYZ2RGB[rpt][1] * psrc[1]);
+                tf[rpt] += (float)(XYZ2RGB[rpt][2] * psrc[2]);
             }
 
             psrc[0] = tf[0];
