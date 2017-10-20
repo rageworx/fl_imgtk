@@ -158,7 +158,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
         uint16_t compression; /// Type of compression
         uint32_t colors_used; /// Number of colors used
         int x, y;           /// Looping vars
-        uint32_t color = 0;   /// Color of RLE pixel
+        int32_t color = 0;  /// Color of RLE pixel
         int repcount;       /// Number of times to repeat
         int temp;           /// Temporary color
         int align;          /// Alignment bytes
@@ -406,9 +406,10 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                                     else if (repcount == 2) 
                                     {
                                         // Delta...
-                                        repcount = buffer[buffque++] *
-                                                   buffer[buffque++] *
+                                        repcount = buffer[buffque] *
+                                                   buffer[buffque+1] *
                                                    w;
+										buffque += 2;
                                         color = 0;
                                     } 
                                     else 
@@ -502,9 +503,10 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                                 } else if (repcount == 2) 
                                 {
                                     // Delta...
-                                    repcount = buffer[buffque++] * 
-                                               buffer[buffque++] * 
+                                    repcount = buffer[buffque] * 
+                                               buffer[buffque+1] * 
                                                w;
+									buffque += 2;
                                     color = 0;
                                 } 
                                 else 
@@ -2966,8 +2968,8 @@ void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points
             double pt_ry = (double)points[ rcnt ].y;
             double dc_y  = (double)cur_y;
 
-            if ( ( pt_y  < dc_y ) && ( pt_ry >= dc_y ) ||
-                 ( pt_ry < dc_y ) && ( pt_y  >= dc_y ) )
+            if ( ( ( pt_y  < dc_y ) && ( pt_ry >= dc_y ) ) ||
+                 ( ( pt_ry < dc_y ) && ( pt_y  >= dc_y ) ) )
             {
                 double newv = pt_x + ( dc_y - pt_y ) /
                               ( pt_ry - pt_y ) * ( pt_rx - pt_x );
