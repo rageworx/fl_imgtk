@@ -56,7 +56,7 @@ ifeq (avx,$(firstword $(MAKECMDGOALS)))
 	OPTIMIZEOPT += -fopenmp
 	DEFINEOPT += -DUSING_OMP
 	CPUARCHOPT += -mavx
-	OUTBIN = libfl_imgtk_avx.a
+	OUTBIN = libfl_imgtk_avxomp.a
 endif
 
 CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT) $(FLTKLIBS)
