@@ -1,4 +1,4 @@
-# Makefile for fl_imgtk
+# Makefile for fl_imgtk for MinGW-W64
 # (C)2017 Raphael Kim / rageworx@gmail.com
 #
 
@@ -22,42 +22,51 @@ GCC = ${CCPATH}gcc
 GPP = ${CCPATH}g++
 AR  = ${CCPATH}ar
 
-# FLTK place
-FLTKDIR    = /d/Projects/fltk-1.3.4-1-ts
-FLTKLIBDIR = ${FLTKDIR}/lib
+# FLTK place ( you may installed it for MSYS )
+FLTKDIR    = /usr/local/include
+FLTKLIBDIR = /usr/local/lib
 FLTKLIBS   = -L$(FLTKLIBDIR) -lfltk -lfltk_images -lfltk_png -lfltk_jpeg
 
 # Sources and how it built
 # Optimization issue: recommend to build with using -ffast-math option.
 # Change if your CPU architecture supports more high technologies.
-INCDIR    = ./inc
-SOURCEDIR = ./src
-OBJDIR    = ./obj/Release
-OUTBIN    = libfl_imgtk.a
-OUTDIR    = ./lib
-DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
-OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
-CPUARCHOPT    = -mavx
-
-ifeq (64bit,$(firstword $(MAKECMDGOALS)))
-	OBJDIR = ./obj64/Release
-	OUTDIR = ./lib64
-	CPUARCHOPT += -m64
-endif
+INCDIR      = ./inc
+SOURCEDIR   = ./src
+OBJDIR      = ./obj/Release
+OUTBIN      = libfl_imgtk.a
+OUTDIR      = ./lib
+DEFINEOPT   = -DUSING_INTERPOLATED_ROTATE_FREE
+DEFINEOPT  += -DFLTK_ABI_VERISON=10304
+OPTIMIZEOPT = -ffast-math -O3 -s
+CPUARCHOPT  =
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
 	DEFINEOPT += -DDEBUG
-	OPTIMIZEOPT = -ffast-math -fopenmp -g
+	OPTIMIZEOPT = -g
 	OUTBIN = libfl_imgtk_d.a
+endif
+
+ifeq (openmp,$(firstword $(MAKECMDGOALS)))
+	OPTIMIZEOPT += -fopenmp
+	DEFINEOPT += -DUSING_OMP
+	OUTBIN = libfl_imgtk_omp.a
+endif
+
+ifeq (avx,$(firstword $(MAKECMDGOALS)))
+	OPTIMIZEOPT += -fopenmp
+	DEFINEOPT += -DUSING_OMP
+	CPUARCHOPT += -mavx
+	OUTBIN = libfl_imgtk_avx.a
 endif
 
 CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT) $(FLTKLIBS)
 
-.PHONY: 64bit
+.PHONY: avx openmp
 
 all: prepare clean ${OUTDIR}/${OUTBIN}
 
-64bit: all
+avx: all
+openmp: all
 debug: all
 
 prepare:
