@@ -160,8 +160,8 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
         int x, y;           /// Looping vars
         int32_t color = 0;  /// Color of RLE pixel
         int repcount;       /// Number of times to repeat
-        int temp;           /// Temporary color
-        int align;          /// Alignment bytes
+        int temp;           /// Temp. Color or Index
+		int align;          /// Alignment bytes
         uint32_t dataSize;    /// number of bytes in image data set
         int row_order=-1;   /// 1 = normal;  -1 = flipped row order
         int start_y;        /// Beginning Y
@@ -309,11 +309,11 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
         }
         
         // Read the image data...
-        color = 0;
+        color    = 0;
         repcount = 0;
-        align = 0;
-        byte  = 0;
-        temp  = 0;
+        align    = 0;
+        byte     = 0;
+        temp     = 0;
 
         if (row_order < 0) 
         {
@@ -435,11 +435,11 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                             // Get the next color byte as needed...
                             if (color < 0) 
                             {
-                                temp = buffer[buffque++];
+                                temp = (uchar)buffer[buffque++];
                             }
                             else
                             {
-                                temp = color;
+                                temp  = (uchar)color;
                             }
 
                             // Copy the color value...
@@ -525,12 +525,18 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                         // Get a new color as needed...
                         if (color < 0) 
                         {
-                            temp = buffer[buffque++];
+                            temp = (uchar)buffer[buffque++];
                         }
                         else 
                         {
-                            temp = color;
+                            temp = (uchar)color;
                         }
+
+						// Check Error range ...
+						if ( ( temp < 0 ) || ( temp >= (int)colors_used ) )
+						{
+							temp = (int)colors_used - 1;
+						}
 
                         repcount --;
 
