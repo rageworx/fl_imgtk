@@ -82,12 +82,19 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
         ulong  datasz = resz * d;
         uchar* pdata  = new uchar[ datasz ];
         
+		uchar ref_r   = ( color & 0xFF000000 ) >> 24;
+        uchar ref_g   = ( color & 0x00FF0000 ) >> 16;
+        uchar ref_b   = ( color & 0x0000FF00 ) >> 8;
+		uchar ref_a   = ( color & 0x000000FF );
+
+		uchar carray[4] = { ref_r, ref_g, ref_b, ref_a };
+        
         if ( pdata != NULL )
         {
             #pragma omp parallel for
             for( ulong cnt=0; cnt<resz; cnt++ )
             {
-                memcpy( &pdata[ cnt * d ], &color, d );
+                memcpy( &pdata[ cnt * d ], &carray[0], d );
             }
             
             return new Fl_RGB_Image( pdata, w, h, d );

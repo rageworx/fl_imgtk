@@ -5,12 +5,16 @@
 
 ## Lastest upate
 
+* 2017-10-30-1
+    1. Fixed a bug of color order of makeanempty();
+	1. Version updated to 0.3.27.1
+
+## Previous update
+
 * 2017-10-13-2
     1. Fixed SIGTRAP occurs when try remove Fl_RGB_Image buffer from got draw_currentwindow();
 	1. It seems to a bug of FLTK, by fl_read_image().
 	1. Version updated to 0.3.26.2
-
-## Previous update
 
 * 2017-10-13-1
     1. Changed sens bit depth in makegradation_h and v.
