@@ -445,7 +445,7 @@ bool fl_imgtk_luminancefromYXY( fl_imgtk_fimg* img, float &maxlumi, float &minlu
 
         double dsum = 0.0;
 
-        //#pragma omp parellel for private( dsum )
+        #pragma omp parellel for reduction(+:dsum)
         for( unsigned cnt=0; cnt<cmax; cnt++ )
         {
             float fY = MAX( 0.0f, img->pixels[ cnt * img->d ] );
@@ -480,6 +480,7 @@ bool fl_imgtk_luminancefromY( fl_imgtk_fimg* img, float &maxlumi, float &minlumi
     double lsum  = 0.0;
     double llsum = 0.0;
 
+    #pragma omp parallel for reduction(+:lsum,llsum,maxl) reduction(-:minl)
     for( unsigned cnt=0; cnt<imgsz; cnt++ )
     {
         float Y = img->pixels[ cnt ];
@@ -569,8 +570,11 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
 
                 *pixel /= ( *pixel + pow( f * pixllumi, m ) );
 
-                colMax = ( *pixel > colMax ) ? *pixel : colMax;
-                colMin = ( *pixel < colMin ) ? *pixel : colMin;
+                #pragma omp critical
+				{
+                    colMax = ( *pixel > colMax ) ? *pixel : colMax;
+                    colMin = ( *pixel < colMin ) ? *pixel : colMin;
+				}
             }
         }
     }
@@ -615,8 +619,11 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
 
                 *pixel /= *pixel + pow( f * lightinp, m );
 
-                colMax = (*pixel > colMax) ? *pixel : colMax;
-                colMin = (*pixel < colMin) ? *pixel : colMin;
+                #pragma omp critical
+                {
+                     colMax = (*pixel > colMax) ? *pixel : colMax;
+                     colMin = (*pixel < colMin) ? *pixel : colMin;
+				}
             }
         }
 

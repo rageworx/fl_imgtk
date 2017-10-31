@@ -861,7 +861,7 @@ Fl_RGB_Image* fl_imgtk::rotate90( Fl_RGB_Image* img )
         unsigned cntw = 0;
         unsigned cnth = 0;
 
-        #pragma omp parallel for private( cnth )
+        //#pragma omp parallel for private( cnth )
         for( cntw=new_w-1; cntw>0; cntw-- )
         {
             for( cnth=0; cnth<new_h; cnth++ )
@@ -950,13 +950,13 @@ Fl_RGB_Image* fl_imgtk::rotate270( Fl_RGB_Image* img )
         unsigned cntw = 0;
         unsigned cnth = 0;
 
-        #pragma omp parallel for private( cnth )
+        //#pragma omp parallel for private( cnth )
         for( cntw=0; cntw<new_w; cntw++ )
         {
             for( cnth=new_h-1; cnth>0; cnth-- )
             {
                 unsigned pos1 = ( new_w * cnth + cntw ) * d;
-                unsigned pos2 = ( src_w * cntw + new_h - cnth ) * d;
+                unsigned pos2 = ( src_w * cntw + new_h - cnth - 1 ) * d;
 
                 memcpy( &buff[ pos1 ], &ptr[ pos2 ], d );
             }
