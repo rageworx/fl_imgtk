@@ -80,11 +80,14 @@ ${OBJDIR}/fl_imgtk_tonemap.o:
 ${OBJDIR}/fl_smimg.o:
 	@$(GPP) -c ${SOURCEDIR}/fl_smimg.cpp ${CFLAGS} -o $@
 
+${OBJDIR}/fl_imgtk_clahe.o:
+	@$(GPP) -c ${SOURCEDIR}/fl_imgtk_clahe.cpp ${CFLAGS} -o $@
+
 ${OBJDIR}/fl_imgtk.o:
 	@$(GPP) -c ${SOURCEDIR}/fl_imgtk.cpp ${CFLAGS} -o $@
 
 
-${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}/fl_imgtk.o
+${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}/fl_imgtk_clahe.o ${OBJDIR}/fl_imgtk.o
 	@echo "Generating $@ ..."
 	@$(AR) -q $@ ${OBJDIR}/*.o
 	@cp -f ${INCDIR}/fl_imgtk.h ${OUTDIR}
