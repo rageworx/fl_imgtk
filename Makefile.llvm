@@ -8,8 +8,8 @@ GPP = llvm-g++
 AR  = ar
 
 # FLTK place
-FLTKDIR    = /usr/include
-FLTKLIBDIR = /usr/lib
+FLTKDIR    = /usr/local/include
+FLTKLIBDIR = /usr/local/lib
 FLTKLIBS   = -L$(FLTKLIBDIR) -lfltk -lfltk_images -lfltk_png -lfltk_jpeg
 
 # Sources and how it built
@@ -35,7 +35,7 @@ ifeq (debug,$(firstword $(MAKECMDGOALS)))
 	OUTBIN = libfl_imgtk_d.a
 endif
 
-CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT) $(FLTKLIBS)
+CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
 
 .PHONY: 64bit
 

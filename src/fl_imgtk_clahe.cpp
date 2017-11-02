@@ -742,7 +742,7 @@ bool fl_imgtk::noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
     uchar* data_rgb_avr = new uchar[ imgsz ];
 
     if ( data_rgb_avr == NULL )
-        return NULL;
+        return false;
 
     uchar min_rgb = 255;
     uchar max_rgb = 0;
