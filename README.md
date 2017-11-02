@@ -5,11 +5,15 @@
 
 ## Lastest upate
 
+* 2017-10-30-2
+    1. Enhanced to OpenMP error for reinhard HDR, but running speed gone for slower.
+	1. Version updated to 0.3.27.2
+
+## Previous update
+
 * 2017-10-30-1
     1. Fixed a bug of color order of makeanempty();
 	1. Version updated to 0.3.27.1
-
-## Previous update
 
 * 2017-10-13-2
     1. Fixed SIGTRAP occurs when try remove Fl_RGB_Image buffer from got draw_currentwindow();

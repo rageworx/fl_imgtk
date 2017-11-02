@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2017-10-31-2
+* fl_imgtk.H , version 2017-11-02-1
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2017 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -23,8 +23,8 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    27
-#define FL_IMGTK_VER_REV    5
+#define FL_IMGTK_VER_BLD    30
+#define FL_IMGTK_VER_REV    1
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \
@@ -254,6 +254,8 @@ namespace fl_imgtk
     // Code referenced to https://rosettacode.org/wiki/Xiaolin_Wu%27s_line_algorithm
     void draw_smooth_line( Fl_RGB_Image* img,
                            int x1, int y1, int x2, int y2, Fl_Color col );
+	void draw_line( Fl_RGB_Image* img, 
+	                int x1, int y1, int x2, int y2, Fl_Color col );
                         
     // Polygon fill , non-anti-aliased.
     typedef struct { int x; int y; } vecpoint;

@@ -82,12 +82,12 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
         ulong  datasz = resz * d;
         uchar* pdata  = new uchar[ datasz ];
         
-		uchar ref_r   = ( color & 0xFF000000 ) >> 24;
+        uchar ref_r   = ( color & 0xFF000000 ) >> 24;
         uchar ref_g   = ( color & 0x00FF0000 ) >> 16;
         uchar ref_b   = ( color & 0x0000FF00 ) >> 8;
-		uchar ref_a   = ( color & 0x000000FF );
+        uchar ref_a   = ( color & 0x000000FF );
 
-		uchar carray[4] = { ref_r, ref_g, ref_b, ref_a };
+        uchar carray[4] = { ref_r, ref_g, ref_b, ref_a };
         
         if ( pdata != NULL )
         {
@@ -168,7 +168,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
         int32_t color = 0;  /// Color of RLE pixel
         int repcount;       /// Number of times to repeat
         int temp;           /// Temp. Color or Index
-		int align;          /// Alignment bytes
+        int align;          /// Alignment bytes
         uint32_t dataSize;    /// number of bytes in image data set
         int row_order=-1;   /// 1 = normal;  -1 = flipped row order
         int start_y;        /// Beginning Y
@@ -416,7 +416,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                                         repcount = buffer[buffque] *
                                                    buffer[buffque+1] *
                                                    w;
-										buffque += 2;
+                                        buffque += 2;
                                         color = 0;
                                     } 
                                     else 
@@ -513,7 +513,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                                     repcount = buffer[buffque] * 
                                                buffer[buffque+1] * 
                                                w;
-									buffque += 2;
+                                    buffque += 2;
                                     color = 0;
                                 } 
                                 else 
@@ -539,11 +539,11 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                             temp = (uchar)color;
                         }
 
-						// Check Error range ...
-						if ( ( temp < 0 ) || ( temp >= (int)colors_used ) )
-						{
-							temp = (int)colors_used - 1;
-						}
+                        // Check Error range ...
+                        if ( ( temp < 0 ) || ( temp >= (int)colors_used ) )
+                        {
+                            temp = (int)colors_used - 1;
+                        }
 
                         repcount --;
 
@@ -2850,9 +2850,9 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, fl
 #define fl_imgtk_fpart(X) (((double)(X))-(double)fl_imgtk_ipart(X))
 #define fl_imgtk_rfpart(X) (1.0 - fl_imgtk_fpart(X))
 #ifdef _MSC_VER /// godam M$VC !!
-	#define fl_imgtk_swap(a, b) { auto tmp = a; a = b; b = tmp; }
+    #define fl_imgtk_swap(a, b) { auto tmp = a; a = b; b = tmp; }
 #else
-	#define fl_imgtk_swap(a, b) { __typeof__(a) tmp;  tmp = a; a = b; b = tmp; }
+    #define fl_imgtk_swap(a, b) { __typeof__(a) tmp;  tmp = a; a = b; b = tmp; }
 #endif
 
 void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_Color col )
@@ -2921,7 +2921,7 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
         float interx = xend + gradient;
 
         yend = fl_imgtk_roundi( y2 );
-        xend = x2 + gradient*( yend - y2);
+        xend = x2 + gradient*( yend - y2 );
         ygap = fl_imgtk_fpart( yend );
 
         int ypxl2 = yend;
@@ -2936,6 +2936,193 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
             fl_imgtk_dla_plot( img, fl_imgtk_ipart(interx), y, col, fl_imgtk_rfpart(interx) );
             fl_imgtk_dla_plot( img, fl_imgtk_ipart(interx) + 1, y, col, fl_imgtk_fpart(interx) );
             interx += gradient;
+        }
+    }
+}
+
+#define fl_imgtk_putpixel( _buff_,_x_,_w_,_y_,_d_,_r_,_g_,_b_,_a_ ) \
+        uchar* _putptr_ = &_buff_[ ( _y_ * _w_ + _x_ ) * _d_ ];\
+        if((uchar)_a_==0xFF)\
+        {_putptr_[0]=_b_; _putptr_[1]=_g_; _putptr_[2]=_r_;}\
+        else\
+        {float _ar_=(float)_a_/255.f; float _rar_=1.f-_ar_;\
+         _putptr_[0]=(uchar)((float)_putptr_[0]*_rar_) + ((float)_b_*_ar_);\
+         _putptr_[1]=(uchar)((float)_putptr_[1]*_rar_) + ((float)_g_*_ar_);\
+         _putptr_[2]=(uchar)((float)_putptr_[2]*_rar_) + ((float)_r_*_ar_); }
+        
+void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_Color col )
+{
+    if ( img == NULL )
+    {
+        return;
+    }
+    
+    if ( img->d() < 3 )
+    {
+        return;
+    }
+
+    uchar* putbuff = (uchar*)img->data()[0];
+    uchar col_r = ( col & 0x0000FF00 ) >> 8;
+    uchar col_g = ( col & 0x00FF0000 ) >> 16;
+    uchar col_b = ( col & 0xFF000000 ) >> 24;
+    uchar col_a = ( col & 0x000000FF );
+    uchar img_d = img->d();
+    int   img_w = img->w();
+    int   img_h = img->h();
+
+    int _x0   = x1;
+    int _x1   = x2;
+    int _y0   = y1;
+    int _y1   = y2;
+
+    int inc1  = 0;
+    int inc2  = 0;
+    int cnt   = 0;
+    int y_adj = 0;
+    int dy    = 0;
+    int dx    = 0;
+    int x_adj = 0;
+
+    if ( _x0 == _x1 )
+    {
+        if ( _y0 > _y1 )
+        {
+            swap( _y0, _y1 );
+        }
+
+        int cnt = _y1 - _y0 + 1;
+
+        while( cnt-- )
+        {
+            if ( ( ( _x0 >= 0 ) && ( _x0 < img_w ) ) && 
+                 ( ( _y0 + cnt >= 0 ) && ( _y0 + cnt < img_h ) ) )
+            {
+                fl_imgtk_putpixel( putbuff, _x0, img_w, _y0 + cnt, 
+                                   img_d, col_r, col_g, col_b, col_a );
+            }
+        }
+    }
+    else
+    {
+        if ( _y0 == _y1 )
+        {
+            if ( _x0 > _x1 )
+            {
+                swap( _x0, _x1 );
+            }
+
+            dx = _x1 - _x0 + 1;
+
+            for( int cnt=0; cnt<dx; cnt++ )
+            {
+                if ( ( ( _x0 + cnt >= 0 ) && ( _x0 + cnt < img_w ) ) && 
+                     ( ( _y0 >= 0 ) && ( _y0 < img_h ) ) )
+                {
+                    fl_imgtk_putpixel( putbuff, _x0 + cnt, img_w, _y0,
+                                       img_d, col_r, col_g, col_b, col_a );
+                }
+            }
+        }
+        else
+        {
+            dy = _y1 - _y0;
+            dx = _x1 - _x0;
+
+            if ( abs( dy ) < abs( dx ) )
+            {
+                if ( _x0 > _x1 )
+                {
+                    swap( _x0, _x1 );
+                    swap( _y0, _y1 );
+                }
+
+                dy = _y1 - _y0;
+                dx = _x1 - _x0;
+
+                if ( dy < 0 )
+                {
+                    dy    = -dy;
+                    y_adj = -1;
+                }
+                else
+                    y_adj = 1;
+
+                inc1 = dy << 1;
+                inc2 = ( dy - dx ) << 1;
+                cnt  = ( dy << 1 ) - dx;
+
+                dx++;
+                int py = y_adj;
+
+                while ( dx-- )
+                {
+                    if ( ( ( _x0 + dx >= 0 ) && ( _x0 + dx < img_w ) ) && 
+                         ( ( _y1 - py >= 0 ) && ( _y1 - py < img_h ) ) )
+                    {
+                        fl_imgtk_putpixel( putbuff, _x0 + dx, img_w, _y1 - py, 
+                                           img_d, col_r, col_g, col_b, col_a );
+                    }
+
+                    if ( cnt >= 0 )
+                    {
+                        cnt += inc2;
+                        py  += y_adj;
+                    }
+                    else
+                    {
+                        cnt += inc1;
+                    }
+                }
+            }
+            else
+            {
+                if ( _y0 > _y1 )
+                {
+                    swap( _x0, _x1 );
+                    swap( _y0, _y1 );
+                }
+
+                dy = _y1 - _y0;
+                dx = _x1 - _x0;
+
+                if ( dx < 0)
+                {
+                    dx    = -dx;
+                    x_adj = -1;
+                }
+                else
+                {
+                    x_adj = 1;
+                }
+
+                inc1 = dx << 1;
+                inc2 = ( dx - dy ) << 1;
+                cnt  = ( dx << 1 ) - dy;
+
+                dy++;
+                int px = x_adj;
+
+                while ( dy-- )
+                {
+                    if ( ( ( _x0 + px >= 0 ) && ( _x0 + px < img_w ) ) && 
+                         ( ( _y1 - dy >= 0 ) && ( _y1 - dy < img_h ) ) )
+                    {                   
+                        fl_imgtk_putpixel( putbuff, _x0 + px, img_w, _y1 - dy, 
+                                           img_d, col_r, col_g, col_b, col_a );
+                    }
+
+                    if ( cnt >= 0 )
+                    {
+                        cnt += inc2;
+                        px  += x_adj;
+                    }
+                    else
+                    {
+                        cnt += inc1;
+                    }
+                }
+            }
         }
     }
 }
