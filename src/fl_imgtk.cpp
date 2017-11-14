@@ -2526,7 +2526,7 @@ bool fl_imgtk::applyalpha_ex( Fl_RGB_Image* src, float val )
 
         uchar* ptr = (uchar*)src->data()[0];
 
-        val = MAX( 1.0f, MIN( 0.0f, val ) );
+        val = MIN( 1.0f, MAX( 0.0f, val ) );
 
         if ( src->d() == 4 )
         {

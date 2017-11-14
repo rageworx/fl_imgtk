@@ -5,11 +5,16 @@
 
 ## Lastest upate
 
+* 2017-11-14-1
+    1. Fixed a bug in applyaplha_ex().
+	1. VisualStudio 2015 project builds target for static build.
+	1. Version updated to 0.3.30.2
+
+## Previous update
+
 * 2017-11-02-1
     1. Included a drawing function for single line (not aliased)
 	1. Version updated to 0.3.30.1
-
-## Previous update
 
 * 2017-10-30-2
     1. Enhanced to OpenMP error for reinhard HDR, but running speed gone for slower.
