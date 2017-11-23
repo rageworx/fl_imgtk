@@ -622,11 +622,11 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
   
         if (havemask) 
         {
-            for (y = h - 1; y >= 0; y --) 
+            for (y = h - 1; y-- != 0; ) 
             {
                 ptr = (uchar *)array + y * w * bDepth + 3;
                 
-                for( x = w, bit = 128; x > 0; x --, ptr+=bDepth ) 
+                for( x = w, bit = 128; x-- != 0; ptr+=bDepth ) 
                 {
                     if (bit == 128) 
                     {
@@ -1059,7 +1059,8 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
             float diffX = (orgX - iorgX);
             float diffY = (orgY - iorgY);
 
-            if ((orgX >= 0) && (orgY >= 0) && (orgX < img_w-1) && (orgY < img_h-1))
+            if ( ( (orgX >= 0) && (orgY >= 0) ) && \
+                 ( (orgX < img_w-1) && (orgY < img_h-1) ) )
             {
                 uchar* pd = &obuff[ ( stepY * dstW + stepX ) * img_d ];
                 uchar* ps = &psrc[ ( iorgX + iorgY * img_w ) * img_d ];
@@ -1091,7 +1092,8 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
             int iorgY = (int)orgY;
             int inxtY = (int)nxtY;
 
-            if ((iorgX >= 0) && (iorgY >= 0) && (iorgX < img_w) && (iorgY < img_h))
+            if ( ( (iorgX >= 0) && (iorgY >= 0) ) \
+                 && ( (iorgX < img_w) && (iorgY < img_h) ) )
             {
                 memcpy( &dst[ stepX * img_d ],
                         &psrc[ ( iorgX + iorgY * img_w ) * img_d ],
@@ -2832,7 +2834,8 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, fl
 
     br *= alpha;
 
-    if ( ( x >= 0 ) && ( y >= 0 ) && ( x < w ) && ( y < h ) )
+    if ( ( ( x >= 0 ) && ( y >= 0 ) )
+        && ( ( x < w ) && ( y < h ) ) )
     {
         unsigned pos  = ( y * w + x ) * d;
         float revbr = 1.0f - br;
