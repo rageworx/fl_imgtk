@@ -622,11 +622,11 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
   
         if (havemask) 
         {
-            for (y = h - 1; y-- != 0; ) 
+            for (y = h; y-- != 0; ) 
             {
                 ptr = (uchar *)array + y * w * bDepth + 3;
                 
-                for( x = w, bit = 128; x-- != 0; ptr+=bDepth ) 
+                for( x = (w + 1), bit = 128; x-- != 0; ptr+=bDepth ) 
                 {
                     if (bit == 128) 
                     {
