@@ -2824,9 +2824,9 @@ fl_imgtk::kfconfig* fl_imgtk::new_kfconfig( const char* preset )
 inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, float br )
 {
     float alpha = (float)( col & 0x000000FF ) / 255.f;
-    uchar col_r = ( col & 0x0000FF00 ) >> 8;
+    uchar col_b = ( col & 0x0000FF00 ) >> 8;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
-    uchar col_b = ( col & 0xFF000000 ) >> 24;
+    uchar col_r = ( col & 0xFF000000 ) >> 24;
 
     int w = img->w();
     int h = img->h();
@@ -2944,14 +2944,14 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
 }
 
 #define fl_imgtk_putpixel( _buff_,_x_,_w_,_y_,_d_,_r_,_g_,_b_,_a_ ) \
-        uchar* _putptr_ = &_buff_[ ( _y_ * _w_ + _x_ ) * _d_ ];\
+        uchar* _putptr_ = &_buff_[ ( ( _y_ * _w_ ) + _x_ ) * _d_ ];\
         if((uchar)_a_==0xFF)\
-        {_putptr_[0]=_b_; _putptr_[1]=_g_; _putptr_[2]=_r_;}\
+        {_putptr_[0]=_r_; _putptr_[1]=_g_; _putptr_[2]=_b_;}\
         else\
         {float _ar_=(float)_a_/255.f; float _rar_=1.f-_ar_;\
-         _putptr_[0]=(uchar)((float)_putptr_[0]*_rar_) + ((float)_b_*_ar_);\
+         _putptr_[0]=(uchar)((float)_putptr_[0]*_rar_) + ((float)_r_*_ar_);\
          _putptr_[1]=(uchar)((float)_putptr_[1]*_rar_) + ((float)_g_*_ar_);\
-         _putptr_[2]=(uchar)((float)_putptr_[2]*_rar_) + ((float)_r_*_ar_); }
+         _putptr_[2]=(uchar)((float)_putptr_[2]*_rar_) + ((float)_b_*_ar_); }
         
 void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_Color col )
 {
@@ -2966,9 +2966,9 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
     }
 
     uchar* putbuff = (uchar*)img->data()[0];
-    uchar col_r = ( col & 0x0000FF00 ) >> 8;
+    uchar col_b = ( col & 0x0000FF00 ) >> 8;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
-    uchar col_b = ( col & 0xFF000000 ) >> 24;
+    uchar col_r = ( col & 0xFF000000 ) >> 24;
     uchar col_a = ( col & 0x000000FF );
     uchar img_d = img->d();
     int   img_w = img->w();
@@ -3001,7 +3001,7 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
             if ( ( ( _x0 >= 0 ) && ( _x0 < img_w ) ) && 
                  ( ( _y0 + cnt >= 0 ) && ( _y0 + cnt < img_h ) ) )
             {
-                fl_imgtk_putpixel( putbuff, _x0, img_w, _y0 + cnt, 
+                fl_imgtk_putpixel( putbuff, _x0, img_w, (_y0 + cnt), 
                                    img_d, col_r, col_g, col_b, col_a );
             }
         }
@@ -3022,7 +3022,7 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
                 if ( ( ( _x0 + cnt >= 0 ) && ( _x0 + cnt < img_w ) ) && 
                      ( ( _y0 >= 0 ) && ( _y0 < img_h ) ) )
                 {
-                    fl_imgtk_putpixel( putbuff, _x0 + cnt, img_w, _y0,
+                    fl_imgtk_putpixel( putbuff, (_x0 + cnt), img_w, _y0,
                                        img_d, col_r, col_g, col_b, col_a );
                 }
             }
@@ -3063,7 +3063,7 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
                     if ( ( ( _x0 + dx >= 0 ) && ( _x0 + dx < img_w ) ) && 
                          ( ( _y1 - py >= 0 ) && ( _y1 - py < img_h ) ) )
                     {
-                        fl_imgtk_putpixel( putbuff, _x0 + dx, img_w, _y1 - py, 
+                        fl_imgtk_putpixel( putbuff, _x0 + dx, img_w, (_y1 - py), 
                                            img_d, col_r, col_g, col_b, col_a );
                     }
 
@@ -3111,7 +3111,7 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
                     if ( ( ( _x0 + px >= 0 ) && ( _x0 + px < img_w ) ) && 
                          ( ( _y1 - dy >= 0 ) && ( _y1 - dy < img_h ) ) )
                     {                   
-                        fl_imgtk_putpixel( putbuff, _x0 + px, img_w, _y1 - dy, 
+                        fl_imgtk_putpixel( putbuff, _x0 + px, img_w, (_y1 - dy), 
                                            img_d, col_r, col_g, col_b, col_a );
                     }
 
