@@ -7,7 +7,7 @@
 
 * 2018-02-02-1
     1. Fixed bugs in rotate free to use right degree in 0 to 359.
-	1. Version updated to 0.3.30.4
+	1. Version updated to 0.3.30.5
 
 ## Previous update
 
