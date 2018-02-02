@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2017-11-30-1
+* fl_imgtk.H , version 2018-02-02-1
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2017 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -24,7 +24,7 @@
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
 #define FL_IMGTK_VER_BLD    30
-#define FL_IMGTK_VER_REV    4
+#define FL_IMGTK_VER_REV    5
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \

@@ -29,14 +29,15 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define FLOAT_PI        3.141592654
+#define FLOAT_PI        3.141592654f
+#define FLOAT_PI2X      6.28318530718f
 
 #define FLIMGTK_BI_RGB       0  /// No compression - straight BGR data
 #define FLIMGTK_BI_RLE8      1  /// 8-bit run-length compression
 #define FLIMGTK_BI_RLE4      2  /// 4-bit run-length compression
 #define FLIMGTK_BI_BITFIELDS 3  /// RGB bitmap with RGB masks
 
-#define fl_imgtk_degree2f( _x_ )      ( ( 360.0 - _x_ ) / 360.0 * 100.0 )
+#define fl_imgtk_degree2f( _x_ )      ( ( _x_ / 360.f ) * FLOAT_PI2X )
 #define fl_imgtk_swap_uc( _a_, _b_ )   uchar t=_a_; _a_=_b_; _b_=t;
 
 ////////////////////////////////////////////////////////////////////////////////

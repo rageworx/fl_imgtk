@@ -5,12 +5,16 @@
 
 ## Lastest upate
 
+* 2018-02-02-1
+    1. Fixed bugs in rotate free to use right degree in 0 to 359.
+	1. Version updated to 0.3.30.4
+
+## Previous update
+
 * 2017-11-30-1
     1. Fixed bugs in draw_line() and draw_smoothline().
 	1. Still left a bug in draw_smoothline() rounding error of y2 coordination.
 	1. Version updated to 0.3.30.3
-
-## Previous update
 
 * 2017-11-14-1
     1. Fixed a bug in applyaplha_ex().
