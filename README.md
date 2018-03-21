@@ -5,11 +5,15 @@
 
 ## Lastest upate
 
+* 2018-03-21-1
+    1. Fixed a bug occurs black line when it turns image to 90 or 240.
+	1. Version updated to 0.3.30.6
+
+## Previous update
+
 * 2018-02-02-1
     1. Fixed bugs in rotate free to use right degree in 0 to 359.
 	1. Version updated to 0.3.30.5
-
-## Previous update
 
 * 2017-11-30-1
     1. Fixed bugs in draw_line() and draw_smoothline().

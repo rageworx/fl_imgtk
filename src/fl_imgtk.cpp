@@ -340,7 +340,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
 
             switch( depth )
             {
-                case 1 : // Bitmap
+                case 1 : /// Bitmap
                     for ( x = w, bit = 128; x>0; x-- ) 
                     {
                         if ( bit == 128 ) 
@@ -379,7 +379,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                     
                     break;
 
-                case 4 : // 16-color
+                case 4 : /// 16-color
                     for ( x = w, bit = 0xf0; x>0; x-- ) 
                     {
                         // Get a new repcount as needed...
@@ -461,7 +461,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                         {
                             bit  = 0xf0;
 
-                              // Copy the color value...
+                            // Copy the color value...
                             *ptr++ = colormap[temp & 15][2];
                             *ptr++ = colormap[temp & 15][1];
                             *ptr++ = colormap[temp & 15][0];
@@ -479,7 +479,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                     }
                     break;
 
-                case 8 : // 256-color
+                case 8 : /// 256-color
                     for ( x=w; x>0; x-- ) 
                     {
                         // Get a new repcount as needed...
@@ -569,7 +569,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                     }
                     break;
 
-                case 16 : // 16-bit 5:5:5 or 5:6:5 RGB
+                case 16 : /// 16-bit 5:5:5 or 5:6:5 RGB
                     for ( x=w; x>0; x--, ptr+=bDepth ) 
                     {
                         uchar b = buffer[buffque++];
@@ -594,7 +594,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                     }
                     break;
 
-                case 24 : // 24-bit RGB
+                case 24 : /// 24-bit RGB
                     for ( x=w; x>0; x--, ptr += bDepth ) 
                     {
                         ptr[2] = (uchar)buffer[buffque++];
@@ -609,7 +609,7 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                     }
                     break;
 
-                case 32 : // 32-bit RGBA
+                case 32 : /// 32-bit RGBA
                     for ( x=w; x>0; x--, ptr += bDepth ) 
                     {
                         ptr[2] = (uchar)buffer[buffque++];
@@ -863,7 +863,7 @@ Fl_RGB_Image* fl_imgtk::rotate90( Fl_RGB_Image* img )
         unsigned cnth = 0;
 
         //#pragma omp parallel for private( cnth )
-        for( cntw=new_w-1; cntw>0; cntw-- )
+        for( cntw=new_w; cntw-- != 0; )
         {
             for( cnth=0; cnth<new_h; cnth++ )
             {
@@ -954,7 +954,7 @@ Fl_RGB_Image* fl_imgtk::rotate270( Fl_RGB_Image* img )
         //#pragma omp parallel for private( cnth )
         for( cntw=0; cntw<new_w; cntw++ )
         {
-            for( cnth=new_h-1; cnth>0; cnth-- )
+            for( cnth=new_h; cnth-- != 0; )
             {
                 unsigned pos1 = ( new_w * cnth + cntw ) * d;
                 unsigned pos2 = ( src_w * cntw + new_h - cnth - 1 ) * d;
