@@ -5,11 +5,16 @@
 
 ## Lastest upate
 
+* 2018-03-26-1
+    1. Fixed a bug of image merging.
+    1. fl_drawonimage supports both of rgb and rgba images.
+	1. Version updated to 0.3.31.0
+
+## Previous update
+
 * 2018-03-21-1
     1. Fixed a bug occurs black line when it turns image to 90 or 240.
 	1. Version updated to 0.3.30.6
-
-## Previous update
 
 * 2018-02-02-1
     1. Fixed bugs in rotate free to use right degree in 0 to 359.

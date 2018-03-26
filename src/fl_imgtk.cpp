@@ -2096,7 +2096,7 @@ void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
         int cnty = 0;
         int imgw = img->w();
         int imgd = img->d();
-
+		
         #pragma omp parellel for private( cnty )
         for( cnty=miny; cnty<maxh; cnty++ )
         {
@@ -2108,40 +2108,74 @@ void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                 uchar* rptr = &rbuff[ ( ipy * imgw + ipx ) * imgd ];
                 uchar* wptr = &buff[ ( ( cnty * bw ) + cntx ) * bd ];
 
-                uchar alp = 255;
-
-                if ( imgd == 4 )
-                {
-                    alp = rptr[3];
-                }
-
-                float falp = ( (float)alp / 255.0f ) * alpha;
-
-                for( unsigned rpt=0; rpt<3; rpt++ )
-                {
-                    float fp = (float)wptr[ rpt ];
-
-                    // Check has alpha ...
-                    if ( falp > 0.0f )
-                    {
-                        // Scale down previous pixel.
-                        fp *= ( 1.0f - falp );
-                        // And now add new alpha pixel.
-                        fp += (float)rptr[ rpt ] * falp;
-
-                        // Cutoff maximum.
-                        fp = MIN( 255.0f, fp );
-                    }
-
-                    wptr[ rpt ] = (uchar)fp;
-
-                }
+				float a_opa = MIN( 1.f, alpha );
+				
+				float w_r = (float)wptr[0] / 255.f;
+				float w_g = (float)wptr[1] / 255.f;
+				float w_b = (float)wptr[2] / 255.f;
+				float w_a = 1.0f;
+				
+				float r_r = (float)rptr[0] / 255.f;
+				float r_g = (float)rptr[1] / 255.f;
+				float r_b = (float)rptr[2] / 255.f;
+				float r_a = 1.0f;
 
                 if ( bd == 4 )
                 {
-                    //wptr[3] = MAX( rptr[3], wptr[3] );
-                    //wptr[3] = 0xFF;
+					w_a = (float)wptr[3] / 255.f;
+				}
+				
+				if ( imgd == 4 )
+				{
+					r_a = (float)rptr[3] / 255.f;
+				}
+										
+				if ( a_opa < 1.f )
+				{
+					r_a *= a_opa;
+				}
+					
+				float rTemp = r_r * r_a + w_r * w_a * ( 1.0f - r_a );
+				float gTemp = r_g * r_a + w_g * w_a * ( 1.0f - r_a );
+				float bTemp = r_b * r_a + w_b * w_a * ( 1.0f - r_a );
+
+				r_a = w_a + ( 1.0f - w_a ) * r_a;
+
+				if ( r_a == 0.0f )
+				{
+					if ( a_opa > 0.0f )
+					{
+						rTemp = r_r;
+						gTemp = r_g;
+						bTemp = r_b;
+					}
+					else
+					{
+						rTemp = w_r;
+						gTemp = w_g;
+						bTemp = w_b;
+					}
+				}
+				else
+				{
+					rTemp /= r_a;
+					gTemp /= r_a;
+					bTemp /= r_a;
+				}
+				
+				if ( bd == 4 )
+				{
+					wptr[0] = rTemp * 255.f;
+					wptr[1] = gTemp * 255.f;
+					wptr[2] = bTemp * 255.f;
+					wptr[3] = r_a * 255.f;
                 }
+				else
+				{
+					wptr[0] = rTemp * ( 255.f * r_a );
+					wptr[1] = gTemp * ( 255.f * r_a );
+					wptr[2] = bTemp * ( 255.f * r_a );
+				}
             }
         }
     }
@@ -2223,7 +2257,6 @@ void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                     }
 
                     wptr[ rpt ] = (uchar)fp;
-
                 }
 
                 if ( bd == 4 )
@@ -2234,7 +2267,6 @@ void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
         }
     }
 }
-
 
 Fl_RGB_Image* fl_imgtk::merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2, mergeconfig* cfg )
 {
