@@ -91,7 +91,7 @@ ${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}
 	@$(AR) -q $@ ${OBJDIR}/*.o
 	@cp -f ${INCDIR}/fl_imgtk.h ${OUTDIR}
 
-clean:
+clean: ${OUTDIR}/${OUTBIN}
 	@echo "Cleaning built directories ..."
 	@rm -rf ${OBJDIR}/*
 	@rm -rf ${OUTDIR}/${OUTBIN}
