@@ -38,7 +38,7 @@ OUTDIR      = ./lib
 DEFINEOPT   = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
 DEFINEOPT  += -DFLTK_ABI_VERISON=10304
 OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
-CPUARCHOPT  = -mavx
+CPUARCHOPT  = -mtune=native
 
 
 # About 32bit, 64bit parameters,
