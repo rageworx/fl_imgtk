@@ -5,12 +5,17 @@
 
 ## Lastest upate
 
+* 2019-04-22-1
+    1. Little changes in drawing smooth line.
+	1. removed non-affective OpenMP preprocessors.
+	1. Version updated to 0.3.31.1
+
+## Previous update
+
 * 2018-03-26-1
     1. Fixed a bug of image merging.
     1. fl_drawonimage supports both of rgb and rgba images.
 	1. Version updated to 0.3.31.0
-
-## Previous update
 
 * 2018-03-21-1
     1. Fixed a bug occurs black line when it turns image to 90 or 240.
