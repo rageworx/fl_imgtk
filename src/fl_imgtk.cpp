@@ -2927,8 +2927,7 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
         fl_imgtk_dla_plot( img, xpxl2, ypxl2, col, fl_imgtk_rfpart(yend) * xgap );
         fl_imgtk_dla_plot( img, xpxl2 + 1, ypxl2, col, fl_imgtk_fpart(yend) * xgap );
 
-        #pragma parallel for private( intery, gradient )
-        for( int x=xpxl1+1; x<xpxl2; x++ )
+        for( int x=xpxl1+1; x<=xpxl2; x++ )
         {
             fl_imgtk_dla_plot( img, x, fl_imgtk_ipart(intery), col, fl_imgtk_rfpart(intery) );
             fl_imgtk_dla_plot( img, x, fl_imgtk_ipart(intery) + 1, col, fl_imgtk_fpart(intery) );
@@ -2966,8 +2965,7 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
         fl_imgtk_dla_plot( img, xpxl2, ypxl2, col, fl_imgtk_rfpart(xend) * ygap );
         fl_imgtk_dla_plot( img, xpxl2, ypxl2 + 1, col, fl_imgtk_fpart(xend) * ygap );
 
-        #pragma parallel for private( interx, gradient )
-        for( int y=ypxl1+1; y<ypxl2; y++ )
+        for( int y=ypxl1+1; y<=ypxl2; y++ )
         {
             fl_imgtk_dla_plot( img, fl_imgtk_ipart(interx), y, col, fl_imgtk_rfpart(interx) );
             fl_imgtk_dla_plot( img, fl_imgtk_ipart(interx) + 1, y, col, fl_imgtk_fpart(interx) );
