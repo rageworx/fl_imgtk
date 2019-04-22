@@ -2881,10 +2881,10 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, fl
     }
 }
 
-#define fl_imgtk_ipart(X) ((int)(X))
-#define fl_imgtk_roundi(X) ((int)(((double)(X))+0.5))
-#define fl_imgtk_fpart(X) (((double)(X))-(double)fl_imgtk_ipart(X))
-#define fl_imgtk_rfpart(X) (1.0 - fl_imgtk_fpart(X))
+#define fl_imgtk_ipart(X)   ((int)(X))
+#define fl_imgtk_roundi(X)  ((int)(((float)(X))+0.5f))
+#define fl_imgtk_fpart(X)   (((float)(X))-(float)fl_imgtk_ipart(X))
+#define fl_imgtk_rfpart(X)  (1.0f - fl_imgtk_fpart(X))
 #ifdef _MSC_VER /// godam M$VC !!
     #define fl_imgtk_swap(a, b) { auto tmp = a; a = b; b = tmp; }
 #else
@@ -2906,14 +2906,16 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
 
         float gradient = dy / dx;
         float xend = fl_imgtk_roundi( x1 );
-        float yend = y1 + gradient*( xend - x1 );
+        float yend = (float)y1 + gradient*( xend - x1 );
         float xgap = fl_imgtk_rfpart( xend );
 
         int xpxl1 = xend;
         int ypxl1 = fl_imgtk_ipart( yend );
 
-        fl_imgtk_dla_plot( img, xpxl1, ypxl1, col, fl_imgtk_rfpart(yend)*xgap );
-        fl_imgtk_dla_plot( img, xpxl1, ypxl1+1, col, fl_imgtk_fpart(yend)*xgap );
+        fl_imgtk_dla_plot( img, xpxl1, ypxl1, col, 
+                           fl_imgtk_rfpart(yend)*xgap );
+        fl_imgtk_dla_plot( img, xpxl1, ypxl1+1, col, 
+                           fl_imgtk_fpart(yend)*xgap );
 
         float intery = yend + gradient;
 
@@ -2924,13 +2926,17 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
         int xpxl2 = xend;
         int ypxl2 = fl_imgtk_ipart( yend );
 
-        fl_imgtk_dla_plot( img, xpxl2, ypxl2, col, fl_imgtk_rfpart(yend) * xgap );
-        fl_imgtk_dla_plot( img, xpxl2 + 1, ypxl2, col, fl_imgtk_fpart(yend) * xgap );
+        fl_imgtk_dla_plot( img, xpxl2, ypxl2, col, 
+                           fl_imgtk_rfpart(yend) * xgap );
+        fl_imgtk_dla_plot( img, xpxl2 + 1, ypxl2, col, 
+                           fl_imgtk_fpart(yend) * xgap );
 
         for( int x=xpxl1+1; x<=xpxl2; x++ )
         {
-            fl_imgtk_dla_plot( img, x, fl_imgtk_ipart(intery), col, fl_imgtk_rfpart(intery) );
-            fl_imgtk_dla_plot( img, x, fl_imgtk_ipart(intery) + 1, col, fl_imgtk_fpart(intery) );
+            fl_imgtk_dla_plot( img, x, fl_imgtk_ipart(intery), col, 
+                               fl_imgtk_rfpart(intery) );
+            fl_imgtk_dla_plot( img, x, fl_imgtk_ipart(intery) + 1, col, 
+                               fl_imgtk_fpart(intery) );
             intery += gradient;
         }
     }
@@ -2944,14 +2950,16 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
 
         float gradient = dx / dy;
         float yend = fl_imgtk_roundi( y1 );
-        float xend = x1 + gradient*( yend - y1 );
+        float xend = (float)x1 + gradient*( yend - y1 );
         float ygap = fl_imgtk_rfpart( yend );
 
         int ypxl1 = yend;
         int xpxl1 = fl_imgtk_ipart(xend);
 
-        fl_imgtk_dla_plot( img, xpxl1, ypxl1, col, fl_imgtk_rfpart(xend)*ygap );
-        fl_imgtk_dla_plot( img, xpxl1, ypxl1+1, col, fl_imgtk_fpart(xend)*ygap );
+        fl_imgtk_dla_plot( img, xpxl1, ypxl1, col, 
+                           fl_imgtk_rfpart(xend)*ygap );
+        fl_imgtk_dla_plot( img, xpxl1, ypxl1+1, col, 
+                           fl_imgtk_fpart(xend)*ygap );
 
         float interx = xend + gradient;
 
