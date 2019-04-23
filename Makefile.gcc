@@ -41,7 +41,10 @@ OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
 CPUARCHOPT  = -mtune=native
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
-	DEFINEOPT += -DDEBUG    
+    DEFINEOPT  = -DUSING_INTERPOLATED_ROTATE_FREE 
+    DEFINEOPT += -DFLTK_ABI_VERISON=10304
+	DEFINEOPT += -DDEBUG
+    OPTIMIZEOPT = -g
 	OUTBIN = libfl_imgtk_d.a
 endif
 

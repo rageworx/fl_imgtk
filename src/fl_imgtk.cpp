@@ -3199,6 +3199,95 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
     }
 }
 
+void fl_imgtk::draw_rect( Fl_RGB_Image* img, int x, int y, int w, int h, Fl_Color col )
+{
+    if ( ( w < 0 ) || ( h < 0 ) ) return;
+
+    if ( x < 0 )
+    {
+        w += x;
+        x = 0;
+    }
+
+    if ( y < 0 )
+    {
+        h += y;
+        y = 0;
+    }
+
+    int x1 = x;
+    int y1 = y;
+    int x2 = x + w;
+    int y2 = y + h;
+
+    if ( ( x2 < 1 ) && ( y2 < 1 ) )
+        return;
+
+          
+    // =
+    draw_line( img, x1, y1, x2, y1, col );
+    draw_line( img, x1, y2, x2, y2, col );
+
+    if ( ( x2 - x1 ) > 1 )
+    {
+        y1++;
+        if ( ( x2 - x1 ) > 2 )
+        {
+            y2--;
+        }
+    }
+
+    // ||
+    draw_line( img, x1, y1, x1, y2, col );
+    draw_line( img, x2, y1, x2, y2, col );
+}
+
+void fl_imgtk::draw_fillrect( Fl_RGB_Image* img, int x, int y, int w, int h, Fl_Color col )
+{
+    if ( ( w < 0 ) || ( h < 0 ) ) return;
+
+    if ( x < 0 )
+    {
+        w += x;
+        x = 0;
+    }
+
+    if ( y < 0 )
+    {
+        h += y;
+        y = 0;
+    }
+
+    uchar* putbuff = (uchar*)img->data()[0];
+    uchar col_b = ( col & 0x0000FF00 ) >> 8;
+    uchar col_g = ( col & 0x00FF0000 ) >> 16;
+    uchar col_r = ( col & 0xFF000000 ) >> 24;
+    uchar col_a = ( col & 0x000000FF );
+    uchar img_d = img->d();
+    int   img_w = img->w();
+    int   img_h = img->h();
+
+    int cym = y+h;
+    int cxm = x+w;
+
+    if ( cxm > img_w )
+        cxm = img_w - x;
+
+    if ( cym > img_h )
+        cym = img_h - y;
+
+    #pragma omp parallel for
+    for( int cy=y; cy<cym; cy++ )
+    {
+        for( int cx=x; cx<cxm; cx++ )
+        {
+            fl_imgtk_putpixel( putbuff,
+                               cx, img_w, cy, img_d,
+                               col_r, col_g, col_b, col_a );
+        }
+    }
+}
+
 bool fl_imgtk_sortcondition (int i,int j)
 {
     return ( i < j );

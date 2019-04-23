@@ -5,17 +5,20 @@
 
 ## Lastest upate
 
+* 2019-04-23-2
+    1. New feature, draw_rect() and draw_fillrect() included.
+	1. Version updated to 0.3.32.0
+
+## Previous update
+
 * 2019-04-23-1
     1. Little bug fixed in drawing simple line
 	1. Version updated to 0.3.31.2
-
-## Previous update
 
 * 2019-04-22-1
     1. Little changes in drawing smooth line.
 	1. removed non-affective OpenMP preprocessors.
 	1. Version updated to 0.3.31.1
-
 
 * 2018-03-26-1
     1. Fixed a bug of image merging.

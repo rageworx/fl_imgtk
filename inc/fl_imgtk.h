@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 2018-03-26-1
+* fl_imgtk.H , version 0.3.32.0
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2019 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -23,8 +23,8 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    31
-#define FL_IMGTK_VER_REV    2
+#define FL_IMGTK_VER_BLD    32
+#define FL_IMGTK_VER_REV    0
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \
@@ -256,6 +256,12 @@ namespace fl_imgtk
                            int x1, int y1, int x2, int y2, Fl_Color col );
 	void draw_line( Fl_RGB_Image* img, 
 	                int x1, int y1, int x2, int y2, Fl_Color col );
+
+    // Draws rectangle and filled one.
+    void draw_rect( Fl_RGB_Image* img,
+                    int x, int y, int w, int h, Fl_Color col );
+    void draw_fillrect( Fl_RGB_Image* img,
+                        int x, int y, int w, int h, Fl_Color col );
                         
     // Polygon fill , non-anti-aliased.
     typedef struct { int x; int y; } vecpoint;
