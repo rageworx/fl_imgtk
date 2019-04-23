@@ -3079,6 +3079,11 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
                     swap( _y0, _y1 );
                 }
 
+                _y0--;
+                _y1--;
+                _x0--;
+                _x1--;
+
                 dy = _y1 - _y0;
                 dx = _x1 - _x0;
 
@@ -3088,7 +3093,14 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
                     y_adj = -1;
                 }
                 else
+                if ( dy > 0 )
+                {
                     y_adj = 1;
+                }
+                else
+                {
+                    y_adj = 0;
+                }
 
                 inc1 = dy << 1;
                 inc2 = ( dy - dx ) << 1;
@@ -3102,8 +3114,12 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
                     if ( ( ( _x0 + dx >= 0 ) && ( _x0 + dx < img_w ) ) && 
                          ( ( _y1 - py >= 0 ) && ( _y1 - py < img_h ) ) )
                     {
-                        fl_imgtk_putpixel( putbuff, _x0 + dx, img_w, (_y1 - py), 
-                                           img_d, col_r, col_g, col_b, col_a );
+                        fl_imgtk_putpixel( putbuff, 
+                                           _x0 + dx, 
+                                           img_w, 
+                                           (_y1 - py), 
+                                           img_d, 
+                                           col_r, col_g, col_b, col_a );
                     }
 
                     if ( cnt >= 0 )
@@ -3125,6 +3141,11 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
                     swap( _y0, _y1 );
                 }
 
+                _x0--;
+                _y0--;
+                _x1--;
+                _y1--;
+
                 dy = _y1 - _y0;
                 dx = _x1 - _x0;
 
@@ -3134,8 +3155,13 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
                     x_adj = -1;
                 }
                 else
+                if ( dx > 0 )
                 {
                     x_adj = 1;
+                }
+                else
+                {
+                    x_adj = 0;
                 }
 
                 inc1 = dx << 1;
@@ -3150,8 +3176,12 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
                     if ( ( ( _x0 + px >= 0 ) && ( _x0 + px < img_w ) ) && 
                          ( ( _y1 - dy >= 0 ) && ( _y1 - dy < img_h ) ) )
                     {                   
-                        fl_imgtk_putpixel( putbuff, _x0 + px, img_w, (_y1 - dy), 
-                                           img_d, col_r, col_g, col_b, col_a );
+                        fl_imgtk_putpixel( putbuff, 
+                                           _x0 + px, 
+                                           img_w, 
+                                           (_y1 - dy), 
+                                           img_d, 
+                                           col_r, col_g, col_b, col_a );
                     }
 
                     if ( cnt >= 0 )

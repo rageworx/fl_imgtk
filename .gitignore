@@ -32,7 +32,9 @@
 msvc/Win32
 msvc/x64
 *.db
+.vs
 
 # Others
 Makefile
 lib/
+.Makefile*
