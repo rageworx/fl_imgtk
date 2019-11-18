@@ -2586,6 +2586,8 @@ bool fl_imgtk::applyalpha_ex( Fl_RGB_Image* src, float val )
                 }
             }
         }
+        
+        return true;
     }
 
     return false;
