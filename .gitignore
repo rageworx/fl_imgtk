@@ -38,3 +38,10 @@ msvc/x64
 Makefile
 lib/
 .Makefile*
+.codelite/
+Debug/
+Makefile.clang
+fl_imgtk.mk
+fl_imgtk.project
+fl_imgtk.txt
+fl_imgtk.workspace
