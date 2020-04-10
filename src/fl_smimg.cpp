@@ -13,125 +13,125 @@
 #include <omp.h>
 #endif /// of USING_OMP
 
-#define FI_RGBA_RED				0
-#define FI_RGBA_GREEN			1
-#define FI_RGBA_BLUE			2
-#define FI_RGBA_ALPHA			3
+#define FI_RGBA_RED             0
+#define FI_RGBA_GREEN           1
+#define FI_RGBA_BLUE            2
+#define FI_RGBA_ALPHA           3
 
 
 /// Clamp function
 template <class T> T CLAMP(const T &value, const T &min_value, const T &max_value) {
-	return ((value < min_value) ? min_value : (value > max_value) ? max_value : value);
+    return ((value < min_value) ? min_value : (value > max_value) ? max_value : value);
 }
 
 WeightsTable::WeightsTable( GenericFilter *pFilter, unsigned uDstSize, unsigned uSrcSize )
 {
-	unsigned        u;
-	double          dWidth;
-	double          dFScale         = 1.0;
-	const double    dFilterWidth    = pFilter->GetWidth();
+    unsigned        u;
+    double          dWidth;
+    double          dFScale         = 1.0;
+    const double    dFilterWidth    = pFilter->GetWidth();
 
-	// scale factor
-	const double dScale = double(uDstSize) / double(uSrcSize);
+    // scale factor
+    const double dScale = double(uDstSize) / double(uSrcSize);
 
-	if(dScale < 1.0)
-	{
-		// minification
-		dWidth  = dFilterWidth / dScale;
-		dFScale = dScale;
-	}
-	else
-	{
-		// magnification
-		dWidth= dFilterWidth;
-	}
+    if(dScale < 1.0)
+    {
+        // minification
+        dWidth  = dFilterWidth / dScale;
+        dFScale = dScale;
+    }
+    else
+    {
+        // magnification
+        dWidth= dFilterWidth;
+    }
 
-	// allocate a new line contributions structure
-	//
-	// window size is the number of sampled pixels
-	m_WindowSize = 2 * (int)ceil(dWidth) + 1;
-	m_LineLength = uDstSize;
-	 // allocate list of contributions
-	m_WeightTable = new Contribution[ m_LineLength + 1 ];
-	for(u = 0 ; u < m_LineLength ; u++)
-	{
-		// allocate contributions for every pixel
-		m_WeightTable[u].Weights = new double[ m_WindowSize + 1 ];
-	}
+    // allocate a new line contributions structure
+    //
+    // window size is the number of sampled pixels
+    m_WindowSize = 2 * (int)ceil(dWidth) + 1;
+    m_LineLength = uDstSize;
+     // allocate list of contributions
+    m_WeightTable = new Contribution[ m_LineLength + 1 ];
+    for(u = 0 ; u < m_LineLength ; u++)
+    {
+        // allocate contributions for every pixel
+        m_WeightTable[u].Weights = new double[ m_WindowSize + 1 ];
+    }
 
-	// offset for discrete to continuous coordinate conversion
-	const double dOffset = ( 0.5 / dScale) - 0.5;
+    // offset for discrete to continuous coordinate conversion
+    const double dOffset = ( 0.5 / dScale) - 0.5;
 
-	#pragma omp parallel for
-	for(u = 0; u < m_LineLength; u++)
-	{
-		// scan through line of contributions
-		const double dCenter = (double)u / dScale + dOffset;   // reverse mapping
+    #pragma omp parallel for
+    for(u = 0; u < m_LineLength; u++)
+    {
+        // scan through line of contributions
+        const double dCenter = (double)u / dScale + dOffset;   // reverse mapping
 
-		// find the significant edge points that affect the pixel
-		int iLeft  = MAX( 0, (int)floor (dCenter - dWidth) );
-		int iRight = MIN( (int)ceil (dCenter + dWidth), int(uSrcSize) - 1 );
+        // find the significant edge points that affect the pixel
+        int iLeft  = MAX( 0, (int)floor (dCenter - dWidth) );
+        int iRight = MIN( (int)ceil (dCenter + dWidth), int(uSrcSize) - 1 );
 
-		// cut edge points to fit in filter window in case of spill-off
-		if((iRight - iLeft + 1) > int(m_WindowSize))
-		{
-			if(iLeft < (int(uSrcSize) - 1 / 2))
-			{
-				iLeft++;
-			}
-			else
-			{
-				iRight--;
-			}
-		}
+        // cut edge points to fit in filter window in case of spill-off
+        if((iRight - iLeft + 1) > int(m_WindowSize))
+        {
+            if(iLeft < (int(uSrcSize) - 1 / 2))
+            {
+                iLeft++;
+            }
+            else
+            {
+                iRight--;
+            }
+        }
 
-		m_WeightTable[u].Left  = iLeft;
-		m_WeightTable[u].Right = iRight;
+        m_WeightTable[u].Left  = iLeft;
+        m_WeightTable[u].Right = iRight;
 
-		int iSrc = 0;
-		double dTotalWeight = 0;  // zero sum of weights
-		for(iSrc = iLeft; iSrc <= iRight; iSrc++)
-		{
-			// calculate weights
-			const double weight = dFScale * pFilter->Filter(dFScale * (dCenter - (double)iSrc));
-			m_WeightTable[u].Weights[iSrc-iLeft] = weight;
-			dTotalWeight += weight;
-		}
+        int iSrc = 0;
+        double dTotalWeight = 0;  // zero sum of weights
+        for(iSrc = iLeft; iSrc <= iRight; iSrc++)
+        {
+            // calculate weights
+            const double weight = dFScale * pFilter->Filter(dFScale * (dCenter - (double)iSrc));
+            m_WeightTable[u].Weights[iSrc-iLeft] = weight;
+            dTotalWeight += weight;
+        }
 
-		if((dTotalWeight > 0) && (dTotalWeight != 1))
-		{
-			// normalize weight of neighbouring points
-			for(iSrc = iLeft; iSrc <= iRight; iSrc++)
-			{
-				// normalize point
-				m_WeightTable[u].Weights[iSrc-iLeft] /= dTotalWeight;
-			}
+        if((dTotalWeight > 0) && (dTotalWeight != 1))
+        {
+            // normalize weight of neighbouring points
+            for(iSrc = iLeft; iSrc <= iRight; iSrc++)
+            {
+                // normalize point
+                m_WeightTable[u].Weights[iSrc-iLeft] /= dTotalWeight;
+            }
 
-			// simplify the filter, discarding null weights at the right
-			iSrc = iRight - iLeft;
-			while(m_WeightTable[u].Weights[iSrc] == 0)
-			{
-				m_WeightTable[u].Right--;
-				iSrc--;
-				if(m_WeightTable[u].Right == m_WeightTable[u].Left)
-				{
-					break;
-				}
-			}
+            // simplify the filter, discarding null weights at the right
+            iSrc = iRight - iLeft;
+            while(m_WeightTable[u].Weights[iSrc] == 0)
+            {
+                m_WeightTable[u].Right--;
+                iSrc--;
+                if(m_WeightTable[u].Right == m_WeightTable[u].Left)
+                {
+                    break;
+                }
+            }
 
-		}
-	}
+        }
+    }
 }
 
 WeightsTable::~WeightsTable()
 {
-	for(unsigned u = 0; u < m_LineLength; u++)
-	{
-		// free contributions for every pixel
-		delete[] m_WeightTable[u].Weights;
-	}
-	// free list of pixels contributions
-	delete[] m_WeightTable;
+    for(unsigned u = 0; u < m_LineLength; u++)
+    {
+        // free contributions for every pixel
+        delete[] m_WeightTable[u].Weights;
+    }
+    // free list of pixels contributions
+    delete[] m_WeightTable;
 }
 
 double WeightsTable::getWeight(unsigned dst_pos, unsigned src_pos)
@@ -203,28 +203,28 @@ void ResizeEngine::useSingleChannel( bool f, char cindex )
 
 Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsigned dst_height )
 {
-	if ( src == NULL)
+    if ( src == NULL)
         return NULL;
 
     if ( ( src->w() == 0 ) && ( src->h() == 0 ) )
         return NULL;
 
-	if ( ( src->w() == dst_width) && ( src->h() == dst_height))
-	{
-		return (Fl_RGB_Image*)src->copy();
-	}
+    if ( ( src->w() == dst_width) && ( src->h() == dst_height))
+    {
+        return (Fl_RGB_Image*)src->copy();
+    }
 
-	// allocate the dst image
-	uchar* dst_buff = new uchar[ ( dst_width * dst_height * 4 ) + 1 ];
-	if ( dst_buff == NULL )
-	{
-	    return NULL;
-	}
+    // allocate the dst image
+    uchar* dst_buff = new uchar[ ( dst_width * dst_height * 4 ) + 1 ];
+    if ( dst_buff == NULL )
+    {
+        return NULL;
+    }
 
     const uchar* src_buff = (uchar*)src->data()[0];
 
-	if ( dst_width <= src->w() )
-	{
+    if ( dst_width <= src->w() )
+    {
         uchar* tmp_buff = NULL;
 
         if ( src->w() != dst_width )
@@ -257,55 +257,55 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
                             dst_buff, dst_width, dst_height );
         }
 
-		if ( ( tmp_buff != src_buff ) && ( tmp_buff != dst_buff ) )
-		{
-		    delete[] tmp_buff;
-		    tmp_buff = NULL;
-		}
+        if ( ( tmp_buff != src_buff ) && ( tmp_buff != dst_buff ) )
+        {
+            delete[] tmp_buff;
+            tmp_buff = NULL;
+        }
 
-	}
-	else    /// == ( dst_width > src->w() )
-	{
-		uchar* tmp_buff = NULL;
+    }
+    else    /// == ( dst_width > src->w() )
+    {
+        uchar* tmp_buff = NULL;
 
-		if ( src->h() != dst_height )
-		{
-			if ( src->w() != dst_width )
-			{
-			    tmp_buff = new uchar[ src->w() * dst_height * src->d() + 1 ];
-				if ( tmp_buff == NULL )
-				{
-					delete[] dst_buff;
-					return NULL;
-				}
-			} else {
-				tmp_buff = dst_buff;
-			}
+        if ( src->h() != dst_height )
+        {
+            if ( src->w() != dst_width )
+            {
+                tmp_buff = new uchar[ src->w() * dst_height * src->d() + 1 ];
+                if ( tmp_buff == NULL )
+                {
+                    delete[] dst_buff;
+                    return NULL;
+                }
+            } else {
+                tmp_buff = dst_buff;
+            }
 
-			verticalFilter( src_buff, src->w(), src->h(), src->d(),
+            verticalFilter( src_buff, src->w(), src->h(), src->d(),
                             0, 0, tmp_buff, dst_width, dst_height );
 
-		}
-		else
-		{
-			tmp_buff = (uchar*)src_buff;
-		}
+        }
+        else
+        {
+            tmp_buff = (uchar*)src_buff;
+        }
 
-		if ( src->w() != dst_width )
-		{
-			horizontalFilter( tmp_buff, dst_height, src->w(), src->d(),
+        if ( src->w() != dst_width )
+        {
+            horizontalFilter( tmp_buff, dst_height, src->w(), src->d(),
                               0, 0, dst_buff, dst_width );
-		}
+        }
 
-		if ( ( tmp_buff != src_buff ) && ( tmp_buff != dst_buff ) )
-		{
-			delete[] tmp_buff;
-			tmp_buff = NULL;
-		}
-	}
+        if ( ( tmp_buff != src_buff ) && ( tmp_buff != dst_buff ) )
+        {
+            delete[] tmp_buff;
+            tmp_buff = NULL;
+        }
+    }
 
-	if ( dst_buff != NULL )
-	{
+    if ( dst_buff != NULL )
+    {
         Fl_RGB_Image *dst = new Fl_RGB_Image( dst_buff, dst_width, dst_height, src->d() );
         if ( dst == NULL )
         {
@@ -314,17 +314,17 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
         }
 
         return dst;
-	}
+    }
 
-	return NULL;
+    return NULL;
 }
 
 void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, const unsigned src_width, const unsigned src_bpp, const unsigned src_offset_x, const unsigned src_offset_y, uchar* dst, const unsigned dst_width)
 {
-	// allocate and calculate the contributions
-	WeightsTable weightsTable(m_pFilter, dst_width, src_width);
+    // allocate and calculate the contributions
+    WeightsTable weightsTable(m_pFilter, dst_width, src_width);
 
-	switch ( src_bpp )
+    switch ( src_bpp )
     {
         case 3:
         {
@@ -343,8 +343,8 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                 for ( x = 0; x < dst_width; x++)
                 {
                     // loop through row
-                    const unsigned iLeft  = weightsTable.getLeftBoundary(x);			// retrieve left boundary
-                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;	// retrieve right boundary
+                    const unsigned iLeft  = weightsTable.getLeftBoundary(x);            // retrieve left boundary
+                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;   // retrieve right boundary
                     const uchar*   pixel  = src_bits + iLeft * 3;
                     double r = 0, g = 0, b = 0, a = 0;
 
@@ -377,15 +377,15 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                     if ( useSCh == true )
                     {
                         uchar cmpv = (uchar)CLAMP<int>((int)(r + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_RED]	= cmpv;
-                        dst_bits[FI_RGBA_GREEN]	= cmpv;
-                        dst_bits[FI_RGBA_BLUE]	= cmpv;
+                        dst_bits[FI_RGBA_RED]   = cmpv;
+                        dst_bits[FI_RGBA_GREEN] = cmpv;
+                        dst_bits[FI_RGBA_BLUE]  = cmpv;
                     }
                     else
                     {
-                        dst_bits[FI_RGBA_RED]	= (uchar)CLAMP<int>((int)(r + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_GREEN]	= (uchar)CLAMP<int>((int)(g + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_BLUE]	= (uchar)CLAMP<int>((int)(b + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_RED]   = (uchar)CLAMP<int>((int)(r + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_GREEN] = (uchar)CLAMP<int>((int)(g + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_BLUE]  = (uchar)CLAMP<int>((int)(b + 0.5), 0, 0xFF);
                     }
                     dst_bits += 3;
                 }
@@ -410,8 +410,8 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                 for ( x = 0; x < dst_width; x++)
                 {
                     // loop through row
-                    const unsigned iLeft = weightsTable.getLeftBoundary(x);				// retrieve left boundary
-                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;	// retrieve right boundary
+                    const unsigned iLeft = weightsTable.getLeftBoundary(x);             // retrieve left boundary
+                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;   // retrieve right boundary
                     const uchar *pixel = src_bits + iLeft * 4;
                     double r = 0, g = 0, b = 0, a = 0;
 
@@ -445,17 +445,17 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                     {
                         uchar cmpv = (uchar)CLAMP<int>((int)(r + 0.5), 0, 0xFF);
 
-                        dst_bits[FI_RGBA_RED]	= cmpv;
-                        dst_bits[FI_RGBA_GREEN]	= cmpv;
-                        dst_bits[FI_RGBA_BLUE]	= cmpv;
-                        dst_bits[FI_RGBA_ALPHA]	= (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_RED]   = cmpv;
+                        dst_bits[FI_RGBA_GREEN] = cmpv;
+                        dst_bits[FI_RGBA_BLUE]  = cmpv;
+                        dst_bits[FI_RGBA_ALPHA] = (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
                     }
                     else
                     {
-                        dst_bits[FI_RGBA_RED]	= (uchar)CLAMP<int>((int)(r + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_GREEN]	= (uchar)CLAMP<int>((int)(g + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_BLUE]	= (uchar)CLAMP<int>((int)(b + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_ALPHA]	= (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_RED]   = (uchar)CLAMP<int>((int)(r + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_GREEN] = (uchar)CLAMP<int>((int)(g + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_BLUE]  = (uchar)CLAMP<int>((int)(b + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_ALPHA] = (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
                     }
                     dst_bits += 4;
                 }
@@ -463,14 +463,14 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
         }
         break;
 
-	} /// of switch()
+    } /// of switch()
 }
 
 /// Performs vertical image filtering
 void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned src_height, const unsigned src_bpp, unsigned src_offset_x, unsigned src_offset_y, uchar* dst, const unsigned dst_width, unsigned dst_height)
 {
-	// allocate and calculate the contributions
-	WeightsTable weightsTable( m_pFilter, dst_height, src_height );
+    // allocate and calculate the contributions
+    WeightsTable weightsTable( m_pFilter, dst_height, src_height );
 
     //unsigned dst_pitch = dst_width * src_bpp;
     unsigned dst_pitch = width * src_bpp;
@@ -498,8 +498,8 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
                     uchar* src_base  = &src[ ( src_offset_y * width * src_bpp ) +
                                              ( src_offset_y * src_pitch + src_offset_x * src_bpp ) ];
                     // loop through column
-                    const unsigned iLeft = weightsTable.getLeftBoundary(y);				// retrieve left boundary
-                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;	// retrieve right boundary
+                    const unsigned iLeft = weightsTable.getLeftBoundary(y);             // retrieve left boundary
+                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;   // retrieve right boundary
                     const uchar *src_bits = src_base + iLeft * src_pitch + index;
                     double r = 0, g = 0, b = 0, a = 0;
 
@@ -529,15 +529,15 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
                     if ( useSCh == true )
                     {
                         uchar cmpv = (uchar)CLAMP<int>((int) (r + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_RED]	= cmpv;
-                        dst_bits[FI_RGBA_GREEN]	= cmpv;
-                        dst_bits[FI_RGBA_BLUE]	= cmpv;
+                        dst_bits[FI_RGBA_RED]   = cmpv;
+                        dst_bits[FI_RGBA_GREEN] = cmpv;
+                        dst_bits[FI_RGBA_BLUE]  = cmpv;
                     }
                     else
                     {
-                        dst_bits[FI_RGBA_RED]	= (uchar)CLAMP<int>((int) (r + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_GREEN]	= (uchar)CLAMP<int>((int) (g + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_BLUE]	= (uchar)CLAMP<int>((int) (b + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_RED]   = (uchar)CLAMP<int>((int) (r + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_GREEN] = (uchar)CLAMP<int>((int) (g + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_BLUE]  = (uchar)CLAMP<int>((int) (b + 0.5), 0, 0xFF);
                     }
                     dst_bits += dst_pitch;
                 }
@@ -564,8 +564,8 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
                     uchar* src_base  = &src[ ( src_offset_y * width * src_bpp ) +
                                              ( src_offset_y * src_pitch + src_offset_x * src_bpp ) ];
                     // loop through column
-                    const unsigned iLeft = weightsTable.getLeftBoundary(y);				// retrieve left boundary
-                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;	// retrieve right boundary
+                    const unsigned iLeft = weightsTable.getLeftBoundary(y);             // retrieve left boundary
+                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;   // retrieve right boundary
                     const uchar *src_bits = src_base + iLeft * src_pitch + index;
                     double r = 0, g = 0, b = 0, a = 0;
 
@@ -597,17 +597,17 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
                     if ( useSCh == true )
                     {
                         uchar cmpv = (uchar)CLAMP<int>((int) (r + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_RED]	= cmpv;
-                        dst_bits[FI_RGBA_GREEN]	= cmpv;
-                        dst_bits[FI_RGBA_BLUE]	= cmpv;
-                        dst_bits[FI_RGBA_ALPHA]	= (uchar)CLAMP<int>((int) (a + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_RED]   = cmpv;
+                        dst_bits[FI_RGBA_GREEN] = cmpv;
+                        dst_bits[FI_RGBA_BLUE]  = cmpv;
+                        dst_bits[FI_RGBA_ALPHA] = (uchar)CLAMP<int>((int) (a + 0.5), 0, 0xFF);
                     }
                     else
                     {
-                        dst_bits[FI_RGBA_RED]	= (uchar)CLAMP<int>((int) (r + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_GREEN]	= (uchar)CLAMP<int>((int) (g + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_BLUE]	= (uchar)CLAMP<int>((int) (b + 0.5), 0, 0xFF);
-                        dst_bits[FI_RGBA_ALPHA]	= (uchar)CLAMP<int>((int) (a + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_RED]   = (uchar)CLAMP<int>((int) (r + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_GREEN] = (uchar)CLAMP<int>((int) (g + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_BLUE]  = (uchar)CLAMP<int>((int) (b + 0.5), 0, 0xFF);
+                        dst_bits[FI_RGBA_ALPHA] = (uchar)CLAMP<int>((int) (a + 0.5), 0, 0xFF);
                     }
                     dst_bits += dst_pitch;
                 }

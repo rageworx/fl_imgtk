@@ -76,15 +76,15 @@ typedef struct
 ** default reference :
 
 static const float RGB2XYZ[3][3] = {
-	{ 0.41239083F, 0.35758433F, 0.18048081F },
-	{ 0.21263903F, 0.71516865F, 0.072192319F },
-	{ 0.019330820F, 0.11919473F, 0.95053220F }
+    { 0.41239083F, 0.35758433F, 0.18048081F },
+    { 0.21263903F, 0.71516865F, 0.072192319F },
+    { 0.019330820F, 0.11919473F, 0.95053220F }
 };
 
 static const float XYZ2RGB[3][3] = {
-	{ 3.2409699F, -1.5373832F, -0.49861079F },
-	{ -0.96924376F, 1.8759676F, 0.041555084F },
-	{ 0.055630036F, -0.20397687F, 1.0569715F }
+    { 3.2409699F, -1.5373832F, -0.49861079F },
+    { -0.96924376F, 1.8759676F, 0.041555084F },
+    { 0.055630036F, -0.20397687F, 1.0569715F }
 };
 */
 
@@ -92,50 +92,50 @@ static const float XYZ2RGB[3][3] = {
 // Table of RGB to XYZ (no white balance)
 static const double  RGB2XYZ[3][3] =
 {
-	{
+    {
         ILLU_CIE_XR * ILLU_CIE_C_RD / ILLU_CIE_D,
         ILLU_CIE_XG * ILLU_CIE_C_GD / ILLU_CIE_D,
         ILLU_CIE_XB * ILLU_CIE_C_BD / ILLU_CIE_D
-	},
-	{
-	    ILLU_CIE_YR * ILLU_CIE_C_RD / ILLU_CIE_D,
+    },
+    {
+        ILLU_CIE_YR * ILLU_CIE_C_RD / ILLU_CIE_D,
         ILLU_CIE_YG * ILLU_CIE_C_GD / ILLU_CIE_D,
         ILLU_CIE_YB * ILLU_CIE_C_BD / ILLU_CIE_D
-	},
-	{
+    },
+    {
         (1.0 - ILLU_CIE_XR - ILLU_CIE_YR) * ILLU_CIE_C_RD / ILLU_CIE_D,
         (1.0 - ILLU_CIE_XG - ILLU_CIE_YG) * ILLU_CIE_C_GD / ILLU_CIE_D,
         (1.0 - ILLU_CIE_XB - ILLU_CIE_YB) * ILLU_CIE_C_BD / ILLU_CIE_D
-	}
+    }
 };
 
 // Table of XYZ to RGB (no white balance)
 static const double  XYZ2RGB[3][3] =
 {
-	{
-	    ( ILLU_CIE_YG - ILLU_CIE_YB - ILLU_CIE_XB * ILLU_CIE_YG + ILLU_CIE_YB * ILLU_CIE_XG )
-	    / ILLU_CIE_C_RD,
+    {
+        ( ILLU_CIE_YG - ILLU_CIE_YB - ILLU_CIE_XB * ILLU_CIE_YG + ILLU_CIE_YB * ILLU_CIE_XG )
+        / ILLU_CIE_C_RD,
         ( ILLU_CIE_XB - ILLU_CIE_XG - ILLU_CIE_XB * ILLU_CIE_YG + ILLU_CIE_XG * ILLU_CIE_YB )
         / ILLU_CIE_C_RD,
         ( ILLU_CIE_XG * ILLU_CIE_YB - ILLU_CIE_XB * ILLU_CIE_YG )
         / ILLU_CIE_C_RD
-	},
-	{
-	    ( ILLU_CIE_YB - ILLU_CIE_YR - ILLU_CIE_YB * ILLU_CIE_XR + ILLU_CIE_YR * ILLU_CIE_XB )
-	    / ILLU_CIE_C_GD,
+    },
+    {
+        ( ILLU_CIE_YB - ILLU_CIE_YR - ILLU_CIE_YB * ILLU_CIE_XR + ILLU_CIE_YR * ILLU_CIE_XB )
+        / ILLU_CIE_C_GD,
         ( ILLU_CIE_XR - ILLU_CIE_XB - ILLU_CIE_XR * ILLU_CIE_YB + ILLU_CIE_XB * ILLU_CIE_YR )
         / ILLU_CIE_C_GD,
         ( ILLU_CIE_XB * ILLU_CIE_YR - ILLU_CIE_XR * ILLU_CIE_YB )
         / ILLU_CIE_C_GD
-	},
-	{
-	    ( ILLU_CIE_YR - ILLU_CIE_YG - ILLU_CIE_YR * ILLU_CIE_XG + ILLU_CIE_YG * ILLU_CIE_XR )
-	    / ILLU_CIE_C_BD,
+    },
+    {
+        ( ILLU_CIE_YR - ILLU_CIE_YG - ILLU_CIE_YR * ILLU_CIE_XG + ILLU_CIE_YG * ILLU_CIE_XR )
+        / ILLU_CIE_C_BD,
         ( ILLU_CIE_XG - ILLU_CIE_XR - ILLU_CIE_XG * ILLU_CIE_YR + ILLU_CIE_XR * ILLU_CIE_YG )
         / ILLU_CIE_C_BD,
         ( ILLU_CIE_XR * ILLU_CIE_YG - ILLU_CIE_XG * ILLU_CIE_YR )
         / ILLU_CIE_C_BD
-	}
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -143,22 +143,22 @@ static const double  XYZ2RGB[3][3] =
 static inline double fl_imgtk_biasFunction(const double b, const double x)
 {
     // pow(x, log(bias)/log(0.5)
-	return pow (x, b);
+    return pow (x, b);
 }
 
 static inline double fl_imgtk_pade_log(const double x)
 {
-	if( x < 1.0 )
+    if( x < 1.0 )
     {
         return ( x * ( 6.0 + x ) / ( 6.0 + 4.0 * x ) );
-	}
-	else
+    }
+    else
     if( x < 2.0 )
     {
-		return ( x * ( 6.0 + 0.7662 * x ) / ( 5.9897 + 3.7658 * x ) );
-	}
+        return ( x * ( 6.0 + 0.7662 * x ) / ( 5.9897 + 3.7658 * x ) );
+    }
 
-	return log( x + 1.0 );
+    return log( x + 1.0 );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -571,10 +571,10 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
                 *pixel /= ( *pixel + pow( f * pixllumi, m ) );
 
                 #pragma omp critical
-				{
+                {
                     colMax = ( *pixel > colMax ) ? *pixel : colMax;
                     colMin = ( *pixel < colMin ) ? *pixel : colMin;
-				}
+                }
             }
         }
     }
@@ -623,7 +623,7 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
                 {
                      colMax = (*pixel > colMax) ? *pixel : colMax;
                      colMin = (*pixel < colMin) ? *pixel : colMin;
-				}
+                }
             }
         }
 
