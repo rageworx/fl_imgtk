@@ -2993,7 +2993,44 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
          _putptr_[0]=(uchar)((float)_putptr_[0]*_rar_) + ((float)_r_*_ar_);\
          _putptr_[1]=(uchar)((float)_putptr_[1]*_rar_) + ((float)_g_*_ar_);\
          _putptr_[2]=(uchar)((float)_putptr_[2]*_rar_) + ((float)_b_*_ar_); }
+/*
+inline void fl_imgtk_putpixel( uchar* _buff_, unsigned _x_, unsigned _w_, unsigned _y_, unsigned _d_, 
+                               unsigned _r_, unsigned _g_, unsigned _b_, unsigned _a_ )
+{
+    uchar* _putptr_ = &_buff_[ ( ( _y_ * _w_ ) + _x_ ) * _d_ ];
+    
+    if((uchar)_a_==0xFF)
+    {
+        _putptr_[0]=_r_;
+        _putptr_[1]=_g_;
+        _putptr_[2]=_b_;
         
+        if ( _d_ > 3 )
+        {
+            _putptr_[3] = (uchar)(( (float)_putptr_[3] / 255.f * (float)_a_/255.f ) * 255.f );
+        }
+    }
+    else
+    {
+        float _ar_=(float)_a_ / 255.f; 
+        float _rar_=1.f-_ar_;
+        
+        if ( _d_ < 4 )
+        {
+            _putptr_[0]=(uchar)((float)_putptr_[0]*_rar_) + ((float)_r_*_ar_);
+            _putptr_[1]=(uchar)((float)_putptr_[1]*_rar_) + ((float)_g_*_ar_);
+            _putptr_[2]=(uchar)((float)_putptr_[2]*_rar_) + ((float)_b_*_ar_);
+        }
+        else
+        {
+            _putptr_[0]=(uchar)((float)_putptr_[0]*_rar_) + ((float)_r_*_ar_);
+            _putptr_[1]=(uchar)((float)_putptr_[1]*_rar_) + ((float)_g_*_ar_);
+            _putptr_[2]=(uchar)((float)_putptr_[2]*_rar_) + ((float)_b_*_ar_);
+            _putptr_[3]=(uchar)(((float)_putptr_[3]/255.f) * _ar_* 255.f);
+        }
+    }
+}
+*/
 void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_Color col )
 {
     if ( img == NULL )
