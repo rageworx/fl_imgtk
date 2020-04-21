@@ -37,6 +37,9 @@ using namespace std;
 #define FLIMGTK_BI_RLE4      2  /// 4-bit run-length compression
 #define FLIMGTK_BI_BITFIELDS 3  /// RGB bitmap with RGB masks
 
+#define __MIN(a,b) (((a)<(b))?(a):(b))
+#define __MAX(a,b) (((a)>(b))?(a):(b))
+
 #define fl_imgtk_degree2f( _x_ )      ( ( _x_ / 360.f ) * FLOAT_PI2X )
 #define fl_imgtk_swap_uc( _a_, _b_ )   uchar t=_a_; _a_=_b_; _b_=t;
 
@@ -2984,6 +2987,7 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
     }
 }
 
+// fl_imgtk_putpixel() is under debugging --
 #if 0
 #define fl_imgtk_putpixel( _buff_,_x_,_w_,_y_,_d_,_r_,_g_,_b_,_a_ ) \
         uchar* _putptr_ = &_buff_[ ( ( _y_ * _w_ ) + _x_ ) * _d_ ];\
@@ -2991,45 +2995,43 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
         {_putptr_[0]=_r_; _putptr_[1]=_g_; _putptr_[2]=_b_;}\
         else\
         {float _ar_=(float)_a_/255.f; float _rar_=1.f-_ar_;\
-         _putptr_[0]=(uchar)((float)_putptr_[0]*_rar_) + ((float)_r_*_ar_);\
-         _putptr_[1]=(uchar)((float)_putptr_[1]*_rar_) + ((float)_g_*_ar_);\
-         _putptr_[2]=(uchar)((float)_putptr_[2]*_rar_) + ((float)_b_*_ar_); }
+         _putptr_[0]=(uchar)(((float)_putptr_[0]*_rar_) + ((float)_r_*_ar_));\
+         _putptr_[1]=(uchar)(((float)_putptr_[1]*_rar_) + ((float)_g_*_ar_));\
+         _putptr_[2]=(uchar)(((float)_putptr_[2]*_rar_) + ((float)_b_*_ar_)); }
 #else
-inline void fl_imgtk_putpixel( uchar* _buff_, \
-                               unsigned _x_, unsigned _w_, unsigned _y_, unsigned _d_, \
-                               unsigned _r_, unsigned _g_, unsigned _b_, unsigned _a_ )
+inline void fl_imgtk_putpixel( uchar* buff, \
+                               unsigned x, unsigned w, unsigned y, unsigned d, \
+                               unsigned r, unsigned g, unsigned b, unsigned a )
 {
-    uchar* _putptr_ = &_buff_[ ( ( _y_ * _w_ ) + _x_ ) * _d_ ];
+    uchar* putptr = &buff[ ( ( y * w ) + x ) * d ];
     
-    if((uchar)_a_==0xFF)
+    float ar  = (float)a / 255.f; 
+    float rar = 1.f - ar;
+    
+    if ( d < 4 )
     {
-        _putptr_[0]=_r_;
-        _putptr_[1]=_g_;
-        _putptr_[2]=_b_;
-        
-        if ( _d_ > 3 )
-        {
-            _putptr_[3] = (uchar)(((float)_putptr_[3] / 255.f) + ((float)_a_/255.f ) * 255.f );
-        }
+        putptr[0]=(uchar)(((float)putptr[0]*rar) + ((float)r*ar));
+        putptr[1]=(uchar)(((float)putptr[1]*rar) + ((float)g*ar));
+        putptr[2]=(uchar)(((float)putptr[2]*rar) + ((float)b*ar));
     }
     else
     {
-        float _ar_  = (float)_a_ / 255.f; 
-        float _rar_ = 1.f - _ar_;
+        float rf1  = (float)putptr[0]/255.f;
+        float gf1  = (float)putptr[1]/255.f;
+        float bf1  = (float)putptr[2]/255.f;
+        float af1  = putptr[3] / 255.f;
+        float raf1 = 1.f - af1;
         
-        if ( _d_ < 4 )
-        {
-            _putptr_[0]=(uchar)((float)_putptr_[0]*_rar_) + ((float)_r_*_ar_);
-            _putptr_[1]=(uchar)((float)_putptr_[1]*_rar_) + ((float)_g_*_ar_);
-            _putptr_[2]=(uchar)((float)_putptr_[2]*_rar_) + ((float)_b_*_ar_);
-        }
-        else
-        {
-            _putptr_[0]=(uchar)(((float)_putptr_[0]/255.f) + ((float)_r_/255.f) * 255.f);
-            _putptr_[1]=(uchar)(((float)_putptr_[1]/255.f) + ((float)_g_/255.f) * 255.f);
-            _putptr_[2]=(uchar)(((float)_putptr_[2]/255.f) + ((float)_b_/255.f) * 255.f);
-            _putptr_[3]=(uchar)(((float)_putptr_[3]/255.f) + _ar_ * 255.f);
-        }
+        float rf2  = (float)r/255.f;
+        float gf2  = (float)g/255.f;
+        float bf2  = (float)b/255.f;
+        float af2  = ar;
+        float raf2 = rar;
+        
+        putptr[0]=(uchar)( ((rf1 * raf1) + (rf2 * af2)) * 255.f );
+        putptr[1]=(uchar)( ((gf1 * raf1) + (gf2 * af2)) * 255.f );
+        putptr[2]=(uchar)( ((bf1 * raf1) + (bf2 * af2)) * 255.f );
+        putptr[3]=(uchar)( (1.f - ( raf1 * raf2 )) * 255.f );
     }
 }
 #endif // of 0
