@@ -2883,6 +2883,10 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, fl
         ptrimg[ pos + 0 ] = ( ptrimg[ pos + 0 ] * revbr ) + ( (float)col_r * br );
         ptrimg[ pos + 1 ] = ( ptrimg[ pos + 1 ] * revbr ) + ( (float)col_g * br );
         ptrimg[ pos + 2 ] = ( ptrimg[ pos + 2 ] * revbr ) + ( (float)col_b * br );
+        if ( d > 3 )
+        {
+            ptrimg[ pos + 3 ] = (uchar)(revbr * 255.f);
+        }
     }
 }
 
@@ -2987,8 +2991,7 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
     }
 }
 
-// fl_imgtk_putpixel() is under debugging --
-#if 0
+#if defined(FAST_RGBA_IGNORE_ALPHA)
 #define fl_imgtk_putpixel( _buff_,_x_,_w_,_y_,_d_,_r_,_g_,_b_,_a_ ) \
         uchar* _putptr_ = &_buff_[ ( ( _y_ * _w_ ) + _x_ ) * _d_ ];\
         if((uchar)_a_==0xFF)\
@@ -2997,7 +3000,7 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
         {float _ar_=(float)_a_/255.f; float _rar_=1.f-_ar_;\
          _putptr_[0]=(uchar)(((float)_putptr_[0]*_rar_) + ((float)_r_*_ar_));\
          _putptr_[1]=(uchar)(((float)_putptr_[1]*_rar_) + ((float)_g_*_ar_));\
-         _putptr_[2]=(uchar)(((float)_putptr_[2]*_rar_) + ((float)_b_*_ar_)); }
+         _putptr_[2]=(uchar)(((float)_putptr_[2]*_rar_) + ((float)_b_*_ar_));}
 #else
 inline void fl_imgtk_putpixel( uchar* buff, \
                                unsigned x, unsigned w, unsigned y, unsigned d, \
@@ -3007,32 +3010,44 @@ inline void fl_imgtk_putpixel( uchar* buff, \
     
     float ar  = (float)a / 255.f; 
     float rar = 1.f - ar;
-    
-    if ( d < 4 )
+
+    putptr[0]=(uchar)(((float)putptr[0]*rar) + ((float)r*ar));
+    putptr[1]=(uchar)(((float)putptr[1]*rar) + ((float)g*ar));
+    putptr[2]=(uchar)(((float)putptr[2]*rar) + ((float)b*ar));
+    if ( d > 3 )
     {
-        putptr[0]=(uchar)(((float)putptr[0]*rar) + ((float)r*ar));
-        putptr[1]=(uchar)(((float)putptr[1]*rar) + ((float)g*ar));
-        putptr[2]=(uchar)(((float)putptr[2]*rar) + ((float)b*ar));
+        //putptr[3]=(uchar)((1.f-((float)putptr[3]/255.f*rar))*255.f);
+        putptr[3]=a;
     }
-    else
+    /*
+    float rf2  = (float)r/255.f;
+    float gf2  = (float)g/255.f;
+    float bf2  = (float)b/255.f;
+    float af2  = (float)a/255.f;
+    float raf2 = 1.f - af2;
+
+    float rf1  = (float)putptr[0]/255.f;
+    float gf1  = (float)putptr[1]/255.f;
+    float bf1  = (float)putptr[2]/255.f;
+    float af1  = raf2;
+    float raf1 = 1.f - af1;    
+
+    if ( d > 3 ) 
     {
-        float rf1  = (float)putptr[0]/255.f;
-        float gf1  = (float)putptr[1]/255.f;
-        float bf1  = (float)putptr[2]/255.f;
-        float af1  = putptr[3] / 255.f;
-        float raf1 = 1.f - af1;
-        
-        float rf2  = (float)r/255.f;
-        float gf2  = (float)g/255.f;
-        float bf2  = (float)b/255.f;
-        float af2  = ar;
-        float raf2 = rar;
-        
-        putptr[0]=(uchar)( ((rf1 * raf1) + (rf2 * af2)) * 255.f );
-        putptr[1]=(uchar)( ((gf1 * raf1) + (gf2 * af2)) * 255.f );
-        putptr[2]=(uchar)( ((bf1 * raf1) + (bf2 * af2)) * 255.f );
-        putptr[3]=(uchar)( (1.f - ( raf1 * raf2 )) * 255.f );
+        af1  = putptr[3]/255.f;
+        raf1 = 1.f - af1;
     }
+
+    putptr[0]=__MIN( (uchar)(((rf1*raf1) + (rf2*af2)) * 255.f), 255);
+    putptr[1]=__MIN( (uchar)(((gf1*raf1) + (gf2*af2)) * 255.f), 255);
+    putptr[2]=__MIN( (uchar)(((bf1*raf1) + (bf2*af2)) * 255.f), 255);
+
+    if ( d > 3 )
+    {
+        putptr[3]=__MIN( (uchar)((1.f-(raf1*raf2))*255.f), 255);
+        //putptr[3]=__MIN( (uchar)((1.f-(raf1*raf2))*af2*255.f), 255);
+    }
+    */
 }
 #endif // of 0
 
