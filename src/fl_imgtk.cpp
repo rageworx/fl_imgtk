@@ -3006,6 +3006,9 @@ inline void fl_imgtk_putpixel( uchar* buff, \
                                unsigned x, unsigned w, unsigned y, unsigned d, \
                                unsigned r, unsigned g, unsigned b, unsigned a )
 {
+    if ( a == 0 )
+        return;
+
     uchar* putptr = &buff[ ( ( y * w ) + x ) * d ];
     
     float ar  = (float)a / 255.f; 
@@ -3016,10 +3019,11 @@ inline void fl_imgtk_putpixel( uchar* buff, \
     putptr[2]=(uchar)(((float)putptr[2]*rar) + ((float)b*ar));
     if ( d > 3 )
     {
+        // -- will be removed, testing debris.
         //putptr[3]=(uchar)((1.f-((float)putptr[3]/255.f*rar))*255.f);
         putptr[3]=a;
     }
-    /*
+    /* -- will be removed, testing debris.
     float rf2  = (float)r/255.f;
     float gf2  = (float)g/255.f;
     float bf2  = (float)b/255.f;
@@ -3068,6 +3072,10 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
     uchar col_r = ( col & 0xFF000000 ) >> 24;
     uchar col_a = ( col & 0x000000FF );
+
+    if ( col_a == 0 )
+        return;
+
     uchar img_d = img->d();
     int   img_w = img->w();
     int   img_h = img->h();
