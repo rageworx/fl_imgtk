@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 0.3.33.4
+* fl_imgtk.H , version 0.3.35.7
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2019 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -23,8 +23,8 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    33
-#define FL_IMGTK_VER_REV    4
+#define FL_IMGTK_VER_BLD    35
+#define FL_IMGTK_VER_REV    7
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \
@@ -254,6 +254,10 @@ namespace fl_imgtk
     // Code referenced to https://rosettacode.org/wiki/Xiaolin_Wu%27s_line_algorithm
     void draw_smooth_line( Fl_RGB_Image* img,
                            int x1, int y1, int x2, int y2, Fl_Color col );
+    // reference : http://members.chello.at/~easyfilter/bresenham.html
+    void draw_smooth_line_ex( Fl_RGB_Image* img,
+                              int x1, int y1, int x2, int y2, float wd, 
+                              Fl_Color col );
 	void draw_line( Fl_RGB_Image* img, 
 	                int x1, int y1, int x2, int y2, Fl_Color col );
 

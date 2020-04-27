@@ -2885,7 +2885,7 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, fl
         ptrimg[ pos + 2 ] = ( ptrimg[ pos + 2 ] * revbr ) + ( (float)col_b * br );
         if ( d > 3 )
         {
-            ptrimg[ pos + 3 ] = (uchar)(revbr * 255.f);
+            ptrimg[ pos + 3 ] = (uchar)( ( ptrimg[ pos + 3 ] * revbr ) + ( alpha * 255.f ) * br );
         }
     }
 }
@@ -2987,6 +2987,62 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
             fl_imgtk_dla_plot( img, fl_imgtk_ipart(interx), y, col, fl_imgtk_rfpart(interx) );
             fl_imgtk_dla_plot( img, fl_imgtk_ipart(interx) + 1, y, col, fl_imgtk_fpart(interx) );
             interx += gradient;
+        }
+    }
+}
+
+// reference : http://members.chello.at/~easyfilter/bresenham.html
+// still buggy.
+void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, float wd, Fl_Color col )
+{
+    if ( wd < 0.1f ) wd = 0.1f;
+        
+    int dx   = abs( x2 - x1 );
+    int sx   = x1 < x2 ? 1 : -1;
+    int dy   = abs( y2 - y1 );
+    int sy   = y1 < y2 ? 1 : -1;
+    int err  = dx - dy;
+    int e2   = 0;
+    int x3   = 0;
+    int y3   = 0;
+    float ed = dx+dy == 0 ? 1 : sqrt( float(dx*dx) + float(dy*dy) );
+        
+    for( wd = ( wd + 1 )/2; ; )
+    {
+        fl_imgtk_dla_plot( img, x1, y1, col, abs(err-dx+dy)/ed-wd+1 );
+        
+        e2 = err;
+        x3 = x1;
+        
+        if ( ( 2*e2 ) >= -dx )
+        {
+            for( e2 += dy, y3 = y1; e2 < ed*wd && ( y2 != y3 || dx > dy ); e2 += dx )
+            {
+                float dr = abs(e2)/ed-wd+1;
+                fl_imgtk_dla_plot( img, x1, y3 += sy, col, __MAX( 1.f, dr ) );
+            }
+            
+            if ( x1 == x2 )
+                break;
+            
+            e2   = err; 
+            err -= dy;
+            x1  += sx;
+        }
+        
+        if ( ( 2*e2 ) <= dy )
+        {
+            for ( e2 = dx-e2; e2 < ed*wd && ( x2 != x3 || dx < dy ); e2 += dy )
+            {
+                float dr = abs(e2)/ed-wd+1;
+                fl_imgtk_dla_plot( img, x3 += sx, y1, col, __MAX( 1.f, dr ) );
+            }
+            
+            if (y1 == y2)
+                break;
+            
+            err += dx;
+            y1  += sy;
         }
     }
 }
