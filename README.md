@@ -5,11 +5,17 @@
 
 ## Lastest upate
 
+* 2020-04-28-1
+    1. Fixed some alpha depth processing routines.
+    1. No Fl_Color, use unsigned long for RGBA.
+    1. New feature, draw_smooth_line_ex() included.
+	1. Version updated to 0.3.35.7
+
+## Previous update
+
 * 2019-04-23-2
     1. New feature, draw_rect() and draw_fillrect() included.
 	1. Version updated to 0.3.32.0
-
-## Previous update
 
 * 2019-04-23-1
     1. Little bug fixed in drawing simple line

@@ -2859,9 +2859,13 @@ fl_imgtk::kfconfig* fl_imgtk::new_kfconfig( const char* preset )
     return newcfg;
 }
 
-inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, float br )
+inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, ulong col, float br )
 {
     float alpha = (float)( col & 0x000000FF ) / 255.f;
+    
+    if ( ( br == 0.f ) || ( alpha == 0.f ) )
+        return;
+        
     uchar col_b = ( col & 0x0000FF00 ) >> 8;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
     uchar col_r = ( col & 0xFF000000 ) >> 24;
@@ -2900,7 +2904,7 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, Fl_Color col, fl
     #define fl_imgtk_swap(a, b) { __typeof__(a) tmp;  tmp = a; a = b; b = tmp; }
 #endif
 
-void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_Color col )
+void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, ulong col )
 {
     float dx = (float)x2 - (float)x1;
     float dy = (float)y2 - (float)y1;
@@ -2993,8 +2997,11 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
 
 // reference : http://members.chello.at/~easyfilter/bresenham.html
 // still buggy.
-void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, float wd, Fl_Color col )
+void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, float wd, ulong col )
 {
+    if ( img == NULL )
+        return;
+
     if ( wd < 0.1f ) wd = 0.1f;
         
     int dx   = abs( x2 - x1 );
@@ -3002,14 +3009,15 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
     int dy   = abs( y2 - y1 );
     int sy   = y1 < y2 ? 1 : -1;
     int err  = dx - dy;
-    int e2   = 0;
+    float e2 = 0.f;
     int x3   = 0;
     int y3   = 0;
-    float ed = dx+dy == 0 ? 1 : sqrt( float(dx*dx) + float(dy*dy) );
+    float ed = dx+dy == 0.f ? 1.f : sqrt( float(dx*dx) + float(dy*dy) );
         
-    for( wd = ( wd + 1 )/2; ; )
+    for( wd = ( wd + 1.f )/2.f; ; )
     {
-        fl_imgtk_dla_plot( img, x1, y1, col, abs(err-dx+dy)/ed-wd+1 );
+        float dr = abs( err - dx + dy ) / ed - wd + 1.f;
+        fl_imgtk_dla_plot( img, x1, y1, col, __MIN( 1.f, 1.f - dr ) );
         
         e2 = err;
         x3 = x1;
@@ -3018,8 +3026,8 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
         {
             for( e2 += dy, y3 = y1; e2 < ed*wd && ( y2 != y3 || dx > dy ); e2 += dx )
             {
-                float dr = abs(e2)/ed-wd+1;
-                fl_imgtk_dla_plot( img, x1, y3 += sy, col, __MAX( 1.f, dr ) );
+                dr = abs( e2 ) / ed - wd + 1.f;
+                fl_imgtk_dla_plot( img, x1, y3 += sy, col, __MIN( 1.f, 1.f - dr ) );
             }
             
             if ( x1 == x2 )
@@ -3034,8 +3042,8 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
         {
             for ( e2 = dx-e2; e2 < ed*wd && ( x2 != x3 || dx < dy ); e2 += dy )
             {
-                float dr = abs(e2)/ed-wd+1;
-                fl_imgtk_dla_plot( img, x3 += sx, y1, col, __MAX( 1.f, dr ) );
+                dr = abs( e2 ) / ed - wd + 1.f;
+                fl_imgtk_dla_plot( img, x3 += sx, y1, col, __MIN( 1.f, 1.f - dr ) );
             }
             
             if (y1 == y2)
@@ -3045,6 +3053,8 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
             y1  += sy;
         }
     }
+    
+    fflush( stdout );
 }
 
 #if defined(FAST_RGBA_IGNORE_ALPHA)
@@ -3075,43 +3085,12 @@ inline void fl_imgtk_putpixel( uchar* buff, \
     putptr[2]=(uchar)(((float)putptr[2]*rar) + ((float)b*ar));
     if ( d > 3 )
     {
-        // -- will be removed, testing debris.
-        //putptr[3]=(uchar)((1.f-((float)putptr[3]/255.f*rar))*255.f);
-        putptr[3]=a;
+        putptr[3]=(uchar)(((float)putptr[3]*rar)+(ar*255.f)*ar);
     }
-    /* -- will be removed, testing debris.
-    float rf2  = (float)r/255.f;
-    float gf2  = (float)g/255.f;
-    float bf2  = (float)b/255.f;
-    float af2  = (float)a/255.f;
-    float raf2 = 1.f - af2;
-
-    float rf1  = (float)putptr[0]/255.f;
-    float gf1  = (float)putptr[1]/255.f;
-    float bf1  = (float)putptr[2]/255.f;
-    float af1  = raf2;
-    float raf1 = 1.f - af1;    
-
-    if ( d > 3 ) 
-    {
-        af1  = putptr[3]/255.f;
-        raf1 = 1.f - af1;
-    }
-
-    putptr[0]=__MIN( (uchar)(((rf1*raf1) + (rf2*af2)) * 255.f), 255);
-    putptr[1]=__MIN( (uchar)(((gf1*raf1) + (gf2*af2)) * 255.f), 255);
-    putptr[2]=__MIN( (uchar)(((bf1*raf1) + (bf2*af2)) * 255.f), 255);
-
-    if ( d > 3 )
-    {
-        putptr[3]=__MIN( (uchar)((1.f-(raf1*raf2))*255.f), 255);
-        //putptr[3]=__MIN( (uchar)((1.f-(raf1*raf2))*af2*255.f), 255);
-    }
-    */
 }
-#endif // of 0
+#endif // of defined(FAST_RGBA_IGNORE_ALPHA)
 
-void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_Color col )
+void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, ulong col )
 {
     if ( img == NULL )
     {
@@ -3322,7 +3301,7 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, Fl_
     }
 }
 
-void fl_imgtk::draw_rect( Fl_RGB_Image* img, int x, int y, int w, int h, Fl_Color col )
+void fl_imgtk::draw_rect( Fl_RGB_Image* img, int x, int y, int w, int h, ulong col )
 {
     if ( ( w < 0 ) || ( h < 0 ) ) return;
 
@@ -3365,7 +3344,7 @@ void fl_imgtk::draw_rect( Fl_RGB_Image* img, int x, int y, int w, int h, Fl_Colo
     draw_line( img, x2, y1, x2, y2, col );
 }
 
-void fl_imgtk::draw_fillrect( Fl_RGB_Image* img, int x, int y, int w, int h, Fl_Color col )
+void fl_imgtk::draw_fillrect( Fl_RGB_Image* img, int x, int y, int w, int h, ulong col )
 {
     if ( ( w < 0 ) || ( h < 0 ) ) return;
 
@@ -3416,7 +3395,7 @@ bool fl_imgtk_sortcondition (int i,int j)
     return ( i < j );
 }
 
-void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points, unsigned pointscnt, Fl_Color col )
+void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points, unsigned pointscnt, ulong col )
 {
     if ( img == NULL )
         return;

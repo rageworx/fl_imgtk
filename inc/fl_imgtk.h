@@ -253,26 +253,27 @@ namespace fl_imgtk
     // Smoothen drawing line algorithm theory by Ph.D Xiaolin Wu.
     // Code referenced to https://rosettacode.org/wiki/Xiaolin_Wu%27s_line_algorithm
     void draw_smooth_line( Fl_RGB_Image* img,
-                           int x1, int y1, int x2, int y2, Fl_Color col );
+                           int x1, int y1, int x2, int y2, ulong col );
+    // Smoothen drawing line with thickness ( wd ),
     // reference : http://members.chello.at/~easyfilter/bresenham.html
     void draw_smooth_line_ex( Fl_RGB_Image* img,
                               int x1, int y1, int x2, int y2, float wd, 
-                              Fl_Color col );
+                              ulong col );
 	void draw_line( Fl_RGB_Image* img, 
-	                int x1, int y1, int x2, int y2, Fl_Color col );
+	                int x1, int y1, int x2, int y2, ulong col );
 
     // Draws rectangle and filled one.
     void draw_rect( Fl_RGB_Image* img,
-                    int x, int y, int w, int h, Fl_Color col );
+                    int x, int y, int w, int h, ulong col );
     void draw_fillrect( Fl_RGB_Image* img,
-                        int x, int y, int w, int h, Fl_Color col );
+                        int x, int y, int w, int h, ulong col );
                         
     // Polygon fill , non-anti-aliased.
     typedef struct { int x; int y; } vecpoint;
     
     void draw_polygon( Fl_RGB_Image* img, 
                        const vecpoint* points = NULL, unsigned pointscnt = 0,
-                       Fl_Color col = 0 );
+                       ulong col = 0 );
     
     ////////////////////////////////////////////////////////////////////////////
 
