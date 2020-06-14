@@ -250,7 +250,11 @@ Fl_RGB_Image* fl_imgtk_clamp_F2RGB( fl_imgtk_fimg* img )
             for( unsigned cnt=0; cnt<imgsz; cnt++ )
             {
                 float conv = ( img->pixels[ cnt ] > 1.0f ) ? 1.0f : img->pixels[ cnt ];
-                buff[ cnt ] = (uchar)( conv * 255.0f + 0.5f );
+                conv *= 255.f;
+                conv += 0.5f;
+                if ( conv > 255.f )
+                    conv = 255.f;
+                buff[ cnt ] = (uchar)( conv );
             }
 
             return new Fl_RGB_Image( buff, w, h ,d );
