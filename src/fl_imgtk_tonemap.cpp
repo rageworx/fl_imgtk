@@ -202,11 +202,12 @@ fl_imgtk_fimg* fl_imgtk_RGB2F( Fl_RGB_Image* img )
     return NULL;
 }
 
-Fl_RGB_Image* fl_imgtk_F2RGB( fl_imgtk_fimg* img )
+Fl_RGB_Image* fl_imgtk_F2RGB( fl_imgtk_fimg* img, bool dranged = false )
 {
     if ( img == NULL )
         return NULL;
 
+	float divf = 1.f;
     unsigned w = img->w;
     unsigned h = img->h;
     unsigned d = img->d;
@@ -217,17 +218,96 @@ Fl_RGB_Image* fl_imgtk_F2RGB( fl_imgtk_fimg* img )
 
         if ( buff != NULL )
         {
-            #pragma omp parallel for
-            for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
-            {
-                buff[ cnt ] = (uchar)( img->pixels[ cnt ] * 255.0f );
-            }
+			// if dynamic range adjusting, find maximum range.
+			if ( dranged == true )
+			{
+				#pragma omp parallel for reduction(max:divf)
+				for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
+				{
+					divf = MAX( divf, img->pixels[ cnt ] );
+				}
+				
+				#pragma omp parallel for
+				for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
+				{
+					float fconv  = ( img->pixels[ cnt ] / divf ) * 255.0f;
+					if ( fconv > 255.f ) fconv = 255.f;
+					buff[ cnt ] = (uchar)fconv;
+				}
+			}
+			else
+			{
+				#pragma omp parallel for
+				for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
+				{
+					float fconv  = img->pixels[ cnt ] * 255.0f;
+					if ( fconv > 255.f ) fconv = 255.f;
+					buff[ cnt ] = (uchar)fconv;
+				}
+			}
 
             return new Fl_RGB_Image( buff, w, h ,d );
         }
     }
 
     return NULL;
+}
+
+bool fl_imgtk_F2RGB_ex( Fl_RGB_Image* dimg, fl_imgtk_fimg* fimg, bool dranged = false )
+{
+    if ( (dimg == NULL ) || ( fimg == NULL ) )
+        return false;
+
+	float divf = 1.f;
+    unsigned w = fimg->w;
+    unsigned h = fimg->h;
+    unsigned d = fimg->d;
+
+    if ( ( dimg->w() != fimg->w ) || ( dimg->h() != fimg->h )
+         || ( dimg->d() != fimg->d ) )
+    {
+        return false;
+    }
+
+    if ( ( w > 0 ) && ( h > 0 ) )
+    {
+        uchar* buff = (uchar*)dimg->data()[0];
+
+        if ( buff != NULL )
+        {
+			// if dynamic range adjusting, find maximum range.
+			if ( dranged == true )
+			{
+				#pragma omp parallel for reduction(max:divf)
+				for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
+				{
+					divf = MAX( divf, fimg->pixels[ cnt ] );
+				}
+				
+				#pragma omp parallel for
+				for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
+				{
+					float fconv  = ( fimg->pixels[ cnt ] / divf ) * 255.0f;
+					if ( fconv > 255.f ) fconv = 255.f;
+					buff[ cnt ] = (uchar)fconv;
+				}
+			}
+			else
+			{
+				#pragma omp parallel for
+				for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
+				{
+					float fconv  = fimg->pixels[ cnt ] * 255.0f;
+					if ( fconv > 255.f ) fconv = 255.f;
+					buff[ cnt ] = (uchar)fconv;
+				}
+			}
+
+			return true;
+        }
+    }
+
+    return false;
 }
 
 Fl_RGB_Image* fl_imgtk_clamp_F2RGB( fl_imgtk_fimg* img )
@@ -692,13 +772,13 @@ bool fl_imgtk_rec709gammacorrect( fl_imgtk_fimg* img, float gval )
         if ( gval >= 2.1f )
         {
             start = 0.018f / ( gval - 2.0f ) * 7.5f;
-            slope = 4.5f * ( gval - 2.0f ) * 7.5;
+            slope = 4.5f * ( gval - 2.0f ) * 7.5f;
         }
         else
         if ( gval <= 1.9f)
         {
             start = 0.018f / ( 2.0f - gval ) * 7.5f;
-            slope = 4.5f * ( 2.0f - gval ) * 7.5;
+            slope = 4.5f * ( 2.0f - gval ) * 7.5f;
         }
 
         unsigned imgsz = img->w * img->h * img->d;
@@ -706,10 +786,16 @@ bool fl_imgtk_rec709gammacorrect( fl_imgtk_fimg* img, float gval )
         #pragma omp parellel for
         for( unsigned cnt=0; cnt<imgsz; cnt++ )
         {
+			/*
             float* pixel = &img->pixels[cnt];
 
             *pixel = ( *pixel <= start ) ? *pixel * slope
                      : ( 1.099f * pow( *pixel, fgamma) - 0.099f );
+			*/
+            float pixel = img->pixels[cnt];
+
+            img->pixels[cnt] = ( pixel <= start ) ? pixel * slope
+                               : ( 1.099f * pow( pixel, fgamma) - 0.099f );			
         }
 
         return true;
@@ -830,7 +916,7 @@ Fl_RGB_Image* fl_imgtk::tonemapping_drago( Fl_RGB_Image* src, float gamma, float
                             fl_imgtk_rec709gammacorrect( convimg, gamma );
                         }
 
-                        retimg = fl_imgtk_clamp_F2RGB( convimg );
+                        retimg = fl_imgtk_F2RGB( convimg, false );
                     }
                 }
             }
@@ -873,7 +959,7 @@ bool fl_imgtk::tonemapping_drago_ex( Fl_RGB_Image* src, float gamma, float expos
                             fl_imgtk_rec709gammacorrect( convimg, gamma );
                         }
 
-                        retb = fl_imgtk_clamp_F2RGB_ex( src, convimg );
+                        retb = fl_imgtk_F2RGB_ex( src, convimg, false );
 
                         if ( retb == true )
                         {
