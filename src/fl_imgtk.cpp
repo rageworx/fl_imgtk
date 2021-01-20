@@ -5,26 +5,24 @@
 #pragma warning(disable : 4996)  
 #endif
 
+#include <cstdint>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+
 #include "fl_imgtk.h"
 #include "fl_imgtk_minmax.h"
+#include "fl_smimg.h"
 
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Image_Surface.H>
 #include <FL/fl_draw.H>
 
-#include "fl_smimg.h"
-
-#include "stdint.h"
-
-#include <vector>
-#include <algorithm>
-#include <cmath>
-
 using namespace std;
 
 #ifdef USING_OMP
-#include <omp.h>
+    #include <omp.h>
 #endif /// of USING_OMP
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,6 +41,15 @@ using namespace std;
 #define fl_imgtk_degree2f( _x_ )      ( ( _x_ / 360.f ) * FLOAT_PI2X )
 #define fl_imgtk_swap_uc( _a_, _b_ )   uchar t=_a_; _a_=_b_; _b_=t;
 
+// if this flag defined, all new Fl_RGB_Image may alloc_array set to 1.
+#define FLIMGTK_IMGBUFF_OWNALLOC 
+
+// OpenMP compatibility for M$VC.
+#ifdef _MSC_VER
+    #define OMPSIZE_T       long
+#else
+    #define OMPSIZE_T       size_t
+#endif 
 ////////////////////////////////////////////////////////////////////////////////
 
 const float matrixdata_blur[] =
@@ -77,14 +84,13 @@ const float matrixdata_sharpenmore[] =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-
 Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong color )
 {
     if ( ( w > 0 ) && ( h > 0 ) && ( d >= 3 ) )
     {
-        ulong  resz   = w * h;
-        ulong  datasz = resz * d;
-        uchar* pdata  = new uchar[ datasz ];
+        OMPSIZE_T resz   = w * h;
+        OMPSIZE_T datasz = resz * d;
+        uchar*    pdata  = new uchar[ datasz ];
         
         uchar ref_r   = ( color & 0xFF000000 ) >> 24;
         uchar ref_g   = ( color & 0x00FF0000 ) >> 16;
@@ -96,19 +102,27 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
         if ( pdata != NULL )
         {
             #pragma omp parallel for
-            for( ulong cnt=0; cnt<resz; cnt++ )
+            for( OMPSIZE_T cnt=0; cnt<resz; cnt++ )
             {
                 memcpy( &pdata[ cnt * d ], &carray[0], d );
             }
-            
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+            Fl_RGB_Image* newimg = new Fl_RGB_Image( pdata, w, h, d );
+            if ( newimg != NULL )
+            {
+                newimg->alloc_array = 1;
+                return newimg;
+            }
+#else
             return new Fl_RGB_Image( pdata, w, h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         }
     }
     
     return NULL;
 }
 
-uint16_t flimgtk_memread_word( const char* buffer, unsigned* que = NULL )
+inline uint16_t flimgtk_memread_word( const char* buffer, unsigned* que = NULL )
 {
     uint16_t retus = 0;
     memcpy( &retus, buffer, 2 );
@@ -121,7 +135,7 @@ uint16_t flimgtk_memread_word( const char* buffer, unsigned* que = NULL )
     return retus;
 }
 
-uint32_t flimgtk_memread_dword( const char* buffer, unsigned* que = NULL )
+inline uint32_t flimgtk_memread_dword( const char* buffer, unsigned* que = NULL )
 {
     uint32_t retui = 0;
     memcpy( &retui, buffer, 4 );
@@ -134,7 +148,7 @@ uint32_t flimgtk_memread_dword( const char* buffer, unsigned* que = NULL )
     return retui;
 }
 
-int flimgtk_memread_int( const char* buffer, unsigned* que = NULL )
+inline int flimgtk_memread_int( const char* buffer, unsigned* que = NULL )
 {
     int reti = 0;
     memcpy( &reti, buffer, 4 );
@@ -662,8 +676,17 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                 }
             }
         }
-        
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        Fl_RGB_Image* newimg = new Fl_RGB_Image( array, w, h, bDepth );
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+            
+            return newimg;
+        }
+#else        
         return new Fl_RGB_Image( array, w, h, bDepth );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
         
     return NULL;
@@ -674,13 +697,13 @@ Fl_RGB_Image* fl_imgtk::fliphorizontal( Fl_RGB_Image* img )
     if ( img == NULL )
         return NULL;
 
-    uchar* ptr = (uchar*)img->data()[0];
-    unsigned w = img->w();
-    unsigned h = img->h();
-    unsigned d = img->d();
+    OMPSIZE_T w = (size_t)img->w();
+    OMPSIZE_T h = (size_t)img->h();
+    OMPSIZE_T d = (size_t)img->d();
 
     if ( ( w > 0 ) && ( h > 0 ) )
     {
+        const uchar* ptr = (const uchar*)img->data()[0];
         uchar* buff = new uchar[ w * h * d ];
 
         if ( buff == NULL )
@@ -688,28 +711,34 @@ Fl_RGB_Image* fl_imgtk::fliphorizontal( Fl_RGB_Image* img )
 
         memcpy( buff, ptr, w * h * d );
 
-        unsigned hcenter = h/2;
-        unsigned cnth = 0;
-        unsigned cntw = 0;
+        OMPSIZE_T hcenter = h/2;
+        OMPSIZE_T cnth = 0;
+        OMPSIZE_T cntw = 0;
 
         #pragma omp parallel for private(cntw)
         for( cnth=0; cnth<hcenter; cnth++ )
         {
             for( cntw=0; cntw<w; cntw++ )
             {
-                unsigned pos1 = ( w * ( h - 1 - cnth ) + cntw ) * d;
-                unsigned pos2 = ( w * cnth + cntw ) * d;
+                size_t pos1 = ( w * ( h - 1 - cnth ) + cntw ) * d;
+                size_t pos2 = ( w * cnth + cntw ) * d;
 
-                for( unsigned cntd=0; cntd<d; cntd++ )
+                for( size_t cntd=0; cntd<d; cntd++ )
                 {
                     fl_imgtk_swap_uc( buff[ pos1 + cntd ], buff[ pos2 + cntd ] );
                 }
             }
-        }
-
+        }        
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
-
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+        }
         return newimg;
+#else
+        return new Fl_RGB_Image( buff, w, h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -721,15 +750,15 @@ bool fl_imgtk::fliphorizontal_ex( Fl_RGB_Image* img )
         return false;
 
     uchar* ptr = (uchar*)img->data()[0];
-    unsigned w = img->w();
-    unsigned h = img->h();
-    unsigned d = img->d();
+    OMPSIZE_T w = img->w();
+    OMPSIZE_T h = img->h();
+    OMPSIZE_T d = img->d();
 
     if ( ( w > 0 ) && ( h > 0 ) )
     {
-        unsigned hcenter = h/2;
-        unsigned cnth = 0;
-        unsigned cntw = 0;
+        OMPSIZE_T hcenter = h/2;
+        OMPSIZE_T cnth = 0;
+        OMPSIZE_T cntw = 0;
 
         #pragma omp parallel for private(cntw)
         for( cnth=0; cnth<hcenter; cnth++ )
@@ -759,13 +788,13 @@ Fl_RGB_Image* fl_imgtk::flipvertical( Fl_RGB_Image* img )
     if ( img == NULL )
         return NULL;
 
-    uchar* ptr = (uchar*)img->data()[0];
-    unsigned w = img->w();
-    unsigned h = img->h();
-    unsigned d = img->d();
+    OMPSIZE_T w = img->w();
+    OMPSIZE_T h = img->h();
+    OMPSIZE_T d = img->d();
 
-    if ( ( w > 0 ) && ( h > 0 ) && ( ptr != NULL ) )
+    if ( ( w > 0 ) && ( h > 0 ) )
     {
+        const uchar* ptr = (const uchar*)img->data()[0];
         uchar* buff = new uchar[ w * h * d ];
 
         if ( buff == NULL )
@@ -773,9 +802,9 @@ Fl_RGB_Image* fl_imgtk::flipvertical( Fl_RGB_Image* img )
 
         memcpy( buff, ptr, w * h * d );
 
-        unsigned wcenter = w/2;
-        unsigned cntw = 0;
-        unsigned cnth = 0;
+        OMPSIZE_T wcenter = w/2;
+        OMPSIZE_T cntw = 0;
+        OMPSIZE_T cnth = 0;
 
         #pragma omp parallel for private(cnth)
         for( cntw=0; cntw<wcenter; cntw++ )
@@ -805,16 +834,16 @@ bool fl_imgtk::flipvertical_ex( Fl_RGB_Image* img )
     if ( img == NULL )
         return false;
 
-    uchar* ptr = (uchar*)img->data()[0];
-    unsigned w = img->w();
-    unsigned h = img->h();
-    unsigned d = img->d();
+    OMPSIZE_T w = img->w();
+    OMPSIZE_T h = img->h();
+    OMPSIZE_T d = img->d();
 
-    if ( ( w > 0 ) && ( h > 0 ) && ( ptr != NULL ) )
+    if ( ( w > 0 ) && ( h > 0 ) )
     {
-        unsigned wcenter = w/2;
-        unsigned cntw = 0;
-        unsigned cnth = 0;
+        uchar* ptr = (uchar*)img->data()[0];
+        OMPSIZE_T wcenter = w/2;
+        OMPSIZE_T cntw = 0;
+        OMPSIZE_T cnth = 0;
 
         #pragma omp parallel for private(cnth)
         for( cntw=0; cntw<wcenter; cntw++ )
@@ -844,30 +873,30 @@ Fl_RGB_Image* fl_imgtk::rotate90( Fl_RGB_Image* img )
     if ( img == NULL )
         return NULL;
 
-    uchar* ptr = (uchar*)img->data()[0];
-    unsigned w = img->w();
-    unsigned h = img->h();
-    unsigned d = img->d();
+    OMPSIZE_T w = img->w();
+    OMPSIZE_T h = img->h();
+    OMPSIZE_T d = img->d();
 
-    unsigned src_w = w;
-    unsigned src_h = h;
+    OMPSIZE_T src_w = w;
+    OMPSIZE_T src_h = h;
 
-    if ( ( src_w > 0 ) && ( src_h > 0 ) && ( ptr != NULL ) )
+    if ( ( src_w > 0 ) && ( src_h > 0 ) )
     {
-        unsigned new_w = src_h;
-        unsigned new_h = src_w;
+        const uchar* ptr = (const uchar*)img->data()[0];
+        OMPSIZE_T new_w = src_h;
+        OMPSIZE_T new_h = src_w;
 
         uchar* buff = new uchar[ new_w * new_h * d ];
 
         if ( buff == NULL )
             return NULL;
 
-        unsigned cntw = 0;
-        unsigned cnth = 0;
+        OMPSIZE_T cntw = 0;
+        OMPSIZE_T cnth = 0;
 
-        //#pragma omp parallel for private( cnth )
         for( cntw=new_w; cntw-- != 0; )
         {
+            #pragma omp parallel for
             for( cnth=0; cnth<new_h; cnth++ )
             {
                 unsigned pos1 = ( new_w * cnth + cntw ) * d;
@@ -876,10 +905,16 @@ Fl_RGB_Image* fl_imgtk::rotate90( Fl_RGB_Image* img )
                 memcpy( &buff[ pos1 ], &ptr[ pos2 ], d );
             }
         }
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, new_w, new_h, d );
-
-        return newimg;
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+            return newimg;
+        }
+#else
+        return new Fl_RGB_Image( buff, new_w, new_h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -890,16 +925,16 @@ Fl_RGB_Image* fl_imgtk::rotate180( Fl_RGB_Image* img )
     if ( img == NULL )
         return NULL;
 
-    uchar* ptr = (uchar*)img->data()[0];
-    unsigned w = img->w();
-    unsigned h = img->h();
-    unsigned d = img->d();
+    OMPSIZE_T w = img->w();
+    OMPSIZE_T h = img->h();
+    OMPSIZE_T d = img->d();
 
-    unsigned cur_w = w;
-    unsigned cur_h = h;
+    OMPSIZE_T cur_w = w;
+    OMPSIZE_T cur_h = h;
 
-    if ( ( cur_w > 0 ) && ( cur_h > 0 ) && ( ptr != NULL ) )
+    if ( ( cur_w > 0 ) && ( cur_h > 0 ) )
     {
+        uchar* ptr = (uchar*)img->data()[0];
         uchar* buff = new uchar[ w * h * d ];
 
         if ( buff == NULL )
@@ -907,22 +942,28 @@ Fl_RGB_Image* fl_imgtk::rotate180( Fl_RGB_Image* img )
 
         memcpy( buff, ptr, w * h * d );
 
-        unsigned imgmax = w*h;
-        unsigned cntmax = imgmax / 2;
-
+        OMPSIZE_T imgmax = w*h;
+        OMPSIZE_T cntmax = imgmax / 2;
+        
         #pragma omp parallel for
-        for( unsigned cnt=0; cnt<cntmax; cnt++ )
+        for( OMPSIZE_T cnt=0; cnt<cntmax; cnt++ )
         {
-            for( unsigned cntd=0;cntd<d; cntd++)
+            for( OMPSIZE_T cntd=0;cntd<d; cntd++)
             {
                 fl_imgtk_swap_uc( buff[ cnt * d + cntd ],
                                   buff[ (imgmax - cnt) * d + cntd ] );
             }
         }
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
-
-        return newimg;
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+            return newimg;
+        }
+#else
+        return new Fl_RGB_Image( buff, w, h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -933,48 +974,54 @@ Fl_RGB_Image* fl_imgtk::rotate270( Fl_RGB_Image* img )
     if ( img == NULL )
         return NULL;
 
-    uchar* ptr = (uchar*)img->data()[0];
-    unsigned w = img->w();
-    unsigned h = img->h();
-    unsigned d = img->d();
+    OMPSIZE_T w = img->w();
+    OMPSIZE_T h = img->h();
+    OMPSIZE_T d = img->d();
 
-    unsigned src_w = w;
-    unsigned src_h = h;
+    OMPSIZE_T src_w = w;
+    OMPSIZE_T src_h = h;
 
     if ( ( src_w > 0 ) && ( src_h > 0 ) )
     {
-        unsigned new_w = src_h;
-        unsigned new_h = src_w;
+        const uchar* ptr = (const uchar*)img->data()[0];
+        OMPSIZE_T new_w = src_h;
+        OMPSIZE_T new_h = src_w;
 
         uchar* buff = new uchar[ new_w * new_h * d ];
 
         if ( buff == NULL )
             return NULL;
 
-        unsigned cntw = 0;
-        unsigned cnth = 0;
+        OMPSIZE_T cntw = 0;
+        OMPSIZE_T cnth = 0;
 
         //#pragma omp parallel for private( cnth )
         for( cntw=0; cntw<new_w; cntw++ )
         {
             for( cnth=new_h; cnth-- != 0; )
             {
-                unsigned pos1 = ( new_w * cnth + cntw ) * d;
-                unsigned pos2 = ( src_w * cntw + new_h - cnth - 1 ) * d;
+                OMPSIZE_T pos1 = ( new_w * cnth + cntw ) * d;
+                OMPSIZE_T pos2 = ( src_w * cntw + new_h - cnth - 1 ) * d;
 
                 memcpy( &buff[ pos1 ], &ptr[ pos2 ], d );
             }
         }
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, new_w, new_h, d );
-
-        return newimg;
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+            return newimg;
+        }
+#else
+        return new Fl_RGB_Image( buff, new_w, new_h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
 }
 
-float fl_imgtk_min4(float a, float b, float c, float d)
+inline float fl_imgtk_min4(float a, float b, float c, float d)
 {
    float mn = a;
    if(mn > b) mn = b;
@@ -983,7 +1030,7 @@ float fl_imgtk_min4(float a, float b, float c, float d)
    return mn;
 }
 
-float fl_imgtk_max4(float a, float b, float c, float d)
+inline float fl_imgtk_max4(float a, float b, float c, float d)
 {
    float mx = a;
    if(mx < b) mx = b;
@@ -1001,12 +1048,12 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
     if ( ( img == NULL ) || ( img->d() < 3 ) )
         return NULL;
 
-    int img_w = img->w();
-    int img_h = img->h();
-    int img_d = img->d();
+    long img_w = img->w();
+    long img_h = img->h();
+    long img_d = img->d();
 
-    float CtX = ( (float) img_w ) / 2.0f;
-    float CtY = ( (float) img_h ) / 2.0f;
+    float CtX = ( (float)img_w ) / 2.0f;
+    float CtY = ( (float)img_h ) / 2.0f;
 
     float fdeg = fl_imgtk_degree2f( deg );
 
@@ -1014,20 +1061,20 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
     float sA = (float)sin( fdeg );
 
     float x1 = CtX + (-CtX) * cA - (-CtY) * sA;
-    float x2 = CtX + (img_w - CtX) * cA - (-CtY) * sA;
-    float x3 = CtX + (img_w - CtX) * cA - (img_h - CtY) * sA;
+    float x2 = CtX + ((float)img_w - CtX) * cA - (-CtY) * sA;
+    float x3 = CtX + ((float)img_w - CtX) * cA - ((float)img_h - CtY) * sA;
     float x4 = CtX + (-CtX) * cA - (img_h - CtY) * sA;
 
     float y1 = CtY + (-CtY) * cA + (-CtX) * sA;
-    float y2 = CtY + (img_h - CtY) * cA + (-CtX) * sA;
-    float y3 = CtY + (img_h - CtY) * cA + (img_w - CtX) * sA;
-    float y4 = CtY + (-CtY) * cA + (img_w - CtX) * sA;
+    float y2 = CtY + ((float)img_h - CtY) * cA + (-CtX) * sA;
+    float y3 = CtY + ((float)img_h - CtY) * cA + ((float)img_w - CtX) * sA;
+    float y4 = CtY + (-CtY) * cA + ((float)img_w - CtX) * sA;
 
-    int OfX = ((int)floor(fl_imgtk_min4(x1, x2, x3, x4)));
-    int OfY = ((int)floor(fl_imgtk_min4(y1, y2, y3, y4)));
+    long OfX = (long)floor(fl_imgtk_min4(x1, x2, x3, x4));
+    long OfY = (long)floor(fl_imgtk_min4(y1, y2, y3, y4));
 
-    int dstW = ((int)ceil(fl_imgtk_max4(x1, x2, x3, x4))) - OfX;
-    int dstH = ((int)ceil(fl_imgtk_max4(y1, y2, y3, y4))) - OfY;
+    long dstW = (long)ceil(fl_imgtk_max4(x1, x2, x3, x4)) - OfX;
+    long dstH = (long)ceil(fl_imgtk_max4(y1, y2, y3, y4)) - OfY;
 
     // Now new image !
     uchar* obuff = new uchar[ dstW * dstH * img_d ];
@@ -1035,49 +1082,54 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
     if ( obuff == NULL )
         return NULL;
 
-    memset( obuff, 0, dstW * dstH * img_d );
+    memset( obuff, 0x00, dstW * dstH * img_d );
 
     uchar* psrc = (uchar*)img->data()[0];
 
-    int stepY = 0;
-    int stepX = 0;
+    long stepY = 0;
+    long stepX = 0;
 
     // pointer to destination.
     uchar* dst = obuff;
-
-    #pragma omp parellel for private( stepX )
-    for ( stepY = 0; stepY<dstH; stepY++ )
+    
+    #pragma omp parallel for private( stepX )
+    for ( stepY=0; stepY<dstH; stepY++ )
     {
-        for ( stepX = 0; stepX<dstW; stepX++ )
+        for ( stepX=0; stepX<dstW; stepX++ )
         {
-#if USING_INTERPOLATED_ROTATE_FREE
+#if defined(USING_INTERPOLATED_ROTATE_FREE)
             float CtX2 = CtX - OfX;
             float CtY2 = CtY - OfY;
 
             float orgX = ( cA*(stepX-CtX2) + sA*(stepY-CtY2)) + CtX;
             float orgY = (-sA*(stepX-CtX2) + cA*(stepY-CtY2)) + CtY;
 
-            int iorgX  = (int) orgX;
-            int iorgY  = (int) orgY;
+            long iorgX  = (long) orgX;
+            long iorgY  = (long) orgY;
 
-            float diffX = (orgX - iorgX);
-            float diffY = (orgY - iorgY);
+            float diffX = (orgX - (float)iorgX);
+            float diffY = (orgY - (float)iorgY);
 
             if ( ( (orgX >= 0) && (orgY >= 0) ) && \
                  ( (orgX < img_w-1) && (orgY < img_h-1) ) )
             {
                 uchar* pd = &obuff[ ( stepY * dstW + stepX ) * img_d ];
-                uchar* ps = &psrc[ ( iorgX + iorgY * img_w ) * img_d ];
+                uchar* ps = &psrc[ ( iorgY * img_w + iorgX ) * img_d ];
 
                 // Doing interpolated pixel calculation .
                 for( unsigned cntd=0; cntd<img_d; cntd++ )
                 {
                     float pv[4] = {0.0f};
 
+                    // steps in order :
+                    //   0 : current position.
+                    //   1 : right side.
+                    //   2 : below side.
+                    //   3 : right below side.
                     pv[0] = (float)ps[ cntd ];
-                    pv[1] = (float)ps[ cntd + img_d ]; /// Right pixel
-                    pv[2] = (float)ps[ cntd + ( img_w * img_d ) ]; /// Below pixel
-                    pv[3] = (float)ps[ cntd + ( ( img_w + 1 ) * img_d ) ]; /// Right below pixel.
+                    pv[1] = (float)ps[ cntd + img_d ];
+                    pv[2] = (float)ps[ cntd + ( img_w * img_d ) ];
+                    pv[3] = (float)ps[ cntd + ( ( img_w + 1 ) * img_d ) ];
 
                     float pc = pv[0] * ( 1.0f - diffX ) * ( 1.0f - diffY ) +
                                pv[1] *          diffX   * ( 1.0f - diffY ) +
@@ -1108,8 +1160,18 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
 
         dst += dstW * img_d;
     }
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+    Fl_RGB_Image* newimg = new Fl_RGB_Image( obuff, dstW, dstH, img_d );
+    if ( newimg != NULL )
+    {
+        newimg->alloc_array = 1;
+        return newimg;
+    }
     return new Fl_RGB_Image( obuff, dstW, dstH, img->d() );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+    
+    // prevent compiler warning.
+    return NULL;
 }
 
 Fl_RGB_Image* fl_imgtk_curve( Fl_RGB_Image* img, const uchar* LUT )
@@ -1117,11 +1179,11 @@ Fl_RGB_Image* fl_imgtk_curve( Fl_RGB_Image* img, const uchar* LUT )
     if ( img == NULL )
         return NULL;
 
-    uchar* ptr = (uchar*)img->data()[0];
-    unsigned w = img->w();
-    unsigned h = img->h();
-    unsigned d = img->d();
-    unsigned imgsz = w*h;
+    const uchar* ptr = (const uchar*)img->data()[0];
+    OMPSIZE_T w = img->w();
+    OMPSIZE_T h = img->h();
+    OMPSIZE_T d = img->d();
+    OMPSIZE_T imgsz = w*h;
 
     if ( imgsz == 0 )
         return NULL;
@@ -1134,15 +1196,26 @@ Fl_RGB_Image* fl_imgtk_curve( Fl_RGB_Image* img, const uchar* LUT )
     memcpy( buff, ptr, imgsz * d );
 
     #pragma omp parallel for
-    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
-        for( unsigned cntd=1; cntd<=d; cntd++ )
+        for( OMPSIZE_T cntd=1; cntd<=d; cntd++ )
         {
             buff[ cnt * d + cntd ] = LUT[ buff[ cnt * d + cntd ] ];
         }
     }
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+    Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
+    if ( newimg != NULL )
+    {
+        newimg->alloc_array = 1;
+        return newimg;
+    }
+#else
     return new Fl_RGB_Image( buff, w, h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
+    // prevent compiler warning.
+    return NULL;
 }
 
 bool fl_imgtk_curve_ex( Fl_RGB_Image* img, const uchar* LUT )
@@ -1151,18 +1224,18 @@ bool fl_imgtk_curve_ex( Fl_RGB_Image* img, const uchar* LUT )
         return false;
 
     uchar* ptr = (uchar*)img->data()[0];
-    unsigned w = img->w();
-    unsigned h = img->h();
-    unsigned d = img->d();
-    unsigned imgsz = w*h;
+    OMPSIZE_T w = img->w();
+    OMPSIZE_T h = img->h();
+    OMPSIZE_T d = img->d();
+    OMPSIZE_T imgsz = w*h;
 
     if ( imgsz == 0 )
         return false;
 
     #pragma omp parallel for
-    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
-        for( unsigned cntd=1; cntd<=d; cntd++ )
+        for( OMPSIZE_T cntd=1; cntd<=d; cntd++ )
         {
             ptr[ cnt * d + cntd ] = LUT[ ptr[ cnt * d + cntd ] ];
         }
@@ -1211,7 +1284,7 @@ bool fl_imgtk::gamma_ex( Fl_RGB_Image* img, double gamma )
             col = 255;
         }
 
-        lut[ cnt ] = (uchar)floor( col + 0.5 );
+        lut[ cnt ] = (uchar)floor( col + 0.5f );
     }
 
     return fl_imgtk_curve_ex( img, lut );
@@ -1289,14 +1362,14 @@ Fl_RGB_Image* fl_imgtk::invert( Fl_RGB_Image* img )
 {
     if ( img != NULL )
     {
-        unsigned img_w = img->w();
-        unsigned img_h = img->h();
-        unsigned img_d = img->d();
+        OMPSIZE_T img_w = img->w();
+        OMPSIZE_T img_h = img->h();
+        OMPSIZE_T img_d = img->d();
 
         if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
             return NULL;
 
-        unsigned buffsz = img_w * img_h;
+        OMPSIZE_T buffsz = img_w * img_h;
         uchar* newbuff = new uchar[ buffsz * img_d ];
 
         if ( newbuff != NULL )
@@ -1304,19 +1377,27 @@ Fl_RGB_Image* fl_imgtk::invert( Fl_RGB_Image* img )
             uchar* refbuff = (uchar*)img->data()[0];
 
             #pragma omp parallel for
-            for( unsigned cnt=0; cnt<buffsz; cnt++ )
+            for( OMPSIZE_T cnt=0; cnt<buffsz; cnt++ )
             {
                 uchar* psrc = &refbuff[ cnt * img_d ];
                 uchar* pdst = &newbuff[ cnt * img_d ];
 
                 // alpha channel will skipped to invert.
-                for( unsigned rpt=0; rpt<3; rpt++ )
+                for( OMPSIZE_T rpt=0; rpt<3; rpt++ )
                 {
                     pdst[ rpt ] = 0xFF - psrc[ rpt ];
                 }
             }
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+            Fl_RGB_Image* newimg = new Fl_RGB_Image( newbuff, img_w, img_h, img_d );
+            if ( newimg != NULL )
+            {
+                newimg->alloc_array = 1;
+                return newimg;
+            }
+#else
             return new Fl_RGB_Image( newbuff, img_w, img_h, img_d );
+#endif /// of  #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         }
     }
 
@@ -1327,24 +1408,24 @@ bool fl_imgtk::invert_ex( Fl_RGB_Image* img )
 {
     if ( img != NULL )
     {
-        unsigned img_w = img->w();
-        unsigned img_h = img->h();
-        unsigned img_d = img->d();
+        OMPSIZE_T img_w = img->w();
+        OMPSIZE_T img_h = img->h();
+        OMPSIZE_T img_d = img->d();
 
         if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
             return false;
 
-        unsigned buffsz = img_w * img_h;
+        OMPSIZE_T buffsz = img_w * img_h;
 
         uchar* refbuff = (uchar*)img->data()[0];
 
         #pragma omp parallel for
-        for( unsigned cnt=0; cnt<buffsz; cnt++ )
+        for( OMPSIZE_T cnt=0; cnt<buffsz; cnt++ )
         {
             uchar* psrc = &refbuff[ cnt * img_d ];
 
             // alpha channel will skipped to invert.
-            for( unsigned rpt=0; rpt<3; rpt++ )
+            for( OMPSIZE_T rpt=0; rpt<3; rpt++ )
             {
                 psrc[ rpt ] = 0xFF - psrc[ rpt ];
             }
@@ -1361,9 +1442,9 @@ Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
 {
     if ( ( img != NULL ) && ( kfc != NULL ) )
     {
-        unsigned img_w = img->w();
-        unsigned img_h = img->h();
-        unsigned img_d = img->d();
+        OMPSIZE_T img_w = img->w();
+        OMPSIZE_T img_h = img->h();
+        OMPSIZE_T img_d = img->d();
 
         if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
             return NULL;
@@ -1378,27 +1459,27 @@ Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
             return NULL;
 
         #pragma omp parallel for
-        for( unsigned cntx=0; cntx<img_w; cntx++ )
+        for( OMPSIZE_T cntx=0; cntx<img_w; cntx++ )
         {
-            for( unsigned cnty=0; cnty<img_h; cnty++ )
+            for( OMPSIZE_T cnty=0; cnty<img_h; cnty++ )
             {
                 double adj[4] = {0.0};
 
                 // -- applying matrix ---
-                for( unsigned fcntx=0; fcntx<kfc->w; fcntx++ )
+                for( OMPSIZE_T fcntx=0; fcntx<kfc->w; fcntx++ )
                 {
-                    for( unsigned fcnty=0; fcnty<kfc->h; fcnty++ )
+                    for( OMPSIZE_T fcnty=0; fcnty<kfc->h; fcnty++ )
                     {
-                        unsigned posX = ( cntx - kfc->w / 2 + fcntx + img_w )
-                                        % img_w;
-                        unsigned posY = ( cnty - kfc->h / 2 + fcnty + img_h )
-                                        % img_h;
+                        OMPSIZE_T posX = ( cntx - kfc->w / 2 + fcntx + img_w )
+                                         % img_w;
+                        OMPSIZE_T posY = ( cnty - kfc->h / 2 + fcnty + img_h )
+                                         % img_h;
 
-                        unsigned posM = posY * img_w + posX;
+                        OMPSIZE_T posM = posY * img_w + posX;
 
                         if ( posM < ( img_w * img_h ) )
                         {
-                            for( unsigned cntd=0; cntd<img_d; cntd ++ )
+                            for( OMPSIZE_T cntd=0; cntd<img_d; cntd ++ )
                             {
                                 adj[ cntd ] += (double)pixels[ posM * img_d  + cntd ] *
                                                (double)kfc->m[ fcnty * kfc->w + fcntx ];
@@ -1407,15 +1488,23 @@ Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
                     }
                 }
 
-                for( unsigned cntd=0; cntd<img_d; cntd++ )
+                for( OMPSIZE_T cntd=0; cntd<img_d; cntd++ )
                 {
                     uchar rpixel = MIN( MAX( kfc->f * adj[ cntd ] + kfc->b, 0 ), 255 );
                     newbuff[ ( cnty * img_w + cntx ) * img_d + cntd ] = rpixel;
                 }
             }
         }
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        Fl_RGB_Image* newimg = new Fl_RGB_Image( newbuff, img_w, img_h, img_d );
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+            return newimg;
+        }
+#else
         return new Fl_RGB_Image( newbuff, img_w, img_h, img_d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -1425,9 +1514,9 @@ bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
 {
     if ( ( img != NULL ) && ( kfc != NULL ) )
     {
-        unsigned img_w = img->w();
-        unsigned img_h = img->h();
-        unsigned img_d = img->d();
+        OMPSIZE_T img_w = img->w();
+        OMPSIZE_T img_h = img->h();
+        OMPSIZE_T img_d = img->d();
 
         if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
             return false;
@@ -1438,27 +1527,27 @@ bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
         uchar* pixels  = (uchar*)img->data()[0];
 
         #pragma omp parallel for
-        for( unsigned cntx=0; cntx<img_w; cntx++ )
+        for( OMPSIZE_T cntx=0; cntx<img_w; cntx++ )
         {
-            for( unsigned cnty=0; cnty<img_h; cnty++ )
+            for( OMPSIZE_T cnty=0; cnty<img_h; cnty++ )
             {
                 double adj[4] = {0.0};
 
                 // -- applying matrix ---
-                for( unsigned fcntx=0; fcntx<kfc->w; fcntx++ )
+                for( OMPSIZE_T fcntx=0; fcntx<kfc->w; fcntx++ )
                 {
-                    for( unsigned fcnty=0; fcnty<kfc->h; fcnty++ )
+                    for( OMPSIZE_T fcnty=0; fcnty<kfc->h; fcnty++ )
                     {
-                        unsigned posX = ( cntx - kfc->w / 2 + fcntx + img_w )
-                                        % img_w;
-                        unsigned posY = ( cnty - kfc->h / 2 + fcnty + img_h )
-                                        % img_h;
+                        OMPSIZE_T posX = ( cntx - kfc->w / 2 + fcntx + img_w )
+                                         % img_w;
+                        OMPSIZE_T posY = ( cnty - kfc->h / 2 + fcnty + img_h )
+                                         % img_h;
 
-                        unsigned posM = posY * img_w + posX;
+                        OMPSIZE_T posM = posY * img_w + posX;
 
                         if ( posM < ( img_w * img_h ) )
                         {
-                            for( unsigned cntd=0; cntd<img_d; cntd ++ )
+                            for( OMPSIZE_T cntd=0; cntd<img_d; cntd ++ )
                             {
                                 adj[ cntd ] += (double)pixels[ posM * img_d  + cntd ] *
                                                (double)kfc->m[ fcnty * kfc->w + fcntx ];
@@ -1467,7 +1556,7 @@ bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
                     }
                 }
 
-                for( unsigned cntd=0; cntd<img_d; cntd++ )
+                for( OMPSIZE_T cntd=0; cntd<img_d; cntd++ )
                 {
                     uchar rpixel = MIN( MAX( kfc->f * adj[ cntd ] + kfc->b, 0 ), 255 );
                     pixels[ ( cnty * img_w + cntx ) * img_d + cntd ] = rpixel;
@@ -1481,28 +1570,28 @@ bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
     return false;
 }
 
-bool fl_imgtk_gen_lowfreq( uchar** out, uchar* src, unsigned w, unsigned h, unsigned d, unsigned sz )
+bool fl_imgtk_gen_lowfreq( uchar** out, const uchar* src, unsigned w, unsigned h, unsigned d, unsigned sz )
 {
     if ( src == NULL )
         return false;
 
-    if ( ( w == 0 ) || ( h == 0 ) || ( d < 3 ) )
+    if ( ( w < sz*2 ) || ( h < sz*2 ) || ( d < 3 ) )
         return false;
 
     if ( sz < 2 )
         return false;
 
-    long startpos = sz / 2;
-    long endposw  = w - startpos;
-    long endposh  = h - startpos;
+    OMPSIZE_T startpos = sz / 2;
+    OMPSIZE_T endposw  = w - startpos;
+    OMPSIZE_T endposh  = h - startpos;
 
     uchar* outbuff = new uchar[ w * h * d ];
 
     if ( outbuff == NULL )
         return false;
 
-    long cnty;
-    long cntx;
+    OMPSIZE_T cnty;
+    OMPSIZE_T cntx;
 
     #pragma omp parallel for private( cntx )
     for( cnty=startpos; cnty<endposh; cnty++ )
@@ -1511,18 +1600,18 @@ bool fl_imgtk_gen_lowfreq( uchar** out, uchar* src, unsigned w, unsigned h, unsi
         {
             unsigned sum[4] = {0};
 
-            for( long ry = -startpos; ry<(startpos+1); ry++ )
+            for( OMPSIZE_T ry = -startpos; ry<(startpos+1); ry++ )
             {
-                for( long rx = -startpos; rx<(startpos+1); rx++ )
+                for( OMPSIZE_T rx = -startpos; rx<(startpos+1); rx++ )
                 {
-                    for( long rpt=0; rpt<d; rpt++ )
+                    for( OMPSIZE_T rpt=0; rpt<d; rpt++ )
                     {
                         sum[rpt] += src[ ( ( cnty + ry ) * w + ( cntx + rx ) ) * d + rpt ];
                     }
                 }
             }
 
-            for( long rpt=0; rpt<d; rpt++ )
+            for( OMPSIZE_T rpt=0; rpt<d; rpt++ )
             {
                 outbuff[ ( cnty * w + cntx ) * d + rpt ] \
                  = MIN( 255, sum[rpt] / ( sz * sz ) );
@@ -1539,13 +1628,13 @@ Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor, unsigne
 {
     if ( img != NULL )
     {
-        unsigned imgsz = img->w() * img->h() * img->d();
+        OMPSIZE_T imgsz = img->w() * img->h() * img->d();
         uchar* outbuff = new uchar[ imgsz ];
 
         if ( outbuff == NULL )
             return NULL;
 
-        uchar* rbuff  = (uchar*)img->data()[0];
+        const uchar* rbuff  = (const uchar*)img->data()[0];
         uchar* lfimg5 = NULL;
         uchar* lfimg9 = NULL;
 
@@ -1567,14 +1656,14 @@ Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor, unsigne
             margin = 0;
         }
 
-        unsigned cnty;
-        unsigned cntx;
-        unsigned cntw = img->w();
-        unsigned cnth = img->h();
-        unsigned mgnx = margin;
-        unsigned mgny = margin;
-        unsigned mgnw = img->w() - ( margin * 2 );
-        unsigned mgnh = img->h() - ( margin * 2 );
+        long cnty;
+        long cntx;
+        long cntw = img->w();
+        long cnth = img->h();
+        long mgnx = margin;
+        long mgny = margin;
+        long mgnw = img->w() - ( margin * 2 );
+        long mgnh = img->h() - ( margin * 2 );
 
         #pragma omp parallel for private( cntx )
         for( cnty=0; cnty<cnth; cnty++ )
@@ -1605,8 +1694,16 @@ Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor, unsigne
 
         delete[] lfimg5;
         delete[] lfimg9;
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        Fl_RGB_Image* newimg = new Fl_RGB_Image( outbuff, img->w(), img->h(), img->d() );
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+            return newimg;
+        }
+#else
         return new Fl_RGB_Image( outbuff, img->w(), img->h(), img->d() );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -1633,12 +1730,12 @@ bool fl_imgtk::edgeenhance_ex( Fl_RGB_Image* img, unsigned factor, unsigned marg
 
         float fedgev = (float)factor / 8.0f;
 
-        unsigned cnty;
-        unsigned cntx;
-        unsigned mgnx = margin;
-        unsigned mgny = margin;
-        unsigned mgnw = img->w() - ( margin * 2 );
-        unsigned mgnh = img->h() - ( margin * 2 );
+        long cnty;
+        long cntx;
+        long mgnx = margin;
+        long mgny = margin;
+        long mgnw = img->w() - ( margin * 2 );
+        long mgnh = img->h() - ( margin * 2 );
 
         #pragma omp parallel for private( cntx )
         for( cnty=mgny; cnty<mgnh; cnty++ )
@@ -1705,7 +1802,12 @@ Fl_RGB_Image* fl_imgtk::rescale( Fl_RGB_Image* img, unsigned w, unsigned h, resc
             if ( rse != NULL )
             {
                 newimg = rse->scale( img, w, h );
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+                if ( newimg != NULL )
+                {
+                    newimg->alloc_array = 1;
+                }
+#endif 
                 delete rse;
             }
 
@@ -1782,17 +1884,22 @@ Fl_RGB_Image* fl_imgtk::draw_currentwindow( void* w )
             fl_read_image( widgetbuff, cwin_x, cwin_y,
                                        cwin_w, cwin_h );
 
-            Fl_RGB_Image* retimg =  new Fl_RGB_Image( widgetbuff,
+            Fl_RGB_Image* newimg =  new Fl_RGB_Image( widgetbuff,
                                                       cwin_w,
                                                       cwin_h,
                                                       3 );
                                                       
-            if ( retimg == NULL )
+            if ( newimg == NULL )
             {
                 delete[] widgetbuff;
             }
-            
-            return retimg;
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+            else
+            {
+                newimg->alloc_array = 1;
+            }
+#endif ///  of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+            return newimg;
         }
     }
     
@@ -1855,6 +1962,9 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
                     Fl_RGB_Image* sdimg = redown->scale( widgetimg, scd_w, scd_h );
                     if ( sdimg != NULL )
                     {
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+                        sdimg->alloc_array = 1;
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)                        
                         BSplineFilter* bsfilter = new BSplineFilter();
                         if ( bsfilter != NULL )
                         {
@@ -1862,8 +1972,13 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
                             if (  reup != NULL )
                             {
                                 blurredimg = reup->scale( sdimg, w->w(), w->h() );
-
                                 delete reup;
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+                                if ( blurredimg != NULL )
+                                {
+                                    blurredimg->alloc_array = 1;
+                                }
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                             }
                             delete bsfilter;
                         }
@@ -1909,6 +2024,9 @@ Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
                 Fl_RGB_Image* sdimg = redown->scale( src, scd_w, scd_h );
                 if ( sdimg != NULL )
                 {
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+                    sdimg->alloc_array = 1;
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                     BSplineFilter* bsfilter = new BSplineFilter();
                     if ( bsfilter != NULL )
                     {
@@ -1916,8 +2034,13 @@ Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
                         if (  reup != NULL )
                         {
                             newimg = reup->scale( sdimg, src->w(), src->h() );
-
                             delete reup;
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+                            if ( newimg != NULL )
+                            {
+                                newimg->alloc_array =1;
+                            }
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                         }
                         delete bsfilter;
                     }
@@ -1960,6 +2083,9 @@ bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, unsigned factor )
                 Fl_RGB_Image* sdimg = redown->scale( src, scd_w, scd_h );
                 if ( sdimg != NULL )
                 {
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+                    sdimg->alloc_array = 1;
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                     BSplineFilter* bsfilter = new BSplineFilter();
                     if ( bsfilter != NULL )
                     {
@@ -1970,6 +2096,9 @@ bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, unsigned factor )
 
                             if ( newimg != NULL )
                             {
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+                                newimg->alloc_array = 1;
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                                 uchar* pdst = (uchar*)src->data()[0];
                                 uchar* psrc = (uchar*)newimg->data()[0];
 
@@ -2002,11 +2131,11 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
 {
     if ( src != NULL )
     {
-        unsigned rsx = sx;
-        unsigned rsy = sy;
-        unsigned rw  = w;
-        unsigned rh  = h;
-        unsigned sd  = src->d();
+        OMPSIZE_T rsx = sx;
+        OMPSIZE_T rsy = sy;
+        OMPSIZE_T rw  = w;
+        OMPSIZE_T rh  = h;
+        OMPSIZE_T sd  = src->d();
 
         if ( ( rsx > src->w() ) || ( rsy > src->h() ) )
             return NULL;
@@ -2027,16 +2156,17 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
         uchar* rbuff = (uchar*)src->data()[0];
         uchar* obuff = new uchar[ rw * rh * sd ];
 
-        if ( ( rbuff != NULL ) && ( obuff != NULL ) )
+        if ( obuff != NULL )
         {
-            unsigned srcw = rsx + w;
-            unsigned srch = rsy + h;
-            unsigned cnty;
-            unsigned cntx;
-            unsigned putx;
-            unsigned puty;
+            OMPSIZE_T srcw = rsx + w;
+            OMPSIZE_T srch = rsy + h;
+            OMPSIZE_T cnty;
+            OMPSIZE_T cntx;
+            OMPSIZE_T putx;
+            OMPSIZE_T puty;
 
-            #pragma omp parellel for private( cntx )
+            // bug in thnak you, https://github.com/fire-eggs
+            #pragma omp parallel for private( cntx )
             for( cnty=rsy; cnty<srch; cnty++ )
             {
                 for( cntx=rsx; cntx<srcw; cntx ++ )
@@ -2049,12 +2179,16 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
                     memcpy( wptr, rptr, sd );
                 }
             }
-#ifdef DEBUG
-            Fl_RGB_Image* retimg = new Fl_RGB_Image( obuff, rw, rh , sd );
-            return retimg;
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+            Fl_RGB_Image* newimg = new Fl_RGB_Image( obuff, rw, rh , sd );
+            if ( newimg != NULL )
+            {
+                newimg->alloc_array = 1;
+                return newimg;
+            }
 #else
             return new Fl_RGB_Image( obuff, rw, rh , sd );
-#endif      
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         }
     }
 
@@ -2076,8 +2210,8 @@ void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
         int imgx = 0;
         int imgy = 0;
 
-        int maxw = MIN( img->w() + minx, bw );
-        int maxh = MIN( img->h() + miny, bh );
+        OMPSIZE_T maxw = MIN( img->w() + minx, bw );
+        OMPSIZE_T maxh = MIN( img->h() + miny, bh );
 
         if ( px < 0 )
         {
@@ -2095,12 +2229,12 @@ void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
             py   = 0;
         }
 
-        int cntx = 0;
-        int cnty = 0;
-        int imgw = img->w();
-        int imgd = img->d();
+        OMPSIZE_T cntx = 0;
+        OMPSIZE_T cnty = 0;
+        OMPSIZE_T imgw = img->w();
+        OMPSIZE_T imgd = img->d();
         
-        #pragma omp parellel for private( cnty )
+        #pragma omp parallel for private( cnty )
         for( cnty=miny; cnty<maxh; cnty++ )
         {
             for( cntx=minx; cntx<maxw; cntx++ )
@@ -2181,6 +2315,8 @@ void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                 }
             }
         }
+        
+        img->uncache();
     }
 }
 
@@ -2194,13 +2330,13 @@ void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
 
         uchar* rbuff = (uchar*)img->data()[0];
 
-        int minx = px;
-        int miny = py;
-        int imgx = 0;
-        int imgy = 0;
+        OMPSIZE_T minx = px;
+        OMPSIZE_T miny = py;
+        OMPSIZE_T imgx = 0;
+        OMPSIZE_T imgy = 0;
 
-        int maxw = MIN( img->w() + minx, bw );
-        int maxh = MIN( img->h() + miny, bh );
+        OMPSIZE_T maxw = MIN( img->w() + minx, bw );
+        OMPSIZE_T maxh = MIN( img->h() + miny, bh );
 
         if ( px < 0 )
         {
@@ -2218,18 +2354,18 @@ void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
             py   = 0;
         }
 
-        int cntx = 0;
-        int cnty = 0;
-        int imgw = img->w();
-        int imgd = img->d();
+        OMPSIZE_T cntx = 0;
+        OMPSIZE_T cnty = 0;
+        OMPSIZE_T imgw = img->w();
+        OMPSIZE_T imgd = img->d();
 
-        #pragma omp parellel for private( cnty )
+        #pragma omp parallel for private( cnty )
         for( cnty=miny; cnty<maxh; cnty++ )
         {
             for( cntx=minx; cntx<maxw; cntx++ )
             {
-                unsigned ipx = imgx + (cntx - minx);
-                unsigned ipy = imgy + (cnty - miny);
+                OMPSIZE_T ipx = imgx + (cntx - minx);
+                OMPSIZE_T ipy = imgy + (cnty - miny);
 
                 uchar* rptr = &rbuff[ ( ipy * imgw + ipx ) * imgd ];
                 uchar* wptr = &buff[ ( ( cnty * bw ) + cntx ) * bd ];
@@ -2243,7 +2379,7 @@ void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
 
                 float falp = ( (float)alp / 255.0f ) * alpha;
 
-                for( unsigned rpt=0; rpt<3; rpt++ )
+                for( OMPSIZE_T rpt=0; rpt<3; rpt++ )
                 {
                     float fp = (float)wptr[ rpt ];
 
@@ -2261,13 +2397,10 @@ void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
 
                     wptr[ rpt ] = (uchar)fp;
                 }
-
-                if ( bd == 4 )
-                {
-                    //wptr[3] = 0xFF;
-                }
             }
         }
+        
+        img->uncache();
     }
 }
 
@@ -2325,8 +2458,13 @@ Fl_RGB_Image* fl_imgtk::merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2, mergeconf
                                  src1, img1px, img1py, fratios[0] );
         fl_imgtk_putimgonbuffer( obuff, maxsz_w, maxsz_h, 4,
                                  src2, img2px, img2py, fratios[1] );
-
         newimg = new Fl_RGB_Image( obuff, maxsz_w, maxsz_h, 4 );
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+        }
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return newimg;
@@ -2354,6 +2492,12 @@ Fl_RGB_Image* fl_imgtk::subtract( Fl_RGB_Image* src1, Fl_RGB_Image* src2, int px
         fl_imgtk_subimgonbuffer( obuff, maxsz_w, maxsz_h, 4, src2, px, py, sr );
 
         newimg = new Fl_RGB_Image( obuff, maxsz_w, maxsz_h, 4 );
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+        }
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return newimg;
@@ -2387,38 +2531,38 @@ unsigned fl_imgtk::makealphamap( uchar* &amap, Fl_RGB_Image* src, float val )
 
     val = MAX( 1.0f, MIN( 0.0f, val ) );
 
-    unsigned imgsz = src->w() * src->h();
+    OMPSIZE_T imgsz = src->w() * src->h();
 
     uchar* refbuff = (uchar*)src->data()[0];
-    uchar* newbuff = new uchar[ imgsz ];
+    amap = new uchar[ imgsz ];
 
-    if ( newbuff != NULL )
+    if ( amap != NULL )
     {
+        memset( amap, 0, imgsz );
+        
         if ( src->d() == 4 )
         {
-            #pragma omp parellel for
-            for( unsigned cnt=0; cnt<imgsz; cnt++ )
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
             {
-                uchar fillv = uchar( (float)refbuff[cnt * 4] * val );
-
-                newbuff[ cnt ] = fillv;
+                amap[ cnt ] = (uchar)( (float)refbuff[cnt*4] * val );
             }
         }
         else
         {
             // Generate alphamap from RGB average.
-
-            #pragma omp parellel for
-            for( unsigned cnt=0; cnt<imgsz; cnt++ )
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
             {
-                unsigned avrp = refbuff[cnt*3+0] + refbuff[cnt*3+1] + refbuff[cnt*3+2];
-                avrp /= 3;
+                float avrp = (float)refbuff[cnt*3+0] 
+                             + (float)refbuff[cnt*3+1] 
+                             + (float)refbuff[cnt*3+2];
+                avrp /= 3.f;
 
-                newbuff[ cnt ] = uchar( (float)avrp * val );
+                amap[ cnt ] = (uchar)( avrp * val );
             }
         }
 
-        amap = newbuff;
         return imgsz;
     }
 
@@ -2431,15 +2575,12 @@ unsigned fl_imgtk::makealphamap( uchar* &amap, unsigned w, unsigned h, uchar val
 
     val = MAX( 1.0f, MIN( 0.0f, val ) );
 
-    uchar* newbuff = new uchar[ imgsz ];
+    amap = new uchar[ imgsz ];
 
-    if ( newbuff != NULL )
+    if ( amap != NULL )
     {
         uchar fillv = (uchar)( 255.0f * val );
-
-        memset( newbuff, fillv, imgsz );
-
-        amap = newbuff;
+        memset( amap, fillv, imgsz );
         return imgsz;
     }
 
@@ -2455,9 +2596,9 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
         if ( src->d() < 3 )
             return NULL;
 
-        unsigned img_w  = src->w();
-        unsigned img_h  = src->h();
-        unsigned img_sz = img_w * img_h;
+        OMPSIZE_T img_w  = src->w();
+        OMPSIZE_T img_h  = src->h();
+        OMPSIZE_T img_sz = img_w * img_h;
 
         uchar* sbuff = (uchar*)src->data()[0];
         uchar* obuff = new uchar[ img_sz * 4 ];
@@ -2474,8 +2615,8 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
         }
         else
         {
-            #pragma omp parellel for
-            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<img_sz; cnt++ )
             {
                 uchar* sbpos = &sbuff[ cnt * 3 ];
                 uchar* obpos = &obuff[ cnt * 4 ];
@@ -2485,8 +2626,8 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
             }
         }
 
-        #pragma omp parellel for
-        for( unsigned cnt=0; cnt<img_sz; cnt++ )
+        #pragma omp parallel for
+        for( OMPSIZE_T cnt=0; cnt<img_sz; cnt++ )
         {
             uchar* obp = &obuff[ cnt * 4 + 3 ];
 
@@ -2494,6 +2635,12 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
         }
 
         newimg = new Fl_RGB_Image( obuff, img_w, img_h, 4 );
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+        }
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return newimg;
@@ -2508,9 +2655,9 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, uchar* alphamap, unsigned
         if ( src->d() < 3 )
             return NULL;
 
-        unsigned img_w  = src->w();
-        unsigned img_h  = src->h();
-        unsigned img_sz = img_w * img_h;
+        OMPSIZE_T img_w  = src->w();
+        OMPSIZE_T img_h  = src->h();
+        OMPSIZE_T img_sz = img_w * img_h;
 
         uchar* sbuff = (uchar*)src->data()[0];
         uchar* obuff = new uchar[ img_sz * 4 ];
@@ -2525,8 +2672,8 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, uchar* alphamap, unsigned
         }
         else
         {
-            #pragma omp parellel for
-            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<img_sz; cnt++ )
             {
                 uchar* sbpos = &sbuff[ cnt * 3 ];
                 uchar* obpos = &obuff[ cnt * 4 ];
@@ -2538,14 +2685,20 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, uchar* alphamap, unsigned
         // Apply alpha map.
         if ( ( alphamap != NULL ) && ( amsz == img_sz ) )
         {
-            #pragma omp parellel for
-            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<img_sz; cnt++ )
             {
                 obuff[ cnt * 4 + 3 ] = alphamap[ cnt ];
             }
         }
 
         newimg = new Fl_RGB_Image( obuff, img_w, img_h, 4 );
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+        }
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return newimg;
@@ -2558,9 +2711,9 @@ bool fl_imgtk::applyalpha_ex( Fl_RGB_Image* src, float val )
         if ( src->d() < 3 )
             return false;
 
-        unsigned img_w  = src->w();
-        unsigned img_h  = src->h();
-        unsigned img_sz = img_w * img_h;
+        OMPSIZE_T img_w  = src->w();
+        OMPSIZE_T img_h  = src->h();
+        OMPSIZE_T img_sz = img_w * img_h;
 
         uchar* ptr = (uchar*)src->data()[0];
 
@@ -2568,8 +2721,8 @@ bool fl_imgtk::applyalpha_ex( Fl_RGB_Image* src, float val )
 
         if ( src->d() == 4 )
         {
-            #pragma omp parellel for
-            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<img_sz; cnt++ )
             {
                 uchar* obp = &ptr[ cnt * 4 + 3 ];
 
@@ -2578,12 +2731,12 @@ bool fl_imgtk::applyalpha_ex( Fl_RGB_Image* src, float val )
         }
         else
         {
-            #pragma omp parellel for
-            for( unsigned cnt=0; cnt<img_sz; cnt++ )
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<img_sz; cnt++ )
             {
                 uchar* obp = &ptr[ cnt * 3 ];
 
-                for( unsigned rpt=0; rpt<3; rpt++ )
+                for( OMPSIZE_T rpt=0; rpt<3; rpt++ )
                 {
                     obp[rpt] = (uchar)( (float)obp[rpt] * val );
                 }
@@ -2649,8 +2802,8 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
         uchar ref_c2b   = ( col2 & 0x0000FF00 ) >> 8;
         uchar ref_c2a   = alpha2;
 
-        #pragma omp parellel for
-        for ( int cy=0; cy<h; cy++ )
+        #pragma omp parallel for
+        for ( long cy=0; cy<(long)h; cy++ )
         {
             uchar* sbuf = &buffer[ cy * w * d ];
 
@@ -2665,7 +2818,7 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
                 fill_a = ( (float)ref_c1a * col1g ) + ( (float)ref_c2a * col2g );
             }
 
-            for ( int cx=0; cx<w; cx++ )
+            for ( long cx=0; cx<(long)w; cx++ )
             {
                 if ( dither == true )
                 {
@@ -2697,8 +2850,16 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
                 sbuf += d;
             }
         }
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        Fl_RGB_Image* newimg = new Fl_RGB_Image( buffer, w, h, d );
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+            return newimg;
+        }
+#else
         return new Fl_RGB_Image( buffer, w, h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -2738,8 +2899,11 @@ Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulo
         uchar ref_c2b   = ( col2 & 0x0000FF00 ) >> 8;
         uchar ref_c2a   = alpha2;
 
-        #pragma omp parellel for private( cy )
-        for ( int cx=0; cx<w; cx++ )
+        OMPSIZE_T cx = 0;
+        OMPSIZE_T cy = 0;
+        
+        #pragma omp parallel for private( cy )
+        for ( cx=0; cx<w; cx++ )
         {
             col1g = ( ( float( w*10 ) - float( cx*10 )  ) * downscale_f ) / 2559.0f;
             col2g = 1.0f - col1g;
@@ -2752,7 +2916,7 @@ Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulo
                 fill_a = ( (float)ref_c1a * col1g ) + ( (float)ref_c2a * col2g );
             }
 
-            for ( int cy=0; cy<h; cy++ )
+            for ( cy=0; cy<h; cy++ )
             {
                 uchar* sbuf = &buffer[ ( ( w * cy ) + cx ) * d ];
 
@@ -2787,7 +2951,16 @@ Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulo
             }
         }
 
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        Fl_RGB_Image* newimg = new Fl_RGB_Image( buffer, w, h, d );
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+            return newimg;
+        }
+#else
         return new Fl_RGB_Image( buffer, w, h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -2863,12 +3036,12 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, ulong col, float
 {
     float alpha = (float)( col & 0x000000FF ) / 255.f;
     
-    if ( ( br == 0.f ) || ( alpha == 0.f ) )
+    if ( ( br <= 0.f ) || ( alpha == 0.f ) )
         return;
         
-    uchar col_b = ( col & 0x0000FF00 ) >> 8;
-    uchar col_g = ( col & 0x00FF0000 ) >> 16;
     uchar col_r = ( col & 0xFF000000 ) >> 24;
+    uchar col_g = ( col & 0x00FF0000 ) >> 16;
+    uchar col_b = ( col & 0x0000FF00 ) >> 8;
 
     int w = img->w();
     int h = img->h();
@@ -3003,17 +3176,19 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
         return;
 
     if ( wd < 0.1f ) wd = 0.1f;
-        
+
     int dx   = abs( x2 - x1 );
     int sx   = x1 < x2 ? 1 : -1;
     int dy   = abs( y2 - y1 );
     int sy   = y1 < y2 ? 1 : -1;
     int err  = dx - dy;
-    float e2 = 0.f;
+    int e2   = 0;
     int x3   = 0;
     int y3   = 0;
     float ed = dx+dy == 0.f ? 1.f : sqrt( float(dx*dx) + float(dy*dy) );
-        
+    int ox   = x1;
+    int oy   = y1;
+    
     for( wd = ( wd + 1.f )/2.f; ; )
     {
         float dr = abs( err - dx + dy ) / ed - wd + 1.f;
@@ -3021,11 +3196,14 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
         
         e2 = err;
         x3 = x1;
-        
+
+        // step of X.
         if ( ( 2*e2 ) >= -dx )
         {
-            for( e2 += dy, y3 = y1; e2 < ed*wd && ( y2 != y3 || dx > dy ); e2 += dx )
+            for( e2 += dy, y3 = y1; (e2 < ed*wd) && ((y2 != y3) || (dx > dy)); e2 += dx )
             {
+                int xfix = 0;
+                
                 dr = abs( e2 ) / ed - wd + 1.f;
                 fl_imgtk_dla_plot( img, x1, y3 += sy, col, __MIN( 1.f, 1.f - dr ) );
             }
@@ -3038,9 +3216,10 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
             x1  += sx;
         }
         
+        // step of Y.
         if ( ( 2*e2 ) <= dy )
         {
-            for ( e2 = dx-e2; e2 < ed*wd && ( x2 != x3 || dx < dy ); e2 += dy )
+            for ( e2 = dx-e2; (e2 < ed*wd) && ((x2 != x3) || (dx < dy )); e2 += dy )
             {
                 dr = abs( e2 ) / ed - wd + 1.f;
                 fl_imgtk_dla_plot( img, x3 += sx, y1, col, __MIN( 1.f, 1.f - dr ) );
@@ -3053,8 +3232,6 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
             y1  += sy;
         }
     }
-    
-    fflush( stdout );
 }
 
 #if defined(FAST_RGBA_IGNORE_ALPHA)
@@ -3365,12 +3542,13 @@ void fl_imgtk::draw_fillrect( Fl_RGB_Image* img, int x, int y, int w, int h, ulo
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
     uchar col_r = ( col & 0xFF000000 ) >> 24;
     uchar col_a = ( col & 0x000000FF );
-    uchar img_d = img->d();
-    int   img_w = img->w();
-    int   img_h = img->h();
+    
+    OMPSIZE_T img_d = img->d();
+    OMPSIZE_T img_w = img->w();
+    OMPSIZE_T img_h = img->h();
 
-    int cym = y+h;
-    int cxm = x+w;
+    OMPSIZE_T cym = y+h;
+    OMPSIZE_T cxm = x+w;
 
     if ( cxm > img_w )
         cxm = img_w - x;
@@ -3379,9 +3557,9 @@ void fl_imgtk::draw_fillrect( Fl_RGB_Image* img, int x, int y, int w, int h, ulo
         cym = img_h - y;
 
     #pragma omp parallel for
-    for( int cy=y; cy<cym; cy++ )
+    for( OMPSIZE_T cy=y; cy<cym; cy++ )
     {
-        for( int cx=x; cx<cxm; cx++ )
+        for( OMPSIZE_T cx=x; cx<cxm; cx++ )
         {
             fl_imgtk_putpixel( putbuff,
                                cx, img_w, cy, img_d,
@@ -3406,10 +3584,11 @@ void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points
     if ( img->d() < 3 )
         return;
     
-    uchar col_r = ( col & 0x0000FF00 ) >> 8;
+    uchar col_r = ( col & 0xFF000000 ) >> 24;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
-    uchar col_b = ( col & 0xFF000000 ) >> 24;
-
+    uchar col_b = ( col & 0x0000FF00 ) >> 8;
+    uchar col_a = ( col & 0x000000FF );
+    
     uchar* ptrimg = (uchar*)img->data()[0];
     
     const unsigned max_y = img->h();
@@ -3443,7 +3622,7 @@ void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points
             rcnt = cnt;
         }
 
-        unsigned node_x_sz = node_x.size();
+        OMPSIZE_T node_x_sz = (OMPSIZE_T)node_x.size();
 
         // sort nodes ..
         if ( node_x_sz > 1 )
@@ -3451,17 +3630,17 @@ void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points
             sort( node_x.begin(),
                   node_x.begin() + node_x_sz,
                   fl_imgtk_sortcondition );
-
+#if (DEBUG_DRAWPOLYGON==1)
             for( unsigned ncnt=0; ncnt<node_x_sz; ncnt++ )
             {
                 printf("%.2f, ", node_x[ncnt] );
             }
             printf("\n");
-
+#endif /// of DEBUG_DRAWPOLYGON
         }
 
         #pragma parallel for
-        for( unsigned dcnt=0; dcnt<node_x_sz; dcnt+=2 )
+        for( OMPSIZE_T dcnt=0; dcnt<node_x_sz; dcnt+=2 )
         {
             if ( node_x[dcnt] >= max_x )
                 break;
@@ -3478,13 +3657,11 @@ void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points
                     node_x[dcnt+1] = max_x;
                 }
 
-                for( int cur_x=node_x[dcnt]; cur_x<=node_x[dcnt+1]; cur_x++ )
+                for( OMPSIZE_T cur_x=node_x[dcnt]; cur_x<=node_x[dcnt+1]; cur_x++ )
                 {
-                    int buffpos = ( max_x * cur_y + cur_x ) * img->d();
-                    
-                    ptrimg[ buffpos + 0 ] = col_r;
-                    ptrimg[ buffpos + 1 ] = col_g;
-                    ptrimg[ buffpos + 2 ] = col_b;
+                    fl_imgtk_putpixel( ptrimg,
+                                       cur_x, img->w(), cur_y, img->d(),
+                                       col_r, col_g, col_b, col_a );
                 }
             }
         }
@@ -3500,11 +3677,12 @@ void fl_imgtk::discard_user_rgb_image( Fl_RGB_Image* &img )
 {
     if( img != NULL )
     {
+#if !defined(FLIMGTK_IMGBUFF_OWNALLOC)
         if ( ( img->array != NULL ) && ( img->alloc_array == 0 ) )
         {
             delete[] img->array;
         }
-
+#endif
         delete img;
         img = NULL;
     }

@@ -2,7 +2,7 @@
 #define __FL_IMGTOOLKIT_H__
 
 /*******************************************************************************
-* fl_imgtk.H , version 0.3.35.8
+* fl_imgtk.H , version 0.3.37.12
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2019 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -23,8 +23,8 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    35
-#define FL_IMGTK_VER_REV    8
+#define FL_IMGTK_VER_BLD    37
+#define FL_IMGTK_VER_REV    12
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \
@@ -276,7 +276,8 @@ namespace fl_imgtk
                        ulong col = 0 );
     
     ////////////////////////////////////////////////////////////////////////////
-
+    // Please use call discard_user_rgb_image() to destruct images from 
+    // fl_imgtk().
     void discard_user_rgb_image( Fl_RGB_Image* &img );
     void discard_kfconfig( kfconfig* &kfc ); /// Not Kentucky Fried Chicken !
 };

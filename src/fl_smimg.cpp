@@ -18,6 +18,12 @@
 #define FI_RGBA_BLUE            2
 #define FI_RGBA_ALPHA           3
 
+// OpenMP compatibility for M$VC.
+#ifdef _MSC_VER
+#define OMPSIZE_T       long
+#else
+#define OMPSIZE_T       size_t
+#endif 
 
 /// Clamp function
 template <class T> T CLAMP(const T &value, const T &min_value, const T &max_value) {
@@ -26,7 +32,7 @@ template <class T> T CLAMP(const T &value, const T &min_value, const T &max_valu
 
 WeightsTable::WeightsTable( GenericFilter *pFilter, unsigned uDstSize, unsigned uSrcSize )
 {
-    unsigned        u;
+    OMPSIZE_T       u;
     double          dWidth;
     double          dFScale         = 1.0;
     const double    dFilterWidth    = pFilter->GetWidth();
@@ -328,8 +334,8 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
     {
         case 3:
         {
-            unsigned x = 0;
-            unsigned y = 0;
+            OMPSIZE_T x = 0;
+            OMPSIZE_T y = 0;
 
             #pragma omp parallel for private(x)
             for ( y = 0; y < height; y++)
@@ -395,8 +401,8 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
 
         case 4:
         {
-            unsigned x = 0;
-            unsigned y = 0;
+            OMPSIZE_T x = 0;
+            OMPSIZE_T y = 0;
 
             #pragma omp parallel for private(x)
             for ( y = 0; y < height; y++)
@@ -481,8 +487,8 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
     {
         case 3:
         {
-            unsigned x = 0;
-            unsigned y = 0;
+            OMPSIZE_T x = 0;
+            OMPSIZE_T y = 0;
 
             #pragma omp parallel for private(y)
             for ( x = 0; x < width; x++)
@@ -547,8 +553,8 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
 
         case 4:
         {
-            unsigned x = 0;
-            unsigned y = 0;
+            OMPSIZE_T x = 0;
+            OMPSIZE_T y = 0;
 
             #pragma omp parallel for private(y)
             for ( x = 0; x < width; x++)

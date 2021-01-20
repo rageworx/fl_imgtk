@@ -12,6 +12,13 @@
 #define CLAHE_MAX_REG_H             256
 #define CLAHE_MAX_RANGE             512
 
+// OpenMP compatibility for M$VC.
+#ifdef _MSC_VER
+#define OMPSIZE_T       long
+#else
+#define OMPSIZE_T       size_t
+#endif 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Some CLAHE depends functions here:
 
@@ -220,11 +227,13 @@ void CLAHE_Interpolate( uchar* pImage,
             {
                 /* get histogram bin value */
                 GreyValue = pLUT[*pImage];
-
-                *pImage++ = (uchar)( ( invcoefH *
-                                     ( invcoefW*pMapLU[GreyValue] +  coefW * pMapRU[GreyValue] ) +
-                                       coefH * (invcoefW * pMapLB[GreyValue] +
-                                       coefW * pMapRB[GreyValue])) / normFactor );
+                unsigned tmpus =  ( invcoefH * \
+                                   ( invcoefW*pMapLU[GreyValue] +  coefW * pMapRU[GreyValue] ) + \
+                                     coefH * (invcoefW * pMapLB[GreyValue] + \
+                                     coefW * pMapRB[GreyValue]) \
+                                   ) / normFactor;
+                if ( tmpus > 255 ) tmpus = 255;
+                *pImage++ = (uchar)tmpus;
             }
         }
     }
@@ -246,11 +255,13 @@ void CLAHE_Interpolate( uchar* pImage,
             {
                 /* get histogram bin value */
                 GreyValue = pLUT[*pImage];
-
-                *pImage++ = (uchar)( ( invcoefH *
-                                       ( invcoefW * pMapLU[GreyValue] + coefW * pMapRU[GreyValue] ) +
-                                         coefH * (invcoefW * pMapLB[GreyValue] +
-                                         coefW * pMapRB[GreyValue])) >> shifts );
+                unsigned tmpus = ( invcoefH * \
+                                   ( invcoefW * pMapLU[GreyValue] + coefW * pMapRU[GreyValue] ) + \
+                                     coefH * \
+                                   ( invcoefW * pMapLB[GreyValue] + coefW * pMapRB[GreyValue] ) \
+                                 ) >> shifts;
+                if ( tmpus > 255 ) tmpus = 255;
+                *pImage++ = (uchar)tmpus;
             }
         }
     }
@@ -451,13 +462,13 @@ Fl_RGB_Image* fl_imgtk::CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     if ( src->d() < 3 )
         return NULL;
 
-    unsigned imgWidth = src->w();
-    unsigned imgHeight = src->h();
+    OMPSIZE_T imgWidth = src->w();
+    OMPSIZE_T imgHeight = src->h();
 
     if ( ( imgWidth == 0 ) || ( imgHeight == 0 ) )
         return NULL;
 
-    unsigned imgsz = imgWidth * imgHeight;
+    OMPSIZE_T imgsz = imgWidth * imgHeight;
 
     uchar* rbuff = (uchar*)src->data()[0];
 
@@ -485,8 +496,9 @@ Fl_RGB_Image* fl_imgtk::CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     uchar min_rgb[3] = {255,255,255};
     uchar max_rgb[3] = {0,0,0};
 
-    #pragma omp parellel for
-    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    //need to fix this for openmp --
+    //#pragma omp parallel for
+    for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
         uchar* ptr = &rbuff[ cnt * src->d() ];
         data_r[ cnt ] = ptr[ 0 ];
@@ -510,11 +522,11 @@ Fl_RGB_Image* fl_imgtk::CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     // RED->GREEN->BLUE
     // Skip failure.
     applyCLAHE( data_r, imgWidth, imgHeight,
-                min_rgb[0], max_rgb[0], regionW, regionH, 256, cliplimit );
+                min_rgb[0], max_rgb[0], regionW, regionH, 255, cliplimit );
     applyCLAHE( data_g, imgWidth, imgHeight,
-                min_rgb[1], max_rgb[1], regionW, regionH, 256, cliplimit );
+                min_rgb[1], max_rgb[1], regionW, regionH, 255, cliplimit );
     applyCLAHE( data_b, imgWidth, imgHeight,
-                min_rgb[2], max_rgb[2], regionW, regionH, 256, cliplimit );
+                min_rgb[2], max_rgb[2], regionW, regionH, 255, cliplimit );
 
     Fl_RGB_Image* newimg = (Fl_RGB_Image*)src->copy();
 
@@ -522,8 +534,8 @@ Fl_RGB_Image* fl_imgtk::CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     {
         rbuff = (uchar*)newimg->data()[0];
 
-        #pragma omp parellel for
-        for( unsigned cnt=0; cnt<imgsz; cnt++ )
+        #pragma omp parallel for
+        for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
         {
             uchar* ptr = &rbuff[ cnt * newimg->d() ];
             ptr[ 0 ] = data_r[ cnt ];
@@ -549,13 +561,13 @@ bool fl_imgtk::CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
     if ( src->d() < 3 )
         return false;
 
-    unsigned imgWidth = src->w();
-    unsigned imgHeight = src->h();
+    OMPSIZE_T imgWidth = src->w();
+    OMPSIZE_T imgHeight = src->h();
 
     if ( ( imgWidth == 0 ) || ( imgHeight == 0 ) )
         return false;
 
-    unsigned imgsz = imgWidth * imgHeight;
+    OMPSIZE_T imgsz = imgWidth * imgHeight;
 
     uchar* rbuff = (uchar*)src->data()[0];
 
@@ -583,8 +595,9 @@ bool fl_imgtk::CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
     uchar min_rgb[3] = {255,255,255};
     uchar max_rgb[3] = {0,0,0};
 
-    #pragma omp parellel for
-    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    //need to fix this for openmp --
+    // #pragma omp parallel for
+    for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
         uchar* ptr = &rbuff[ cnt * src->d() ];
         data_r[ cnt ] = ptr[ 0 ];
@@ -608,14 +621,14 @@ bool fl_imgtk::CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
     // RED->GREEN->BLUE
     // Skip failure.
     applyCLAHE( data_r, imgWidth, imgHeight,
-                min_rgb[0], max_rgb[0], regionW, regionH, 256, cliplimit );
+                min_rgb[0], max_rgb[0], regionW, regionH, 512, cliplimit );
     applyCLAHE( data_g, imgWidth, imgHeight,
-                min_rgb[1], max_rgb[1], regionW, regionH, 256, cliplimit );
+                min_rgb[1], max_rgb[1], regionW, regionH, 512, cliplimit );
     applyCLAHE( data_b, imgWidth, imgHeight,
-                min_rgb[2], max_rgb[2], regionW, regionH, 256, cliplimit );
+                min_rgb[2], max_rgb[2], regionW, regionH, 512, cliplimit );
 
-    #pragma omp parellel for
-    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    #pragma omp parallel for
+    for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
         uchar* ptr = &rbuff[ cnt * src->d() ];
         ptr[ 0 ] = data_r[ cnt ];
@@ -640,8 +653,8 @@ Fl_RGB_Image* fl_imgtk::noire( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     if ( src->d() < 3 )
         return NULL;
 
-    unsigned imgWidth = src->w();
-    unsigned imgHeight = src->h();
+    OMPSIZE_T imgWidth = src->w();
+    OMPSIZE_T imgHeight = src->h();
 
     if ( ( imgWidth == 0 ) || ( imgHeight == 0 ) )
         return NULL;
@@ -652,7 +665,7 @@ Fl_RGB_Image* fl_imgtk::noire( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     if ( cliplimit < 1.0f )
         cliplimit = 1.1f;
 
-    unsigned imgsz = imgWidth * imgHeight;
+    OMPSIZE_T imgsz = imgWidth * imgHeight;
 
     uchar* rbuff = (uchar*)src->data()[0];
 
@@ -665,8 +678,8 @@ Fl_RGB_Image* fl_imgtk::noire( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     uchar min_rgb = 255;
     uchar max_rgb = 0;
 
-    #pragma omp parellel for
-    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    //#pragma omp parallel for
+    for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
         uchar* ptr = &rbuff[ cnt * src->d() ];
 
@@ -695,8 +708,8 @@ Fl_RGB_Image* fl_imgtk::noire( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     {
         rbuff = (uchar*)newimg->data()[0];
 
-        #pragma omp parellel for
-        for( unsigned cnt=0; cnt<imgsz; cnt++ )
+        #pragma omp parallel for
+        for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
         {
             uchar* ptr = &rbuff[ cnt * newimg->d() ];
 
@@ -704,7 +717,9 @@ Fl_RGB_Image* fl_imgtk::noire( Fl_RGB_Image* src, unsigned regionW, unsigned reg
 
             for( unsigned rpt=0; rpt<3; rpt++ )
             {
-                ptr[ rpt ] = (uchar) MIN( 255.0f,  (float)ptr[ rpt ] * lumif + 0.5f );
+                float tmpx = (float)ptr[ rpt ] * lumif + 0.5f;
+                if ( tmpx > 255.f ) tmpx = 255.f;
+                ptr[ rpt ] = (uchar)tmpx;
             }
         }
     }
@@ -722,8 +737,8 @@ bool fl_imgtk::noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
     if ( src->d() < 3 )
         return false;
 
-    unsigned imgWidth = src->w();
-    unsigned imgHeight = src->h();
+    OMPSIZE_T imgWidth = src->w();
+    OMPSIZE_T imgHeight = src->h();
 
     if ( ( imgWidth == 0 ) || ( imgHeight == 0 ) )
         return false;
@@ -734,7 +749,7 @@ bool fl_imgtk::noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
     if ( cliplimit < 1.0f )
         cliplimit = 1.1f;
 
-    unsigned imgsz = imgWidth * imgHeight;
+    OMPSIZE_T imgsz = imgWidth * imgHeight;
 
     uchar* rbuff = (uchar*)src->data()[0];
 
@@ -747,8 +762,8 @@ bool fl_imgtk::noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
     uchar min_rgb = 255;
     uchar max_rgb = 0;
 
-    #pragma omp parellel for
-    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    //#pragma omp parallel for
+    for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
         uchar* ptr = &rbuff[ cnt * src->d() ];
 
@@ -771,8 +786,8 @@ bool fl_imgtk::noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
         return false;
     }
 
-    #pragma omp parellel for
-    for( unsigned cnt=0; cnt<imgsz; cnt++ )
+    #pragma omp parallel for
+    for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
         uchar* ptr = &rbuff[ cnt * src->d() ];
 
@@ -780,7 +795,9 @@ bool fl_imgtk::noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, 
 
         for( unsigned rpt=0; rpt<3; rpt++ )
         {
-            ptr[ rpt ] = (uchar) MIN( 255.0f,  (float)ptr[ rpt ] * lumif + 0.5f );
+            float tmpx = (float)ptr[ rpt ] * lumif + 0.5f;
+            if ( tmpx > 255.f ) tmpx = 255.f;
+            ptr[ rpt ] = (uchar)tmpx;
         }
     }
 
