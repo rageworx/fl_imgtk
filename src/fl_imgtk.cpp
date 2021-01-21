@@ -3642,6 +3642,91 @@ void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points
     img->uncache();
 }
 
+void fl_imgtk::draw_2xaa_polygon( Fl_RGB_Image* img, const vecpoint* points, unsigned pointscnt, ulong col )
+{
+    if ( img == NULL )
+        return;
+    
+    if ( ( points == NULL ) || ( pointscnt < 3 ) )
+        return;
+    
+    if ( img->d() < 3 )
+        return;
+    
+    uchar col_r = ( col & 0xFF000000 ) >> 24;
+    uchar col_g = ( col & 0x00FF0000 ) >> 16;
+    uchar col_b = ( col & 0x0000FF00 ) >> 8;
+    uchar col_a = ( col & 0x000000FF );
+    
+    // get max coordinates ...
+    unsigned max_x = 0;
+    unsigned max_y = 0;
+    int      min_x = 0xFFFFFFFF;
+    int      min_y = 0xFFFFFFFF;
+    
+    for ( size_t pcnt=0; pcnt<pointscnt; pcnt++ )
+    {
+        if ( points[pcnt].x > max_x ) max_x = (unsigned)points[pcnt].x;
+        if ( points[pcnt].y > max_y ) max_y = (unsigned)points[pcnt].y;
+        if ( points[pcnt].x < min_x ) min_x = (unsigned)points[pcnt].x;
+        if ( points[pcnt].y < min_y ) min_y = (unsigned)points[pcnt].y;
+    }
+
+    if ( min_x < 0 )
+    {
+        max_x += (unsigned)(-min_x);
+    }
+    
+    if ( min_y < 0 )
+    {
+        max_y += (unsigned)(-min_y);
+    }
+
+    if ( ( max_x > 0 ) && ( max_y > 0 ) )
+    {
+        unsigned img_w = max_x * 2;
+        unsigned img_h = max_y * 2;
+        
+        vecpoint* dblpts = new vecpoint[ pointscnt ];
+        
+        if ( dblpts == NULL )
+            return;
+            
+        for ( size_t cnt=0; cnt<pointscnt; cnt++ )
+        {
+            dblpts[cnt].x = points[cnt].x * 2;
+            dblpts[cnt].y = points[cnt].y * 2;
+        }
+        
+        Fl_RGB_Image* imgdbl = makeanempty( img_w, img_h, 4, 0x00000000 );
+        
+        if ( imgdbl == NULL )
+        {
+            delete[] dblpts;
+            return;
+        }
+        
+        draw_polygon( imgdbl, dblpts, pointscnt, col );
+
+        delete[] dblpts;
+
+        Fl_RGB_Image* imgdsl = rescale( imgdbl, img_w, img_h, BILINEAR );
+        
+        if ( imgdsl == NULL )
+        {
+            discard_user_rgb_image( imgdbl );
+            return;
+        }
+        
+        drawonimage( img, imgdsl, min_x, min_y );
+        
+        discard_user_rgb_image( imgdbl );
+        discard_user_rgb_image( imgdsl );
+    }
+    
+    img->uncache();
+}
+
 void fl_imgtk::discard_user_rgb_image( Fl_RGB_Image* &img )
 {
     if( img != NULL )

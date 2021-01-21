@@ -273,6 +273,12 @@ namespace fl_imgtk
     void draw_polygon( Fl_RGB_Image* img, 
                        const vecpoint* points = NULL, unsigned pointscnt = 0,
                        ulong col = 0 );
+    // Emulated draw ( draw in double size image, then downscale it ),
+    // Much slower than draw_polygon().
+    void draw_2xaa_polygon( Fl_RGB_Image* img, 
+                            const vecpoint* points = NULL, 
+                            unsigned pointscnt = 0,
+                            ulong col = 0 );
     
     ////////////////////////////////////////////////////////////////////////////
     // Please use call discard_user_rgb_image() to destruct images from 
