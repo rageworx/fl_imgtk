@@ -38,10 +38,12 @@ using namespace std;
 
 #define fl_imgtk_degree2f( _x_ )            ( ( _x_ / 360.f ) * FLOAT_PI2X )
 #define fl_imgtk_swap_uc( _a_, _b_ )        uchar _t_=_a_; _a_=_b_; _b_=t
+#if !defined(_MSC_VER)
 #define fl_imgtk_swap_mem( _a_, _b_, _c_ )  uchar _t_[_c_] = {0}; \
-                                            memcpy( _t_, &(_a_), _c_ ); \
-                                            memcpy( &(_a_), &(_b_), _c_ ); \
-                                            memcpy( &(_b_), _t_, _c_ )
+                                            memcpy( _t_, _a_, _c_ ); \
+                                            memcpy( _a_, _b_, _c_ ); \
+                                            memcpy( _b_, _t_, _c_ )
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -76,6 +78,24 @@ const float matrixdata_sharpenmore[] =
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(_MSC_VER)
+inline void fl_imgtk_swap_mem( uchar* a, uchar* b, size_t c )  
+{ 
+    if ( c > 0 )
+    {
+        uchar* t = new uchar[c];
+        if ( t != NULL )
+        {
+            memcpy( t, a, c );
+            memcpy( a, b, c );
+            memcpy( b, t, c );
+
+            delete[] t;
+        }
+    }
+}
+#endif
 
 Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong color )
 {
@@ -715,7 +735,7 @@ Fl_RGB_Image* fl_imgtk::fliphorizontal( Fl_RGB_Image* img )
                 size_t pos1 = ( w * ( h - 1 - cnth ) + cntw ) * d;
                 size_t pos2 = ( w * cnth + cntw ) * d;
 
-                fl_imgtk_swap_mem( buff[ pos1 ], buff[ pos2 ], d );
+                fl_imgtk_swap_mem( &buff[ pos1 ], &buff[ pos2 ], d );
             }
         }        
 #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
@@ -757,7 +777,7 @@ bool fl_imgtk::fliphorizontal_ex( Fl_RGB_Image* img )
                 unsigned pos1 = ( w * ( h - 1 - cnth ) + cntw ) * d;
                 unsigned pos2 = ( w * cnth + cntw ) * d;
 
-                fl_imgtk_swap_mem( ptr[ pos1 ], ptr[ pos2 ], d );
+                fl_imgtk_swap_mem( &ptr[ pos1 ], &ptr[ pos2 ], d );
             }
         }
 
@@ -800,7 +820,7 @@ Fl_RGB_Image* fl_imgtk::flipvertical( Fl_RGB_Image* img )
                 unsigned pos1 = ( w * cnth + cntw ) * d;
                 unsigned pos2 = ( w * cnth + ( w - cntw - 1 ) ) * d;
 
-                fl_imgtk_swap_mem( buff[ pos1 ], buff[ pos2 ], d );
+                fl_imgtk_swap_mem( &buff[ pos1 ], &buff[ pos2 ], d );
             }
         }
 
@@ -843,7 +863,7 @@ bool fl_imgtk::flipvertical_ex( Fl_RGB_Image* img )
                 unsigned pos1 = ( w * cnth + cntw ) * d;
                 unsigned pos2 = ( w * cnth + ( w - cntw - 1 ) ) * d;
 
-                fl_imgtk_swap_mem( ptr[ pos1 ], ptr[ pos2 ], d );
+                fl_imgtk_swap_mem( &ptr[ pos1 ], &ptr[ pos2 ], d );
             }
         }
 
@@ -935,8 +955,8 @@ Fl_RGB_Image* fl_imgtk::rotate180( Fl_RGB_Image* img )
         #pragma omp parallel for
         for( OMPSIZE_T cnt=0; cnt<cntmax; cnt++ )
         {
-            fl_imgtk_swap_mem( buff[ cnt * d ],
-                               buff[ (imgmax - cnt - 1) * d ],
+            fl_imgtk_swap_mem( &buff[ cnt * d ],
+                               &buff[ (imgmax - cnt - 1) * d ],
                                3);
         }
 #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
