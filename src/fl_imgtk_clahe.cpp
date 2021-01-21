@@ -1,9 +1,7 @@
 #include "fl_imgtk.h"
 #include "fl_imgtk_minmax.h"
+#include "fl_imgtk_cfg.h"
 
-#ifdef USING_OMP
-#include <omp.h>
-#endif /// of USING_OMP
 #include <cmath>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -11,13 +9,6 @@
 #define CLAHE_MAX_REG_W             256
 #define CLAHE_MAX_REG_H             256
 #define CLAHE_MAX_RANGE             512
-
-// OpenMP compatibility for M$VC.
-#ifdef _MSC_VER
-#define OMPSIZE_T       long
-#else
-#define OMPSIZE_T       size_t
-#endif 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Some CLAHE depends functions here:

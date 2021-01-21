@@ -114,11 +114,12 @@
       <AdditionalIncludeDirectories>..\..\fltk-1.3.5-2-ts;..\src;..\inc</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>
       </MultiProcessorCompilation>
-      <PreprocessorDefinitions>WIN32;USING_INTERPOLATED_ROTATE_FREE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;USING_INTERPOLATED_ROTATE_FREE;USING_OMP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
@@ -161,7 +162,7 @@
       <AdditionalIncludeDirectories>..\..\fltk-1.3.5-2-ts;..\src;..\inc</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>
       </MultiProcessorCompilation>
-      <PreprocessorDefinitions>WIN32;USING_INTERPOLATED_ROTATE_FREE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;USING_INTERPOLATED_ROTATE_FREE;USING_OMP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -185,6 +186,7 @@
     <ClCompile Include="..\src\fl_smimg.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\fl_imgtk_cfg.h" />
     <ClInclude Include="..\src\fl_imgtk_minmax.h" />
     <ClInclude Include="..\src\fl_smimg.h" />
   </ItemGroup>

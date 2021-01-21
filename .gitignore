@@ -35,13 +35,13 @@ msvc/x64
 .vs
 
 # Others
-Makefile
 lib/
-.Makefile*
 .codelite/
 Debug/
-Makefile.clang
-fl_imgtk.mk
-fl_imgtk.project
-fl_imgtk.txt
-fl_imgtk.workspace
+Makefile
+.Makefile*
+*.mk
+*.project
+*.txt
+*.workspace
+*.opendb

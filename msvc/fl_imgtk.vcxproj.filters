@@ -35,5 +35,8 @@
     <ClInclude Include="..\src\fl_smimg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\fl_imgtk_cfg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

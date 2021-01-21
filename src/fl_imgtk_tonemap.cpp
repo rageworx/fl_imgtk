@@ -7,10 +7,8 @@
 
 #include "fl_imgtk.h"
 #include "fl_imgtk_minmax.h"
+#include "fl_imgtk_cfg.h"
 
-#ifdef USING_OMP
-#include <omp.h>
-#endif /// of USING_OMP
 #include <cmath>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -149,7 +147,6 @@ static const double  XYZ2RGB[3][3] =
 
 static inline double fl_imgtk_biasFunction(const double b, const double x)
 {
-    // pow(x, log(bias)/log(0.5)
     return pow (x, b);
 }
 

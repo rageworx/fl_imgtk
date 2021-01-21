@@ -21,9 +21,7 @@
 
 using namespace std;
 
-#ifdef USING_OMP
-    #include <omp.h>
-#endif /// of USING_OMP
+#include "fl_imgtk_cfg.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -41,15 +39,7 @@ using namespace std;
 #define fl_imgtk_degree2f( _x_ )      ( ( _x_ / 360.f ) * FLOAT_PI2X )
 #define fl_imgtk_swap_uc( _a_, _b_ )   uchar t=_a_; _a_=_b_; _b_=t;
 
-// if this flag defined, all new Fl_RGB_Image may alloc_array set to 1.
-#define FLIMGTK_IMGBUFF_OWNALLOC 
 
-// OpenMP compatibility for M$VC.
-#ifdef _MSC_VER
-    #define OMPSIZE_T       long
-#else
-    #define OMPSIZE_T       size_t
-#endif 
 ////////////////////////////////////////////////////////////////////////////////
 
 const float matrixdata_blur[] =
@@ -681,7 +671,6 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
-            
             return newimg;
         }
 #else        
@@ -734,8 +723,8 @@ Fl_RGB_Image* fl_imgtk::fliphorizontal( Fl_RGB_Image* img )
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
+            return newimg;
         }
-        return newimg;
 #else
         return new Fl_RGB_Image( buff, w, h, d );
 #endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
@@ -821,9 +810,16 @@ Fl_RGB_Image* fl_imgtk::flipvertical( Fl_RGB_Image* img )
             }
         }
 
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
-
-        return newimg;
+        if ( newimg != NULL )
+        {
+            newimg->alloc_array = 1;
+            return newimg;
+        }
+#else
+        return new Fl_RGB_Image( buff, w, h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -1167,9 +1163,10 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
         newimg->alloc_array = 1;
         return newimg;
     }
+#else
     return new Fl_RGB_Image( obuff, dstW, dstH, img->d() );
 #endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
-    
+
     // prevent compiler warning.
     return NULL;
 }
@@ -1802,12 +1799,6 @@ Fl_RGB_Image* fl_imgtk::rescale( Fl_RGB_Image* img, unsigned w, unsigned h, resc
             if ( rse != NULL )
             {
                 newimg = rse->scale( img, w, h );
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
-                if ( newimg != NULL )
-                {
-                    newimg->alloc_array = 1;
-                }
-#endif 
                 delete rse;
             }
 
@@ -3186,13 +3177,20 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
     int x3   = 0;
     int y3   = 0;
     float ed = dx+dy == 0.f ? 1.f : sqrt( float(dx*dx) + float(dy*dy) );
-    int ox   = x1;
-    int oy   = y1;
+    int el   = 0;
+    
+    if ( wd > 1.f )
+    {
+        if ( x1 < x2 )
+        {
+            el = (int)(wd/2.f + 0.5f);
+        }
+    }
     
     for( wd = ( wd + 1.f )/2.f; ; )
     {
         float dr = abs( err - dx + dy ) / ed - wd + 1.f;
-        fl_imgtk_dla_plot( img, x1, y1, col, __MIN( 1.f, 1.f - dr ) );
+        fl_imgtk_dla_plot( img, x1-el, y1, col, __MIN( 1.f, 1.f - dr ) );
         
         e2 = err;
         x3 = x1;
@@ -3205,7 +3203,7 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
                 int xfix = 0;
                 
                 dr = abs( e2 ) / ed - wd + 1.f;
-                fl_imgtk_dla_plot( img, x1, y3 += sy, col, __MIN( 1.f, 1.f - dr ) );
+                fl_imgtk_dla_plot( img, x1-el, y3 += sy, col, __MIN( 1.f, 1.f - dr ) );
             }
             
             if ( x1 == x2 )
@@ -3230,6 +3228,12 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
             
             err += dx;
             y1  += sy;
+            
+            if ( el > 0 )
+            {
+                //el -= (int)(wd/2.f*((y2-y1)/y2));
+                //if ( el < 0 ) el = 0;
+            }
         }
     }
 }

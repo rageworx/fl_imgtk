@@ -8,22 +8,12 @@
 #include <FL/fl_draw.H>
 #include "fl_smimg.h"
 #include "fl_imgtk_minmax.h"
-
-#ifdef USING_OMP
-#include <omp.h>
-#endif /// of USING_OMP
+#include "fl_imgtk_cfg.h"
 
 #define FI_RGBA_RED             0
 #define FI_RGBA_GREEN           1
 #define FI_RGBA_BLUE            2
 #define FI_RGBA_ALPHA           3
-
-// OpenMP compatibility for M$VC.
-#ifdef _MSC_VER
-#define OMPSIZE_T       long
-#else
-#define OMPSIZE_T       size_t
-#endif 
 
 /// Clamp function
 template <class T> T CLAMP(const T &value, const T &min_value, const T &max_value) {
@@ -318,7 +308,12 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
             delete[] dst_buff;
             return NULL;
         }
-
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        if ( dst != NULL )
+        {
+            dst->alloc_array = 1;
+        }
+#endif 
         return dst;
     }
 
