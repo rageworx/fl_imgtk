@@ -5,18 +5,23 @@
 
 ## Lastest upate
 
-* 2021-01-20
-    1. Some enhancements for MSVC OpenMP compatibility.
-	1. Fixed drawing polygon errors in alpha-depth RGB buffer.
-	1. Fixed typo error in OpenMP, also fixed OpenMP compatibilities including tonemaps and CLAHE.
-	1. All created Fl_RGB_Image now alloc_array member set to 1 by FLIMGTK_IMGBUFF_OWNALLOC flag.
-	1. Now it should be safe by call delete instead using discard_user_rgb_image().
-	1. MSVC OpenMP only availed for Release. ( changing project is own-risk, it doesn't made for MSVC )
-	1. Still smooth_line has some thickness error by starting x1 less than x2 coordination.
-	1. Version updated to 0.3.37.12
+* 2021-01-21
+    1. Fixed some OpenMP errors, ehanced for compatibility.
+	1. Fixed error of flipping.
+	1. Replaced draw smooth line algorithm to "SDF optimization with AABB".
+	1. Version updated to 0.3.37.15
 
 ## Previous update
 
+* 2021-01-20
+    1. Some enhancements for MSVC OpenMP compatibility.
+    1. Fixed drawing polygon errors in alpha-depth RGB buffer.
+    1. Fixed typo error in OpenMP, also fixed OpenMP compatibilities including tonemaps and CLAHE.
+    1. All created Fl_RGB_Image now alloc_array member set to 1 by FLIMGTK_IMGBUFF_OWNALLOC flag.
+    1. Now it should be safe by call delete instead using discard_user_rgb_image().
+    1. MSVC OpenMP only availed for Release. ( changing project is own-risk, it doesn't made for MSVC )
+    1. Still smooth_line has some thickness error by starting x1 less than x2 coordination.
+    1. Version updated to 0.3.37.12
 * 2020-12-15-1
     1. Fixed color space error on drago HDR.
     1. Version updated to 0.3.35.8

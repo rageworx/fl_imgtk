@@ -3149,66 +3149,36 @@ void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int 
     }
 }
 
-// reference : http://members.chello.at/~easyfilter/bresenham.html
-// still buggy.
+inline float _capsule_sdf(float px, float py, float ax, float ay, float bx, float by, float r) 
+{
+    float pax = px - ax, pay = py - ay, bax = bx - ax, bay = by - ay;
+    float h   = fmaxf(fminf((pax * bax + pay * bay) / (bax * bax + bay * bay), 1.0f), 0.0f);
+    float dx  = pax - bax * h, dy = pay - bay * h;
+    return sqrtf(dx * dx + dy * dy) - r;
+}
+
+// reference : https://github.com/miloyip/line
+// algorithm replaced.
 void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, float wd, ulong col )
 {
     if ( img == NULL )
         return;
+    float r = wd / 2;
+    if ( r < 0.1f )
+        r = 0.1f;
+        
+    long _x0 = (long)floorf(fminf(x1, x2) - r);
+    long _x1 = (long) ceilf(fmaxf(x1, x2) + r);
+    long _y0 = (long)floorf(fminf(y1, y2) - r);
+    long _y1 = (long) ceilf(fmaxf(y1, y2) + r);
 
-    if ( wd < 0.1f ) wd = 0.1f;
-
-    int dx   = abs( x2 - x1 );
-    int sx   = x1 < x2 ? 1 : -1;
-    int dy   = abs( y2 - y1 );
-    int sy   = y1 < y2 ? 1 : -1;
-    int x3   = 0;
-    int y3   = 0;
-    
-    // precision coords --
-    float err = dx - dy;
-    float e2  = 0.f;
-    float ed  = dx+dy == 0.f ? 1.f : sqrt( float(dx*dx) + float(dy*dy) );
-    
-    for( wd = ( wd + 1.f )/2.f; ; )
+    #pragma omp parallel for
+    for (long y = _y0; y <= _y1; y++)
     {
-        float dr = abs( err - (float)dx + (float)dy ) / ed - wd + 1.f;
-        fl_imgtk_dla_plot( img, x1, y1, col, __MIN( 1.f, 1.f - dr ) );
-        
-        e2 = err;
-        x3 = x1;
-
-        // step of X.
-        if ( ( 2*e2 ) >= -dx )
+        for (long x = _x0; x <= _x1; x++)
         {
-            for( e2+=dy, y3=y1; e2<ed*wd && (y2!=y3 || dx>dy); e2+=dx )
-            {
-                dr = abs( e2 ) / ed - wd + 1.f;
-                fl_imgtk_dla_plot( img, x1, y3+=sy, col, __MIN( 1.f, 1.f - dr ) );
-            }
-            
-            if ( x1 == x2 )
-                break;
-            
-            e2   = err; 
-            err -= dy;
-            x1  += sx;
-        }
-        
-        // step of Y.
-        if ( ( 2*e2 ) <= dy )
-        {
-            for ( e2=dx-e2; e2<ed*wd && (x2!=x3 || (dx-(wd/2.f))<dy); e2+=dy )
-            {
-                dr = abs( e2 ) / ed - wd + 1.f;
-                fl_imgtk_dla_plot( img, x3+=sx, y1, col, __MIN( 1.f, 1.f - dr ) );
-            }
-            
-            if ( y1 == y2 )
-                break;
-            
-            err += dx;
-            y1  += sy;            
+            fl_imgtk_dla_plot( img, x, y, col, 
+                               fmaxf(fminf(0.5f - _capsule_sdf(x, y, x1, y1, x2, y2, r), 1.0f), 0.0f) );
         }
     }
 }
