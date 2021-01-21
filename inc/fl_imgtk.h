@@ -24,7 +24,7 @@
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
 #define FL_IMGTK_VER_BLD    37
-#define FL_IMGTK_VER_REV    13
+#define FL_IMGTK_VER_REV    14
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \
@@ -256,6 +256,7 @@ namespace fl_imgtk
                            int x1, int y1, int x2, int y2, ulong col );
     // Smoothen drawing line with thickness ( wd ),
     // reference : http://members.chello.at/~easyfilter/bresenham.html
+    // still buggy,
     void draw_smooth_line_ex( Fl_RGB_Image* img,
                               int x1, int y1, int x2, int y2, float wd, 
                               ulong col );
