@@ -255,8 +255,6 @@ namespace fl_imgtk
     void draw_smooth_line( Fl_RGB_Image* img,
                            int x1, int y1, int x2, int y2, ulong col );
     // Smoothen drawing line with thickness ( wd ),
-    // reference : http://members.chello.at/~easyfilter/bresenham.html
-    // still buggy,
     void draw_smooth_line_ex( Fl_RGB_Image* img,
                               int x1, int y1, int x2, int y2, float wd, 
                               ulong col );
