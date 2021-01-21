@@ -36,9 +36,12 @@ using namespace std;
 #define __MIN(a,b) (((a)<(b))?(a):(b))
 #define __MAX(a,b) (((a)>(b))?(a):(b))
 
-#define fl_imgtk_degree2f( _x_ )      ( ( _x_ / 360.f ) * FLOAT_PI2X )
-#define fl_imgtk_swap_uc( _a_, _b_ )   uchar t=_a_; _a_=_b_; _b_=t;
-
+#define fl_imgtk_degree2f( _x_ )            ( ( _x_ / 360.f ) * FLOAT_PI2X )
+#define fl_imgtk_swap_uc( _a_, _b_ )        uchar _t_=_a_; _a_=_b_; _b_=t
+#define fl_imgtk_swap_mem( _a_, _b_, _c_ )  uchar _t_[_c_] = {0}; \
+                                            memcpy( _t_, &(_a_), _c_ ); \
+                                            memcpy( &(_a_), &(_b_), _c_ ); \
+                                            memcpy( &(_b_), _t_, _c_ )
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -704,18 +707,15 @@ Fl_RGB_Image* fl_imgtk::fliphorizontal( Fl_RGB_Image* img )
         OMPSIZE_T cnth = 0;
         OMPSIZE_T cntw = 0;
 
-        #pragma omp parallel for private(cntw)
-        for( cnth=0; cnth<hcenter; cnth++ )
+        #pragma omp parallel for private(cnth)
+        for( cntw=0; cntw<w; cntw++ )
         {
-            for( cntw=0; cntw<w; cntw++ )
+            for( cnth=0; cnth<hcenter; cnth++ )
             {
                 size_t pos1 = ( w * ( h - 1 - cnth ) + cntw ) * d;
                 size_t pos2 = ( w * cnth + cntw ) * d;
 
-                for( size_t cntd=0; cntd<d; cntd++ )
-                {
-                    fl_imgtk_swap_uc( buff[ pos1 + cntd ], buff[ pos2 + cntd ] );
-                }
+                fl_imgtk_swap_mem( buff[ pos1 ], buff[ pos2 ], d );
             }
         }        
 #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
@@ -750,17 +750,14 @@ bool fl_imgtk::fliphorizontal_ex( Fl_RGB_Image* img )
         OMPSIZE_T cntw = 0;
 
         #pragma omp parallel for private(cntw)
-        for( cnth=0; cnth<hcenter; cnth++ )
+        for( cntw=0; cntw<w; cntw++ )
         {
-            for( cntw=0; cntw<w; cntw++ )
+            for( cnth=0; cnth<hcenter; cnth++ )
             {
                 unsigned pos1 = ( w * ( h - 1 - cnth ) + cntw ) * d;
                 unsigned pos2 = ( w * cnth + cntw ) * d;
 
-                for( unsigned cntd=0; cntd<d; cntd++ )
-                {
-                    fl_imgtk_swap_uc( ptr[ pos1 + cntd ], ptr[ pos2 + cntd ] );
-                }
+                fl_imgtk_swap_mem( ptr[ pos1 ], ptr[ pos2 ], d );
             }
         }
 
@@ -795,18 +792,15 @@ Fl_RGB_Image* fl_imgtk::flipvertical( Fl_RGB_Image* img )
         OMPSIZE_T cntw = 0;
         OMPSIZE_T cnth = 0;
 
-        #pragma omp parallel for private(cnth)
-        for( cntw=0; cntw<wcenter; cntw++ )
+        #pragma omp parallel for private(cntw)
+        for( cnth=0; cnth<h; cnth++ )
         {
-            for( cnth=0; cnth<h; cnth++ )
+            for( cntw=0; cntw<wcenter; cntw++ )
             {
-                unsigned pos1 = ( w * cnth + ( w - cntw ) ) * d;
-                unsigned pos2 = ( w * cnth + cntw ) * d;
+                unsigned pos1 = ( w * cnth + cntw ) * d;
+                unsigned pos2 = ( w * cnth + ( w - cntw - 1 ) ) * d;
 
-                for( unsigned cntd=0; cntd<d; cntd++ )
-                {
-                    fl_imgtk_swap_uc( buff[ pos1 + cntd ], buff[ pos2 + cntd ] );
-                }
+                fl_imgtk_swap_mem( buff[ pos1 ], buff[ pos2 ], d );
             }
         }
 
@@ -841,18 +835,15 @@ bool fl_imgtk::flipvertical_ex( Fl_RGB_Image* img )
         OMPSIZE_T cntw = 0;
         OMPSIZE_T cnth = 0;
 
-        #pragma omp parallel for private(cnth)
-        for( cntw=0; cntw<wcenter; cntw++ )
+        #pragma omp parallel for private(cntw)
+        for( cnth=0; cnth<h; cnth++ )
         {
-            for( cnth=0; cnth<h; cnth++ )
+            for( cntw=0; cntw<wcenter; cntw++ )
             {
-                unsigned pos1 = ( w * cnth + ( w - cntw ) ) * d;
-                unsigned pos2 = ( w * cnth + cntw ) * d;
+                unsigned pos1 = ( w * cnth + cntw ) * d;
+                unsigned pos2 = ( w * cnth + ( w - cntw - 1 ) ) * d;
 
-                for( unsigned cntd=0; cntd<d; cntd++ )
-                {
-                    fl_imgtk_swap_uc( ptr[ pos1 + cntd ], ptr[ pos2 + cntd ] );
-                }
+                fl_imgtk_swap_mem( ptr[ pos1 ], ptr[ pos2 ], d );
             }
         }
 
@@ -944,11 +935,9 @@ Fl_RGB_Image* fl_imgtk::rotate180( Fl_RGB_Image* img )
         #pragma omp parallel for
         for( OMPSIZE_T cnt=0; cnt<cntmax; cnt++ )
         {
-            for( OMPSIZE_T cntd=0;cntd<d; cntd++)
-            {
-                fl_imgtk_swap_uc( buff[ cnt * d + cntd ],
-                                  buff[ (imgmax - cnt) * d + cntd ] );
-            }
+            fl_imgtk_swap_mem( buff[ cnt * d ],
+                               buff[ (imgmax - cnt - 1) * d ],
+                               3);
         }
 #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
@@ -991,7 +980,7 @@ Fl_RGB_Image* fl_imgtk::rotate270( Fl_RGB_Image* img )
         OMPSIZE_T cntw = 0;
         OMPSIZE_T cnth = 0;
 
-        //#pragma omp parallel for private( cnth )
+        #pragma omp parallel for private( cnth )
         for( cntw=0; cntw<new_w; cntw++ )
         {
             for( cnth=new_h; cnth-- != 0; )
@@ -2777,13 +2766,6 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
     if ( buffer != NULL )
     {
         float downscale_f = 2559.0f / ( float( h ) * 10.0f );
-        float col1g     = 0.0f;
-        float col2g     = 0.0f;
-        float randfv    = 0.0f;
-        uchar fill_r    = 0;
-        uchar fill_g    = 0;
-        uchar fill_b    = 0;
-        uchar fill_a    = 0;
         uchar ref_c1r   = ( col1 & 0xFF000000 ) >> 24;
         uchar ref_c1g   = ( col1 & 0x00FF0000 ) >> 16;
         uchar ref_c1b   = ( col1 & 0x0000FF00 ) >> 8;
@@ -2796,6 +2778,13 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
         #pragma omp parallel for
         for ( long cy=0; cy<(long)h; cy++ )
         {
+            float col1g     = 0.0f;
+            float col2g     = 0.0f;
+            float randfv    = 0.0f;
+            uchar fill_r    = 0;
+            uchar fill_g    = 0;
+            uchar fill_b    = 0;
+            uchar fill_a    = 0;
             uchar* sbuf = &buffer[ cy * w * d ];
 
             col1g = ( ( float( h*10 ) - float( cy*10 )  ) * downscale_f ) / 2559.0f;
@@ -2874,13 +2863,6 @@ Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulo
     if ( buffer != NULL )
     {
         float downscale_f = 2559.0f / ( float( w ) * 10.0f );
-        float col1g     = 0.0f;
-        float col2g     = 0.0f;
-        float randfv    = 0.0f;
-        uchar fill_r    = 0;
-        uchar fill_g    = 0;
-        uchar fill_b    = 0;
-        uchar fill_a    = 0;
         uchar ref_c1r   = ( col1 & 0xFF000000 ) >> 24;
         uchar ref_c1g   = ( col1 & 0x00FF0000 ) >> 16;
         uchar ref_c1b   = ( col1 & 0x0000FF00 ) >> 8;
@@ -2896,6 +2878,14 @@ Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulo
         #pragma omp parallel for private( cy )
         for ( cx=0; cx<w; cx++ )
         {
+            float col1g     = 0.0f;
+            float col2g     = 0.0f;
+            float randfv    = 0.0f;
+            uchar fill_r    = 0;
+            uchar fill_g    = 0;
+            uchar fill_b    = 0;
+            uchar fill_a    = 0;
+            
             col1g = ( ( float( w*10 ) - float( cx*10 )  ) * downscale_f ) / 2559.0f;
             col2g = 1.0f - col1g;
 
@@ -3172,25 +3162,18 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
     int sx   = x1 < x2 ? 1 : -1;
     int dy   = abs( y2 - y1 );
     int sy   = y1 < y2 ? 1 : -1;
-    int err  = dx - dy;
-    int e2   = 0;
     int x3   = 0;
     int y3   = 0;
-    float ed = dx+dy == 0.f ? 1.f : sqrt( float(dx*dx) + float(dy*dy) );
-    int el   = 0;
     
-    if ( wd > 1.f )
-    {
-        if ( x1 < x2 )
-        {
-            el = (int)(wd/2.f + 0.5f);
-        }
-    }
+    // precision coords --
+    float err = dx - dy;
+    float e2  = 0.f;
+    float ed  = dx+dy == 0.f ? 1.f : sqrt( float(dx*dx) + float(dy*dy) );
     
     for( wd = ( wd + 1.f )/2.f; ; )
     {
-        float dr = abs( err - dx + dy ) / ed - wd + 1.f;
-        fl_imgtk_dla_plot( img, x1-el, y1, col, __MIN( 1.f, 1.f - dr ) );
+        float dr = abs( err - (float)dx + (float)dy ) / ed - wd + 1.f;
+        fl_imgtk_dla_plot( img, x1, y1, col, __MIN( 1.f, 1.f - dr ) );
         
         e2 = err;
         x3 = x1;
@@ -3198,12 +3181,10 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
         // step of X.
         if ( ( 2*e2 ) >= -dx )
         {
-            for( e2 += dy, y3 = y1; (e2 < ed*wd) && ((y2 != y3) || (dx > dy)); e2 += dx )
+            for( e2+=dy, y3=y1; e2<ed*wd && (y2!=y3 || dx>dy); e2+=dx )
             {
-                int xfix = 0;
-                
                 dr = abs( e2 ) / ed - wd + 1.f;
-                fl_imgtk_dla_plot( img, x1-el, y3 += sy, col, __MIN( 1.f, 1.f - dr ) );
+                fl_imgtk_dla_plot( img, x1, y3+=sy, col, __MIN( 1.f, 1.f - dr ) );
             }
             
             if ( x1 == x2 )
@@ -3217,23 +3198,17 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
         // step of Y.
         if ( ( 2*e2 ) <= dy )
         {
-            for ( e2 = dx-e2; (e2 < ed*wd) && ((x2 != x3) || (dx < dy )); e2 += dy )
+            for ( e2=dx-e2; e2<ed*wd && (x2!=x3 || (dx-(wd/2.f))<dy); e2+=dy )
             {
                 dr = abs( e2 ) / ed - wd + 1.f;
-                fl_imgtk_dla_plot( img, x3 += sx, y1, col, __MIN( 1.f, 1.f - dr ) );
+                fl_imgtk_dla_plot( img, x3+=sx, y1, col, __MIN( 1.f, 1.f - dr ) );
             }
             
-            if (y1 == y2)
+            if ( y1 == y2 )
                 break;
             
             err += dx;
-            y1  += sy;
-            
-            if ( el > 0 )
-            {
-                //el -= (int)(wd/2.f*((y2-y1)/y2));
-                //if ( el < 0 ) el = 0;
-            }
+            y1  += sy;            
         }
     }
 }
