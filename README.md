@@ -9,7 +9,8 @@
     1. Fixed some OpenMP errors, ehanced for compatibility.
 	1. Fixed error of flipping.
 	1. Replaced draw smooth line algorithm to "SDF optimization with AABB".
-	1. Version updated to 0.3.37.15
+	1. Some detour inline function for MSVC ... 
+	1. Version updated to 0.3.37.16
 
 ## Previous update
 
