@@ -3559,9 +3559,11 @@ void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points
     uchar col_a = ( col & 0x000000FF );
     
     uchar* ptrimg = (uchar*)img->data()[0];
-    
-    const unsigned max_y = img->h();
-    const unsigned max_x = img->w();
+    unsigned img_w = img->w();
+    unsigned img_h = img->h();
+    unsigned img_d = img->d();
+    unsigned max_y = img_h;
+    unsigned max_x = img_w;
 
     vector< double > node_x;
 
@@ -3629,7 +3631,7 @@ void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points
                 for( OMPSIZE_T cur_x=node_x[dcnt]; cur_x<=node_x[dcnt+1]; cur_x++ )
                 {
                     fl_imgtk_putpixel( ptrimg,
-                                       cur_x, img->w(), cur_y, img->d(),
+                                       cur_x, img_w, cur_y, img_d,
                                        col_r, col_g, col_b, col_a );
                 }
             }
@@ -3682,10 +3684,16 @@ void fl_imgtk::draw_2xaa_polygon( Fl_RGB_Image* img, const vecpoint* points, uns
         max_y += (unsigned)(-min_y);
     }
 
+    // this is a trick, over sized drawn to downscale to 100%.
+    float mulrat_w = 1.8f;
+    float mulrat_h = 1.8f;
+    float divrat_w = 1.f / mulrat_w;
+    float divrat_h = 1.f / mulrat_h;
+
     if ( ( max_x > 0 ) && ( max_y > 0 ) )
     {
-        unsigned img_w = max_x * 2;
-        unsigned img_h = max_y * 2;
+        unsigned img_w = max_x * mulrat_w;
+        unsigned img_h = max_y * mulrat_h;
         
         vecpoint* dblpts = new vecpoint[ pointscnt ];
         
@@ -3694,8 +3702,8 @@ void fl_imgtk::draw_2xaa_polygon( Fl_RGB_Image* img, const vecpoint* points, uns
             
         for ( size_t cnt=0; cnt<pointscnt; cnt++ )
         {
-            dblpts[cnt].x = points[cnt].x * 2;
-            dblpts[cnt].y = points[cnt].y * 2;
+            dblpts[cnt].x = points[cnt].x * mulrat_w;
+            dblpts[cnt].y = points[cnt].y * mulrat_h;
         }
         
         Fl_RGB_Image* imgdbl = makeanempty( img_w, img_h, 4, 0x00000000 );
@@ -3710,7 +3718,10 @@ void fl_imgtk::draw_2xaa_polygon( Fl_RGB_Image* img, const vecpoint* points, uns
 
         delete[] dblpts;
 
-        Fl_RGB_Image* imgdsl = rescale( imgdbl, img_w/2, img_h/2, BILINEAR );
+        // downscale to make antialiased --
+        Fl_RGB_Image* imgdsl = rescale( imgdbl, 
+                                        img_w*divrat_w, img_h*divrat_h, 
+                                        BILINEAR );
         
         if ( imgdsl == NULL )
         {
