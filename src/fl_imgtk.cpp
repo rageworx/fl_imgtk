@@ -3710,7 +3710,7 @@ void fl_imgtk::draw_2xaa_polygon( Fl_RGB_Image* img, const vecpoint* points, uns
 
         delete[] dblpts;
 
-        Fl_RGB_Image* imgdsl = rescale( imgdbl, img_w, img_h, BILINEAR );
+        Fl_RGB_Image* imgdsl = rescale( imgdbl, img_w/2, img_h/2, BILINEAR );
         
         if ( imgdsl == NULL )
         {
