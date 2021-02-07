@@ -38,12 +38,6 @@ using namespace std;
 
 #define fl_imgtk_degree2f( _x_ )            ( ( _x_ / 360.f ) * FLOAT_PI2X )
 #define fl_imgtk_swap_uc( _a_, _b_ )        uchar _t_=_a_; _a_=_b_; _b_=t
-#if !defined(_MSC_VER)
-#define fl_imgtk_swap_mem( _a_, _b_, _c_ )  uchar _t_[_c_] = {0}; \
-                                            memcpy( _t_, _a_, _c_ ); \
-                                            memcpy( _a_, _b_, _c_ ); \
-                                            memcpy( _b_, _t_, _c_ )
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -79,7 +73,6 @@ const float matrixdata_sharpenmore[] =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(_MSC_VER)
 inline void fl_imgtk_swap_mem( uchar* a, uchar* b, size_t c )  
 { 
     if ( c > 0 )
@@ -95,7 +88,6 @@ inline void fl_imgtk_swap_mem( uchar* a, uchar* b, size_t c )
         }
     }
 }
-#endif
 
 Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong color )
 {
