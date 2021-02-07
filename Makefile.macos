@@ -55,7 +55,7 @@ LFLAGS    = $(FLTKLIBS)
 
 .PHONY: 64bit
 
-all: prepare clean ${OUTDIR}/${OUTBIN}
+all: prepare ${OUTDIR}/${OUTBIN}
 
 64bit: all
 debug: all
