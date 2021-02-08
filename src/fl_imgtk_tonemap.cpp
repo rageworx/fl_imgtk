@@ -1,8 +1,9 @@
 #ifdef _MSC_VER
-#pragma warning(disable : 4018)  
-#pragma warning(disable : 4068)  
-#pragma warning(disable : 4244)  
-#pragma warning(disable : 4996)  
+    // Holy mother F-hawk M$VC ...
+    #pragma warning(disable : 4018)
+    #pragma warning(disable : 4068)
+    #pragma warning(disable : 4244)
+    #pragma warning(disable : 4996)
 #endif
 
 #include "fl_imgtk.h"
@@ -241,8 +242,12 @@ Fl_RGB_Image* fl_imgtk_F2RGB( fl_imgtk_fimg* img, bool dranged = false )
 				for( OMPSIZE_T cnt=0; cnt<(w*h*d); cnt++ )
 				{
 					float fconv  = ( img->pixels[ cnt ] / divf ) * 255.0f;
-					if ( fconv > 255.f ) fconv = 255.f;
-					buff[ cnt ] = (uchar)fconv;
+                    // fix dynamic range --- 
+                    if ( fconv > 255.f ) fconv = 255.f;
+                    else
+                        if ( fconv < 0.f ) fconv = 0.f;
+                    // ----------------------
+                    buff[ cnt ] = (uchar)fconv;
 				}
 			}
 			else
@@ -251,12 +256,26 @@ Fl_RGB_Image* fl_imgtk_F2RGB( fl_imgtk_fimg* img, bool dranged = false )
 				for( OMPSIZE_T cnt=0; cnt<(w*h*d); cnt++ )
 				{
 					float fconv  = img->pixels[ cnt ] * 255.0f;
-					if ( fconv > 255.f ) fconv = 255.f;
+                    // fix dynamic range --- 
+                    if ( fconv > 255.f ) fconv = 255.f;
+                    else
+                    if ( fconv < 0.f ) fconv = 0.f;
+                    // ----------------------
 					buff[ cnt ] = (uchar)fconv;
 				}
 			}
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+            Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
 
+            if ( newimg != NULL )
+            {
+                newimg->alloc_array = 1;
+            }
+
+            return newimg;
+#else
             return new Fl_RGB_Image( buff, w, h ,d );
+#endif
         }
     }
 
@@ -352,8 +371,18 @@ Fl_RGB_Image* fl_imgtk_clamp_F2RGB( fl_imgtk_fimg* img )
                     conv = 255.f;
                 buff[ cnt ] = (uchar)( conv );
             }
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+            Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
 
+            if ( newimg != NULL )
+            {
+                newimg->alloc_array = 1;
+            }
+
+            return newimg;
+#else
             return new Fl_RGB_Image( buff, w, h ,d );
+#endif
         }
     }
 
@@ -827,14 +856,14 @@ bool fl_imgtk_rec709gammacorrect( fl_imgtk_fimg* img, float gval )
 
         if ( gval >= 2.1f )
         {
-            start = 0.018f / ( gval - 2.0f ) * 7.5f;
-            slope = 4.5f * ( gval - 2.0f ) * 7.5f;
+            start /= ( gval - 2.0f ) * 7.5f;
+            slope *= ( gval - 2.0f ) * 7.5f;
         }
         else
-        if ( gval <= 1.9f)
+        if ( gval <= 1.9f )
         {
-            start = 0.018f / ( 2.0f - gval ) * 7.5f;
-            slope = 4.5f * ( 2.0f - gval ) * 7.5f;
+            start /= ( 2.0f - gval ) * 7.5f;
+            slope *= ( 2.0f - gval ) * 7.5f;
         }
 
         unsigned imgsz = img->w * img->h * img->d;
@@ -845,7 +874,7 @@ bool fl_imgtk_rec709gammacorrect( fl_imgtk_fimg* img, float gval )
             float pixel = img->pixels[cnt];
 
             img->pixels[cnt] = ( pixel <= start ) ? pixel * slope
-                               : ( 1.099f * pow( pixel, fgamma) - 0.099f );			
+                               : ( 1.099f * (float)pow( pixel, fgamma ) - 0.099f );			
         }
 
         return true;
@@ -947,7 +976,7 @@ Fl_RGB_Image* fl_imgtk::tonemapping_drago( Fl_RGB_Image* src, float gamma, float
     if ( convimg != NULL )
     {
         float biasparam = 0.85f;
-        float exposparam = (float)pow(2.0, exposure);
+        float exposparam = (float)pow( 2.0, exposure );
 
         if ( fl_imgtk_F2YXY( convimg ) == true )
         {
@@ -961,7 +990,7 @@ Fl_RGB_Image* fl_imgtk::tonemapping_drago( Fl_RGB_Image* src, float gamma, float
                 {
                     if ( fl_imgtk_YXY2F( convimg ) == true )
                     {
-                        if ( gamma != 1.0 )
+                        if ( gamma != 1.0f )
                         {
                             fl_imgtk_rec709gammacorrect( convimg, gamma );
                         }

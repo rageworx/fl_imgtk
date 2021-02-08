@@ -1,8 +1,9 @@
 #ifdef _MSC_VER
-#pragma warning(disable : 4018)  
-#pragma warning(disable : 4068)  
-#pragma warning(disable : 4244)  
-#pragma warning(disable : 4996)  
+    // Holy mother F-hawk M$VC ...
+    #pragma warning(disable : 4018)
+    #pragma warning(disable : 4068)
+    #pragma warning(disable : 4244)
+    #pragma warning(disable : 4996)
 #endif
 
 #include <FL/fl_draw.H>
@@ -16,7 +17,8 @@
 #define FI_RGBA_ALPHA           3
 
 /// Clamp function
-template <class T> T CLAMP(const T &value, const T &min_value, const T &max_value) {
+template <class T> T CLAMP(const T &value, const T &min_value, const T &max_value) 
+{
     return ((value < min_value) ? min_value : (value > max_value) ? max_value : value);
 }
 

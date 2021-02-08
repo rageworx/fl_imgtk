@@ -541,6 +541,9 @@ Fl_RGB_Image* fl_imgtk::CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     delete[] data_g;
     delete[] data_b;
 
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+    newimg->alloc_array = 1;
+#endif /// of FLIMGTK_IMGBUFF_OWNALLOC
     return newimg;
 }
 
@@ -716,6 +719,10 @@ Fl_RGB_Image* fl_imgtk::noire( Fl_RGB_Image* src, unsigned regionW, unsigned reg
     }
 
     delete[] data_rgb_avr;
+
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+    newimg->alloc_array = 1;
+#endif /// of FLIMGTK_IMGBUFF_OWNALLOC
 
     return newimg;
 }

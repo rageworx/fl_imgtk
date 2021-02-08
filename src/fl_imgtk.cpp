@@ -1,8 +1,9 @@
 #ifdef _MSC_VER
-#pragma warning(disable : 4018)  
-#pragma warning(disable : 4068)  
-#pragma warning(disable : 4244)  
-#pragma warning(disable : 4996)  
+    // Holy mother F-hawk M$VC ...
+    #pragma warning(disable : 4018)
+    #pragma warning(disable : 4068)
+    #pragma warning(disable : 4244)
+    #pragma warning(disable : 4996)
 #endif
 
 #include <cstdint>
@@ -25,8 +26,8 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define FLOAT_PI        3.141592654f
-#define FLOAT_PI2X      6.28318530718f
+#define FLOAT_PI            3.141592654f
+#define FLOAT_PI2X          6.28318530718f
 
 #define FLIMGTK_BI_RGB       0  /// No compression - straight BGR data
 #define FLIMGTK_BI_RLE8      1  /// 8-bit run-length compression
@@ -178,31 +179,31 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
             return NULL;
         
         // Skips uselesses.
-        buffque += 4;   /// skip size.
-        buffque += 2;   /// skip reserved something.
+        buffque += 4;           /// skip size.
+        buffque += 2;           /// skip reserved something.
         buffque += 2;
         
-        int info_size;      /// Size of info header
-        uint16_t depth;     /// Depth of image (bits)
-        int bDepth = 3;     /// Depth of image (bytes)
-        uint16_t compression; /// Type of compression
-        uint32_t colors_used; /// Number of colors used
-        int x, y;           /// Looping vars
-        int32_t color = 0;  /// Color of RLE pixel
-        int repcount;       /// Number of times to repeat
-        int temp;           /// Temp. Color or Index
-        int align;          /// Alignment bytes
-        uint32_t dataSize;    /// number of bytes in image data set
-        int row_order=-1;   /// 1 = normal;  -1 = flipped row order
-        int start_y;        /// Beginning Y
-        int end_y;          /// Ending Y
-        int offbits;        // Offset to image data
-        uchar bit;          /// Bits in image
-        uchar byte;         /// Bytes in image
-        uchar*ptr;          /// Pointer into pixels
-        uchar colormap[256][3];/// Colormap
-        uchar havemask = 0; /// Single bit mask follows image data
-        int use_5_6_5 = 0;  /// Use 5:6:5 for R:G:B channels in 16 bit images
+        int info_size;          /// Size of info header
+        uint16_t depth;         /// Depth of image (bits)
+        int bDepth = 3;         /// Depth of image (bytes)
+        uint16_t compression;   /// Type of compression
+        uint32_t colors_used;   /// Number of colors used
+        int x, y;               /// Looping vars
+        int32_t color = 0;      /// Color of RLE pixel
+        int repcount;           /// Number of times to repeat
+        int temp;               /// Temp. Color or Index
+        int align;              /// Alignment bytes
+        uint32_t dataSize;      /// number of bytes in image data set
+        int row_order=-1;       /// 1 = normal;  -1 = flipped row order
+        int start_y;            /// Beginning Y
+        int end_y;              /// Ending Y
+        int offbits;            /// Offset to image data
+        uchar bit;              /// Bits in image
+        uchar byte;             /// Bytes in image
+        uchar*ptr;              /// Pointer into pixels
+        uchar colormap[256][3]; /// Colormap
+        uchar havemask = 0;     /// Single bit mask follows image data
+        int use_5_6_5 = 0;      /// Use 5:6:5 for R:G:B channels in 16 bit images
         uint32_t w = 0;
         uint32_t h = 0;
         
