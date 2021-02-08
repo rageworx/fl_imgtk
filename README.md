@@ -5,15 +5,19 @@
 
 ## Lastest upate
 
-* 2021-01-21
-    1. Fixed some OpenMP errors, ehanced for compatibility.
-	1. Fixed error of flipping.
-	1. Replaced draw smooth line algorithm to "SDF optimization with AABB".
-	1. Some detour inline function for MSVC ... 
-	1. Version updated to 0.3.37.16
+* 2021-02-08
+    1. Fixed tonemapping images not returns with FLIMGTK_IMGBUFF_OWNALLOC flag.
+	1. Fixed Drago (Logmapping) HDR color correction issue. 
+	1. Version updated to 0.3.38.21
 
 ## Previous update
 
+* 2021-01-21
+    1. Fixed some OpenMP errors, ehanced for compatibility.
+    1. Fixed error of flipping.
+    1. Replaced draw smooth line algorithm to "SDF optimization with AABB".
+    1. Some detour inline function for MSVC ... 
+    1. Version updated to 0.3.37.16
 * 2021-01-20
     1. Some enhancements for MSVC OpenMP compatibility.
     1. Fixed drawing polygon errors in alpha-depth RGB buffer.

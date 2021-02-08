@@ -186,6 +186,7 @@
     <ClCompile Include="..\src\fl_smimg.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\inc\fl_imgtk.h" />
     <ClInclude Include="..\src\fl_imgtk_cfg.h" />
     <ClInclude Include="..\src\fl_imgtk_minmax.h" />
     <ClInclude Include="..\src\fl_smimg.h" />

@@ -38,5 +38,8 @@
     <ClInclude Include="..\src\fl_imgtk_cfg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\inc\fl_imgtk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
