@@ -37,7 +37,7 @@ OUTBIN    = libfl_imgtk.a
 OUTDIR    = ./lib
 DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE
 OPTIMIZEOPT = -ffast-math -O3
-CPUARCHOPT    = -mavx
+CPUARCHOPT  =
 
 ifeq (64bit,$(firstword $(MAKECMDGOALS)))
 	OBJDIR = ./obj64/Release
