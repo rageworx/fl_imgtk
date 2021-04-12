@@ -36,8 +36,8 @@ OBJDIR      = ./obj/Release
 OUTBIN      = libfl_imgtk.a
 OUTDIR      = ./lib
 DEFINEOPT   = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
-DEFINEOPT  += -DFLTK_ABI_VERISON=10304
-OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
+DEFINEOPT  += -DFLTK_ABI_VERISON=10305
+OPTIMIZEOPT =  -std=c++11 -ffast-math -fopenmp -O3 -s
 CPUARCHOPT  = -mtune=native
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
