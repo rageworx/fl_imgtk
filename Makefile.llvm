@@ -1,4 +1,4 @@
-# Makefile for fl_imgtk, LLVM
+# Makefile for fl_imgtk, LLVM ( MacOS )
 # (C)2017 Raphael Kim / rageworx@gmail.com
 #
 
@@ -7,7 +7,7 @@ GCC = llvm-gcc
 GPP = llvm-g++
 AR  = ar
 LT  = libtool
-RLB = ranlib
+RL  = ranlib
 LIP = lipo
 
 # Check architecture for x86.64 or arm64.
@@ -16,7 +16,6 @@ ARCH = $(shell uname -m)
 # FLTK place
 FLTKDIR    = /usr/local/include
 FLTKLIBDIR = /usr/local/lib
-FLTKLIBS   = -L$(FLTKLIBDIR) -lfltk -lfltk_images -lfltk_png -lfltk_jpeg
 
 # Sources and how it built
 # Optimization issue: recommend to build with using -ffast-math option.
@@ -58,7 +57,7 @@ ${OBJDIR}/fl_imgtk.o:
 ${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}/fl_imgtk_clahe.o ${OBJDIR}/fl_imgtk.o
 	@echo "Generating $@ ..."
 	@$(AR) -cr $@ $^
-	@$(RLB) $@
+	@$(RL) $@
 	@cp -f ${INCDIR}/fl_imgtk.h ${OUTDIR}
 
 clean:

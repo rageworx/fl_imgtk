@@ -21,11 +21,11 @@ CCPATH =
 GCC = ${CCPATH}gcc
 GPP = ${CCPATH}g++
 AR  = ${CCPATH}ar
+RL  = ${CCPATH}ranlib
 
 # FLTK place
 FLTKDIR    = /usr/local/include
 FLTKLIBDIR = /usr/local/lib
-FLTKLIBS   = -L$(FLTKLIBDIR) -lfltk -lfltk_images -lfltk_png -lfltk_jpeg
 
 # Sources and how it built
 # Optimization issue: recommend to build with using -ffast-math option.
@@ -48,7 +48,7 @@ ifeq (debug,$(firstword $(MAKECMDGOALS)))
 	OUTBIN = libfl_imgtk_d.a
 endif
 
-CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT) $(FLTKLIBS)
+CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
 
 .PHONY: debug
 
@@ -75,7 +75,8 @@ ${OBJDIR}/fl_imgtk.o:
 
 ${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}/fl_imgtk_clahe.o ${OBJDIR}/fl_imgtk.o
 	@echo "Generating $@ ..."
-	@$(AR) -q $@ ${OBJDIR}/*.o
+	@$(AR) -cr $@ $^
+    @$(RL) $@
 	@cp -f ${INCDIR}/fl_imgtk.h ${OUTDIR}
 
 clean:
