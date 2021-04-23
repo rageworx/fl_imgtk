@@ -76,7 +76,7 @@ ${OBJDIR}/fl_imgtk.o:
 ${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}/fl_imgtk_clahe.o ${OBJDIR}/fl_imgtk.o
 	@echo "Generating $@ ..."
 	@$(AR) -cr $@ $^
-    @$(RL) $@
+	@$(RL) $@
 	@cp -f ${INCDIR}/fl_imgtk.h ${OUTDIR}
 
 clean:
