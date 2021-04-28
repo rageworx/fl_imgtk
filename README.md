@@ -2,21 +2,22 @@
 
 * A small library for FLTK image toolkit.
 * Designed to use some useful effects in FLTK GUI.
+* Better image, better speed, better quality.
 
-## Lastest upate
+## Lastest update
 
 * 2021-02-08
     1. Fixed tonemapping images not returns with FLIMGTK_IMGBUFF_OWNALLOC flag.
 	1. Fixed Drago (Logmapping) HDR color correction issue. 
 	1. Version updated to 0.3.38.21
 
-## Previous update
+## Previous updates
 
 * 2021-01-21
     1. Fixed some OpenMP errors, ehanced for compatibility.
     1. Fixed error of flipping.
     1. Replaced draw smooth line algorithm to "SDF optimization with AABB".
-    1. Some detour inline function for MSVC ... 
+    1. Some detour inline functions for MSVC ... 
     1. Version updated to 0.3.37.16
 * 2021-01-20
     1. Some enhancements for MSVC OpenMP compatibility.
@@ -102,7 +103,7 @@
 * 2017-07-26-0
     1. New functions included !
 	    - drawing smooth line.
-        - drawing polygon.		
+            - drawing polygon.		
 * 2017-04-19-0
 	1. Fixed wrong pointer addressing in
 		- CLAHE();
@@ -146,7 +147,6 @@
         - makealphamap();
         - applyalpha();
         - drawonimage();
-        - 
 * 2017-03-28-0
     1. Cropping image to a new Fl_RGB_Image.
     2. Fixed bugs on Tone mapping (HDR), now it runs well for Drago and Reinhard algorithms.
@@ -156,33 +156,36 @@
 
 ## How to build ?
 
-* Copy your right Makefile.xxxx to Makefile.
-    - Ex) MinGW-W64 need do 
+* Just make a symbolic link from your subsystem
+    - ln -s Makefile.gcc Makefile
+* MinGW-W64 or MSYS2 may need to copy Makefile.mingw to Makefile.
+    - Eg) MinGW-W64 need do 
     ```cp Makefile.mingw Makefile```
 * Then ```make```
-
+* Or you can use ```make -f Makefile.xxx```
 
 ## Currently supported
 
-* OpenMP 3.0 or above with gcc, or supported compiler.
-   - Some visual studio not process unsigned for() loop.
+* OpenMP 3.0 or higher version of gcc, or supported compiler.
+   - Notice: M$ Visual Studio not supports unsigned for() loop.
 * Flip Fl_RGB_Image to horizental or vertical.
 * Rotate Fl_RGB_Image to these :
     1. 90, 180, 270 degrees.
-    2. Or free rotate
+    2. Or free degree rotate
 * Fast rescale with fl_smimg, with supporting these:
     1. Box(nearest)
     2. Bilinear
     3. Bicubic
     4. Lanczos
     5. B-Spline
+    6. ( and more )
 * Draw Fl_Widget to Fl_RGB_Image.
 * Draw Fl_Widget to blurred Fl_RGB_Image.
     - may useful to make background image.
-* Tone mapping (HDR)
+* Tone mappings (HDR)
     1. DRAGO algorithm.
     2. REINHARD algorithm.
-* Color CLAHE
+* RGB-Color CLAHE ( eCLAHE )
 * Kernel matrix filter ( 3x3 to NxN )
 * Crop Fl_RGB_Image to a new Fl_RGB_Image.
 * Merge two different Fl_RGB_Images to a new one.
@@ -191,25 +194,27 @@
 * Subtracts two Fl_RGB_Image.
 * Make gradation image col1 to col2.
 
-## Planned to next
+## Planned to next features
 
-* Channel mix
-* White balance
+* RGB Channel mixing
+* White balancing
 
 ## OpenMP supports
 
-* fl_imgtk designed for using OpenMP 3.x or above,
-* Some lower version of OpenMP may not work with unsigned loop.
-* Apple Mac, X-Code may not supports OpenMP, recommend to use HPC-GCC to build library.
-* To disable using OpenMP, remove -DUSING_OMP in makefile.
+* fl_imgtk designed for OpenMP 3.x or latest,
+* Some less version of OpenMP cause of build error, or lower performance as lik M$VC.
+* ~Apple Mac, X-Code may not supports OpenMP, recommend to use HPC-GCC to build library.~
+  Apple don't need optimizing OpenMP, it's so faster than OpenMP with HPC-GCC in Apple silicon M1.
+  Use Apple M1 !
+* To disable using OpenMP, remove -DUSING_OMP and -fopenmp in your customized Makefile.
 
 ## Supported compiler:
 
-* gcc (with OpenMP), or MinGW-W64
-* llvm-gcc (Apple)
-* (Maybe works on M$VC too, but no project file.)
+* gcc, MinGW-W64 ( with OpenMP )
+* llvm-gcc (Apple) x86.64, arm64 ( automatically generates universal binary if your subsystm is arm64 )
+* M$VC with some limited OpenMP ( I don't have plan to use concurrency )
 
 ## External licenses:
 
-* FreeImage 3 (many codes belongs to this)
+* FreeImage 3 (many algorithms belongs to this)
 * FLTK License
