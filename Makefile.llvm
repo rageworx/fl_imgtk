@@ -11,7 +11,9 @@ RL  = ranlib
 LIP = lipo
 
 # Check architecture for x86.64 or arm64.
+KRNL = $(shell uname -s)
 ARCH = $(shell uname -m)
+KVER = $(shell uname -r | cut -d . -f1)
 
 # FLTK place
 FLTKCFG     = fltk-config --use-images
@@ -31,8 +33,11 @@ OPTIMIZEOPT = -ffast-math -O3
 CPUARCHOPT =
 
 # architecture flag setting.
-ifeq ($(ARCH),arm64)
-CPUARCHOPT += -arch x86_64 -arch arm64
+# Darwin, kernel 20 (big sur) automatically using universal binary.
+ifeq ($(KRNL),Darwin)
+	ifeq ($(shell test $(KVER) -gt 19; echo $$?),0)
+		CPUARCHOPT += -arch x86_64 -arch arm64
+	endif
 endif
 
 CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
