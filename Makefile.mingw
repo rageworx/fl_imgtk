@@ -24,8 +24,9 @@ AR  = ${CCPATH}ar
 RL  = ${CCPATH}ranlib
 
 # FLTK place ( you may installed it for MSYS )
-FLTKDIR    = /usr/local/include
-FLTKLIBDIR = /usr/local/lib
+FLTKCFG     = fltk-config --use-images
+FLTKDIR    := $(shell ${FLTKCFG} --cxxflags)
+FLTKLIBDIR := $(shell ${FLTKCFG} --ldflags)
 
 # Sources and how it built
 # Optimization issue: recommend to build with using -ffast-math option.
