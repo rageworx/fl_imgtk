@@ -209,6 +209,8 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
 
     if ( ( src->w() == dst_width) && ( src->h() == dst_height))
     {
+        // fire-egg announced this may cause segment fault,
+        // let me test it -
         return (Fl_RGB_Image*)src->copy();
     }
 
