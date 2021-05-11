@@ -6,13 +6,17 @@
 
 ## Lastest update
 
-* 2021-02-08
-    1. Fixed tonemapping images not returns with FLIMGTK_IMGBUFF_OWNALLOC flag.
-	1. Fixed Drago (Logmapping) HDR color correction issue. 
-	1. Version updated to 0.3.38.21
+* 2021-05-11
+    1. Reinhard tone mapping OpenMP performance issue fixed, now 10x faster than before.
+	1. Version updated to 0.3.39.25
+	1. notice: g++ OpenMP must be supported reduction().
 
 ## Previous updates
 
+* 2021-02-08
+    1. Fixed tone mapping images not returns with FLIMGTK_IMGBUFF_OWNALLOC flag.
+    1. Fixed Drago (Logmapping) HDR color correction issue. 
+    1. Version updated to 0.3.38.21
 * 2021-01-21
     1. Fixed some OpenMP errors, ehanced for compatibility.
     1. Fixed error of flipping.
