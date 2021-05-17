@@ -6,13 +6,18 @@
 
 ## Lastest update
 
-* 2021-05-11
-    1. Reinhard tone mapping OpenMP performance issue fixed, now 10x faster than before.
-	1. Version updated to 0.3.39.25
-	1. notice: g++ OpenMP must be supported reduction().
+* 2021-05-17
+    1. Fixed rotate180() only woks for depth 3 (RGB bug fixed)
+	1. Fixed invert() works for alpha channel (RGBA bug fixed)
+	1. Fixed Reinhard affected by alpha channel.
+	1. Version updated to 0.3.39.27
 
 ## Previous updates
 
+* 2021-05-11
+    1. Reinhard tone mapping OpenMP performance issue fixed, now 10x faster than before.
+    1. Version updated to 0.3.39.25
+    1. notice: g++ OpenMP must be supported reduction().
 * 2021-02-08
     1. Fixed tone mapping images not returns with FLIMGTK_IMGBUFF_OWNALLOC flag.
     1. Fixed Drago (Logmapping) HDR color correction issue. 
@@ -201,7 +206,7 @@
 ## Planned to next features
 
 * RGB Channel mixing
-* White balancing
+* White balancing ( auto, manual )
 
 ## OpenMP supports
 
