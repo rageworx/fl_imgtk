@@ -24,7 +24,7 @@
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
 #define FL_IMGTK_VER_BLD    39
-#define FL_IMGTK_VER_REV    26
+#define FL_IMGTK_VER_REV    27
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \

@@ -1386,6 +1386,10 @@ Fl_RGB_Image* fl_imgtk::invert( Fl_RGB_Image* img )
                 {
                     pdst[ rpt ] = 0xFF - psrc[ rpt ];
                 }
+                if ( img_d > 3 )
+                {
+                    pdst[ 3 ] = psrc[ 3 ];
+                }
             }
 #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
             Fl_RGB_Image* newimg = new Fl_RGB_Image( newbuff, img_w, img_h, img_d );

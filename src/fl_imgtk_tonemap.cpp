@@ -178,30 +178,62 @@ fl_imgtk_fimg* fl_imgtk_RGB2F( Fl_RGB_Image* img )
     OMPSIZE_T h = img->h();
     OMPSIZE_T d = img->d();
 
-    if ( ( w > 0 ) && ( h > 0 ) && ( d >= 3 ) )
+    if ( ( w > 0 ) && ( h > 0 ) )
     {
-        fl_imgtk_fimg* newfimg = new fl_imgtk_fimg;
-        if ( newfimg != NULL )
+        if ( d >= 3 )
         {
-            newfimg->w = w;
-            newfimg->h = h;
-            newfimg->d = d;
-
-            newfimg->pixels = new float[ w * h * d ];
-            if ( newfimg->pixels == NULL )
+            fl_imgtk_fimg* newfimg = new fl_imgtk_fimg;
+            if ( newfimg != NULL )
             {
-                delete newfimg;
-                return NULL;
-            }
+                newfimg->w = w;
+                newfimg->h = h;
+                newfimg->d = d;
 
-            #pragma omp parallel for
-            for( OMPSIZE_T cnt=0; cnt<(w*h*d); cnt++ )
-            {
-                newfimg->pixels[ cnt ] = (float)ptr[ cnt ] / 255.0f;
-            }
+                newfimg->pixels = new float[ w * h * d ];
+                if ( newfimg->pixels == NULL )
+                {
+                    delete newfimg;
+                    return NULL;
+                }
 
-            return newfimg;
+                #pragma omp parallel for
+                for( OMPSIZE_T cnt=0; cnt<(w*h*d); cnt++ )
+                {
+                    newfimg->pixels[ cnt ] = (float)ptr[ cnt ] / 255.0f;
+                }
+
+                return newfimg;
+            }
         }
+        else
+        if ( d == 1 )
+        {
+            // Create Gray -> RGB 
+            fl_imgtk_fimg* newfimg = new fl_imgtk_fimg;
+            if ( newfimg != NULL )
+            {
+                newfimg->w = w;
+                newfimg->h = h;
+                newfimg->d = 3;
+
+                newfimg->pixels = new float[ w * h * 3 ];
+                if ( newfimg->pixels == NULL )
+                {
+                    delete newfimg;
+                    return NULL;
+                }
+
+                #pragma omp parallel for
+                for( OMPSIZE_T cnt=0; cnt<(w*h); cnt++ )
+                {
+                    newfimg->pixels[cnt*3+0] = (float)ptr[ cnt ] / 255.0f;
+                    newfimg->pixels[cnt*3+1] = newfimg->pixels[cnt*3];
+                    newfimg->pixels[cnt*3+2] = newfimg->pixels[cnt*3];
+                }
+
+                return newfimg;
+            }
+       }
     }
 
     return NULL;
@@ -217,46 +249,54 @@ Fl_RGB_Image* fl_imgtk_F2RGB( fl_imgtk_fimg* img, bool dranged = false )
     OMPSIZE_T h = img->h;
     OMPSIZE_T d = img->d;
 
+    if ( d < 3 ) /// it not possible, fimg depth must be 3 or 4.
+        return NULL; 
+
     if ( ( w > 0 ) && ( h > 0 ) )
     {
         uchar* buff = new uchar[ w * h * d ];
 
         if ( buff != NULL )
         {
-			// if dynamic range adjusting, find maximum range.
+			// if dynamic range adjusting, find maximum range within RGB.
 			if ( dranged == true )
 			{
 #ifndef _MSC_VER
 				#pragma omp parallel for reduction(max:divf)
-				for( unsigned cnt=0; cnt<(w*h*d); cnt++ )
+				for( unsigned cnt=0; cnt<(w*h*3); cnt++ )
 				{
 					divf = MAX( divf, img->pixels[ cnt ] );
 				}
 #else
-                for ( unsigned cnt = 0; cnt<(w*h*d); cnt++ )
+                for ( unsigned cnt = 0; cnt<(w*h*3); cnt++ )
                 {
                     divf = MAX( divf, img->pixels[cnt] );
                 }
 #endif /// of _MSC_VER
 				#pragma omp parallel for
-				for( OMPSIZE_T cnt=0; cnt<(w*h*d); cnt++ )
+				for( OMPSIZE_T cnt=0; cnt<w*h*d; cnt++ )
 				{
-					float fconv  = ( img->pixels[ cnt ] / divf ) * 255.0f;
-                    // fix dynamic range --- 
+					float fconv = 0;
+                    // apply only for RGB, not A.
+                    if ( d < 4 )
+                        fconv = ( img->pixels[ cnt ] / divf ) * 255.0f;
+                    else
+                        fconv = img->pixels[ cnt ] * 255.f;
+                    // fix color over/under flow.
                     if ( fconv > 255.f ) fconv = 255.f;
                     else
-                        if ( fconv < 0.f ) fconv = 0.f;
+                    if ( fconv < 0.f ) fconv = 0.f;
                     // ----------------------
                     buff[ cnt ] = (uchar)fconv;
 				}
 			}
-			else
+			else /// --- v ---- not d-ranged.
 			{
 				#pragma omp parallel for
-				for( OMPSIZE_T cnt=0; cnt<(w*h*d); cnt++ )
+				for( OMPSIZE_T cnt=0; cnt<w*h*d; cnt++ )
 				{
 					float fconv  = img->pixels[ cnt ] * 255.0f;
-                    // fix dynamic range --- 
+                    // fix color over/under flow.
                     if ( fconv > 255.f ) fconv = 255.f;
                     else
                     if ( fconv < 0.f ) fconv = 0.f;
@@ -649,13 +689,12 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
     float lumilogavg = 0.0f;
     float lumimin    = 1.0f;
     float lumimax    = 1.0f;
-
     float key        = 0.0f;        /// = low key, high-key.
-
 
     if ( ( img == NULL ) || ( Y == NULL ) )
         return false;
 
+    // Y should be only 1 ( if else absolutely error )
     if ( Y->d != 1 )
         return false;
 
@@ -694,7 +733,9 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
             // = pixel luminance
             float pixllumi = Y->pixels[cnt];
 
-            for( unsigned rpt=0; rpt<img->d; rpt++ )
+            //for( unsigned rpt=0; rpt<img->d; rpt++ )
+            // ignore alpha channel.
+            for( unsigned rpt=0; rpt<3; rpt++ )
             {
                 float* pixel = &img->pixels[ cnt * img->d + rpt ];
 
@@ -705,6 +746,7 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
             }
         }
 #else
+        // MSVC can't process OpenMP redcution ...
         for ( unsigned cnt = 0; cnt<imgsz; cnt++ )
         {
             // = pixel luminance
@@ -800,11 +842,13 @@ bool fl_imgtk_tonemappingreinhard( fl_imgtk_fimg* img, fl_imgtk_fimg* Y, float f
         #pragma omp parallel for
         for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
         {
-            for( unsigned rpt=0; rpt<3; rpt++ )
+            for( unsigned rpt=0; rpt<img->d; rpt++ )
             {
                 float* pixel = &img->pixels[ cnt * img->d + rpt ];
-
-                *pixel = (*pixel - colMin) / colRange;
+                if ( rpt < 4)
+                    *pixel = (*pixel - colMin) / colRange;
+                else
+                    *pixel = *pixel;
             }
         }
     }
