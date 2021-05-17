@@ -1,12 +1,15 @@
 #ifndef __FL_IMGTOOLKIT_H__
 #define __FL_IMGTOOLKIT_H__
+#ifdef _MSC_VER /// Supporting MSVC
+    #pragma once
+#endif
 
 /*******************************************************************************
-* fl_imgtk.H , version 0.3.39.25
+* fl_imgtk.H , version 0.3.39.27
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2021 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
-* All rights reserved for MIT license.
+* All rights reserved, MIT license.
 *
 * [ Disclaimer ]
 * - Some codes belong to FreeImage 3 library, and modified to FLTK and fl_imgtk.
