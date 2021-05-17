@@ -950,7 +950,7 @@ Fl_RGB_Image* fl_imgtk::rotate180( Fl_RGB_Image* img )
         {
             fl_imgtk_swap_mem( &buff[ cnt * d ],
                                &buff[ (imgmax - cnt - 1) * d ],
-                               3);
+                               d );
         }
 #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
