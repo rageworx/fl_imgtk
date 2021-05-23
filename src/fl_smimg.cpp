@@ -15,6 +15,8 @@
 #define FI_RGBA_GREEN           1
 #define FI_RGBA_BLUE            2
 #define FI_RGBA_ALPHA           3
+#define FI_GRAYA_GRAY           0
+#define FI_GRAYA_ALPHA          1
 
 /// Clamp function
 template <class T> T CLAMP(const T &value, const T &min_value, const T &max_value) 
@@ -331,6 +333,125 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
 
     switch ( src_bpp )
     {
+        case 1:
+        {
+            OMPSIZE_T x = 0;
+            OMPSIZE_T y = 0;
+
+#pragma omp parallel for private(x)
+            for ( y = 0; y < height; y++)
+            {
+                const
+                uchar* src_bits = &src[ ( ( y + src_offset_y ) * src_width * src_bpp ) +
+                                        ( src_offset_x * src_bpp ) ];
+                uchar* dst_bits = &dst[ y * dst_width * src_bpp ];
+
+                // scale each row
+                for ( x = 0; x < dst_width; x++)
+                {
+                    // loop through row
+                    const unsigned iLeft  = weightsTable.getLeftBoundary(x);            // retrieve left boundary
+                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;   // retrieve right boundary
+                    const uchar*   pixel  = src_bits + iLeft * src_bpp;
+                    double v = 0;
+
+                    // for(i = iLeft to iRight)
+                    for (unsigned i = 0; i <= iLimit; i++)
+                    {
+                        // scan between boundaries
+                        // accumulate weighted effect of each neighboring pixel
+                        const double weight = weightsTable.getWeight(x, i);
+
+                        if (useSCh)
+                        {
+                            double c = (weight * (double)pixel[refSCh]);
+                            v += c;
+                        }
+                        else
+                        {
+                            v += (weight * (double)pixel[FI_GRAYA_GRAY]);
+                        }
+
+                        pixel += src_bpp;
+                    }
+
+                    // clamp and place result in destination pixel
+                    if (useSCh)
+                    {
+                        uchar cmpv = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
+                        dst_bits[FI_GRAYA_GRAY]   = cmpv;
+                    }
+                    else
+                    {
+                        dst_bits[FI_GRAYA_GRAY]   = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
+                    }
+                    dst_bits += src_bpp;
+                }
+            }
+        }
+        break;
+
+        case 2:
+        {
+            OMPSIZE_T x = 0;
+            OMPSIZE_T y = 0;
+
+#pragma omp parallel for private(x)
+            for ( y = 0; y < height; y++)
+            {
+                const
+                uchar* src_bits = &src[ ( ( y + src_offset_y ) * src_width * src_bpp ) +
+                                        ( src_offset_x * src_bpp ) ];
+                uchar* dst_bits = &dst[ y * dst_width * src_bpp ];
+
+                // scale each row
+                for ( x = 0; x < dst_width; x++)
+                {
+                    // loop through row
+                    const unsigned iLeft = weightsTable.getLeftBoundary(x);             // retrieve left boundary
+                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;   // retrieve right boundary
+                    const uchar *pixel = src_bits + iLeft * src_bpp;
+                    double v = 0, a = 0;
+
+                    // for(i = iLeft to iRight)
+                    for (unsigned i = 0; i <= iLimit; i++)
+                    {
+                        // scan between boundaries
+                        // accumulate weighted effect of each neighboring pixel
+                        const double weight = weightsTable.getWeight(x, i);
+
+                        if (useSCh)
+                        {
+                            double c = (weight * (double)pixel[refSCh]);
+                            v += c;
+                            a += (weight * (double)pixel[FI_GRAYA_ALPHA]);
+                        }
+                        else
+                        {
+                            v += (weight * (double)pixel[FI_GRAYA_GRAY]);
+                            a += (weight * (double)pixel[FI_GRAYA_ALPHA]);
+                        }
+                        pixel += src_bpp;
+                    }
+
+                    // clamp and place result in destination pixel
+                    if (useSCh)
+                    {
+                        uchar cmpv = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
+
+                        dst_bits[FI_GRAYA_GRAY]   = cmpv;
+                        dst_bits[FI_GRAYA_ALPHA] = (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
+                    }
+                    else
+                    {
+                        dst_bits[FI_GRAYA_GRAY] = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
+                        dst_bits[FI_GRAYA_ALPHA] = (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
+                    }
+                    dst_bits += src_bpp;
+                }
+            }
+        }
+            break;
         case 3:
         {
             OMPSIZE_T x = 0;
@@ -350,8 +471,8 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                     // loop through row
                     const unsigned iLeft  = weightsTable.getLeftBoundary(x);            // retrieve left boundary
                     const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;   // retrieve right boundary
-                    const uchar*   pixel  = src_bits + iLeft * 3;
-                    double r = 0, g = 0, b = 0, a = 0;
+                    const uchar*   pixel  = src_bits + iLeft * src_bpp;
+                    double r = 0, g = 0, b = 0;
 
                     // for(i = iLeft to iRight)
                     for (unsigned i = 0; i <= iLimit; i++)
@@ -374,7 +495,7 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                             b += (weight * (double)pixel[FI_RGBA_BLUE]);
                         }
 
-                        pixel += 3;
+                        pixel += src_bpp;
 
                     }
 
@@ -392,7 +513,7 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                         dst_bits[FI_RGBA_GREEN] = (uchar)CLAMP<int>((int)(g + 0.5), 0, 0xFF);
                         dst_bits[FI_RGBA_BLUE]  = (uchar)CLAMP<int>((int)(b + 0.5), 0, 0xFF);
                     }
-                    dst_bits += 3;
+                    dst_bits += src_bpp;
                 }
             }
         }
@@ -417,7 +538,7 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                     // loop through row
                     const unsigned iLeft = weightsTable.getLeftBoundary(x);             // retrieve left boundary
                     const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;   // retrieve right boundary
-                    const uchar *pixel = src_bits + iLeft * 4;
+                    const uchar *pixel = src_bits + iLeft * src_bpp;
                     double r = 0, g = 0, b = 0, a = 0;
 
                     // for(i = iLeft to iRight)
@@ -442,7 +563,7 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                             b += (weight * (double)pixel[FI_RGBA_BLUE]);
                             a += (weight * (double)pixel[FI_RGBA_ALPHA]);
                         }
-                        pixel += 4;
+                        pixel += src_bpp;
                     }
 
                     // clamp and place result in destination pixel
@@ -462,7 +583,7 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                         dst_bits[FI_RGBA_BLUE]  = (uchar)CLAMP<int>((int)(b + 0.5), 0, 0xFF);
                         dst_bits[FI_RGBA_ALPHA] = (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
                     }
-                    dst_bits += 4;
+                    dst_bits += src_bpp;
                 }
             }
         }
@@ -484,6 +605,126 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
 
     switch( src_bpp )
     {
+        case 1:
+        {
+            OMPSIZE_T x = 0;
+            OMPSIZE_T y = 0;
+
+#pragma omp parallel for private(y)
+            for ( x = 0; x < width; x++)
+            {
+                // work on column x in dst
+                const unsigned index = x * src_bpp;
+                uchar* dst_bits = dst_base + index;
+
+                // scale each column
+                for ( y = 0; y < dst_height; y++)
+                {
+                    const
+                    uchar* src_base  = &src[ ( src_offset_y * width * src_bpp ) +
+                                             ( src_offset_y * src_pitch + src_offset_x * src_bpp ) ];
+                    // loop through column
+                    const unsigned iLeft = weightsTable.getLeftBoundary(y);             // retrieve left boundary
+                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;   // retrieve right boundary
+                    const uchar *src_bits = src_base + iLeft * src_pitch + index;
+                    double v = 0;
+
+                    for (unsigned i = 0; i <= iLimit; i++)
+                    {
+                        // scan between boundaries
+                        // accumulate weighted effect of each neighboring pixel
+                        const double weight = weightsTable.getWeight(y, i);
+
+                        if (useSCh)
+                        {
+                            double c = (weight * (double)src_bits[refSCh]);
+                            v += c;
+                        }
+                        else
+                        {
+                            v += (weight * (double)src_bits[FI_GRAYA_GRAY]);
+                        }
+                        src_bits += src_pitch;
+                    }
+
+                    // clamp and place result in destination pixel
+                    if (useSCh)
+                    {
+                        uchar cmpv = (uchar)CLAMP<int>((int) (v + 0.5), 0, 0xFF);
+                        dst_bits[FI_GRAYA_GRAY]   = cmpv;
+                    }
+                    else
+                    {
+                        dst_bits[FI_GRAYA_GRAY]   = (uchar)CLAMP<int>((int) (v + 0.5), 0, 0xFF);
+                    }
+                    dst_bits += dst_pitch;
+                }
+            }
+        }
+            break;
+
+        case 2:
+        {
+            OMPSIZE_T x = 0;
+            OMPSIZE_T y = 0;
+
+#pragma omp parallel for private(y)
+            for ( x = 0; x < width; x++)
+            {
+                // work on column x in dst
+                const unsigned index = x * src_bpp;
+                uchar *dst_bits = dst_base + index;
+
+                // scale each column
+                for ( y = 0; y < dst_height; y++)
+                {
+                    const
+                    uchar* src_base  = &src[ ( src_offset_y * width * src_bpp ) +
+                                             ( src_offset_y * src_pitch + src_offset_x * src_bpp ) ];
+                    // loop through column
+                    const unsigned iLeft = weightsTable.getLeftBoundary(y);             // retrieve left boundary
+                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;   // retrieve right boundary
+                    const uchar *src_bits = src_base + iLeft * src_pitch + index;
+                    double v = 0, a = 0;
+
+                    for (unsigned i = 0; i <= iLimit; i++)
+                    {
+                        // scan between boundaries
+                        // accumulate weighted effect of each neighboring pixel
+                        const double weight = weightsTable.getWeight(y, i);
+
+                        if (useSCh)
+                        {
+                            double c = (weight * (double)src_bits[refSCh]);
+                            v += c;
+                            a += (weight * (double)src_bits[1]);
+                        }
+                        else
+                        {
+                            v += (weight * (double)src_bits[FI_GRAYA_GRAY]);
+                            a += (weight * (double)src_bits[FI_GRAYA_ALPHA]);
+                        }
+                        src_bits += src_pitch;
+                    }
+
+                    // clamp and place result in destination pixel
+                    if (useSCh)
+                    {
+                        uchar cmpv = (uchar)CLAMP<int>((int) (v + 0.5), 0, 0xFF);
+                        dst_bits[FI_GRAYA_GRAY]   = cmpv;
+                        dst_bits[FI_GRAYA_ALPHA] = (uchar)CLAMP<int>((int) (a + 0.5), 0, 0xFF);
+                    }
+                    else
+                    {
+                        dst_bits[FI_GRAYA_GRAY]   = (uchar)CLAMP<int>((int) (v + 0.5), 0, 0xFF);
+                        dst_bits[FI_GRAYA_ALPHA] = (uchar)CLAMP<int>((int) (a + 0.5), 0, 0xFF);
+                    }
+                    dst_bits += dst_pitch;
+                }
+            }
+        }
+            break;
+
         case 3:
         {
             OMPSIZE_T x = 0;
@@ -506,7 +747,7 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
                     const unsigned iLeft = weightsTable.getLeftBoundary(y);             // retrieve left boundary
                     const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;   // retrieve right boundary
                     const uchar *src_bits = src_base + iLeft * src_pitch + index;
-                    double r = 0, g = 0, b = 0, a = 0;
+                    double r = 0, g = 0, b = 0;
 
                     for (unsigned i = 0; i <= iLimit; i++)
                     {
