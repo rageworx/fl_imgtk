@@ -333,15 +333,15 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
 
     switch ( src_bpp )
     {
-        case 1:
+        case 1: /// single Y channel, gray image.
         {
             OMPSIZE_T x = 0;
             OMPSIZE_T y = 0;
 
-#pragma omp parallel for private(x)
+            #pragma omp parallel for private(x)
             for ( y = 0; y < height; y++)
             {
-                const
+                const \
                 uchar* src_bits = &src[ ( ( y + src_offset_y ) * src_width * src_bpp ) +
                                         ( src_offset_x * src_bpp ) ];
                 uchar* dst_bits = &dst[ y * dst_width * src_bpp ];
@@ -362,44 +362,29 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                         // accumulate weighted effect of each neighboring pixel
                         const double weight = weightsTable.getWeight(x, i);
 
-                        if (useSCh)
-                        {
-                            double c = (weight * (double)pixel[refSCh]);
-                            v += c;
-                        }
-                        else
-                        {
-                            v += (weight * (double)pixel[FI_GRAYA_GRAY]);
-                        }
-
+                        // 1, 2 depth avoids useSCh flag.
+                        v += (weight * (double)pixel[FI_GRAYA_GRAY]);
                         pixel += src_bpp;
                     }
 
                     // clamp and place result in destination pixel
-                    if (useSCh)
-                    {
-                        uchar cmpv = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
-                        dst_bits[FI_GRAYA_GRAY]   = cmpv;
-                    }
-                    else
-                    {
-                        dst_bits[FI_GRAYA_GRAY]   = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
-                    }
+                    // and single Y channel don't need useSCh.
+                    dst_bits[FI_GRAYA_GRAY]   = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
                     dst_bits += src_bpp;
                 }
             }
         }
         break;
 
-        case 2:
+        case 2: /// single Y and Alpha chaneel.
         {
             OMPSIZE_T x = 0;
             OMPSIZE_T y = 0;
 
-#pragma omp parallel for private(x)
-            for ( y = 0; y < height; y++)
+            #pragma omp parallel for private(x)
+            for ( y=0; y<height; y++ )
             {
-                const
+                const \
                 uchar* src_bits = &src[ ( ( y + src_offset_y ) * src_width * src_bpp ) +
                                         ( src_offset_x * src_bpp ) ];
                 uchar* dst_bits = &dst[ y * dst_width * src_bpp ];
@@ -420,33 +405,15 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                         // accumulate weighted effect of each neighboring pixel
                         const double weight = weightsTable.getWeight(x, i);
 
-                        if (useSCh)
-                        {
-                            double c = (weight * (double)pixel[refSCh]);
-                            v += c;
-                            a += (weight * (double)pixel[FI_GRAYA_ALPHA]);
-                        }
-                        else
-                        {
-                            v += (weight * (double)pixel[FI_GRAYA_GRAY]);
-                            a += (weight * (double)pixel[FI_GRAYA_ALPHA]);
-                        }
+                        // 1 and 2 depth avoids useSCh flag.
+                        v += (weight * (double)pixel[FI_GRAYA_GRAY]);
+                        a += (weight * (double)pixel[FI_GRAYA_ALPHA]);
                         pixel += src_bpp;
                     }
 
                     // clamp and place result in destination pixel
-                    if (useSCh)
-                    {
-                        uchar cmpv = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
-
-                        dst_bits[FI_GRAYA_GRAY]   = cmpv;
-                        dst_bits[FI_GRAYA_ALPHA] = (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
-                    }
-                    else
-                    {
-                        dst_bits[FI_GRAYA_GRAY] = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
-                        dst_bits[FI_GRAYA_ALPHA] = (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
-                    }
+                    dst_bits[FI_GRAYA_GRAY] = (uchar)CLAMP<int>((int)(v + 0.5), 0, 0xFF);
+                    dst_bits[FI_GRAYA_ALPHA] = (uchar)CLAMP<int>((int)(a + 0.5), 0, 0xFF);
                     dst_bits += src_bpp;
                 }
             }
