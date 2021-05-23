@@ -92,11 +92,13 @@ inline void fl_imgtk_swap_mem( uchar* a, uchar* b, size_t c )
 
 Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong color )
 {
-    if ( ( w > 0 ) && ( h > 0 )
+    if ( ( w == 0 ) || ( h > 0 ) )
+        return NULL;
+
     if ( d == 1 )
     {
         OMPSIZE_T resz   = w * h;
-        uchar*    pdata  = new uchar[ ressz ];
+        uchar*    pdata  = new uchar[ resz ];
         uchar     ref_y  = ( color & 0x000000FF );
         
         if ( pdata != NULL )
