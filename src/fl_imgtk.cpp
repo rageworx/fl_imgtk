@@ -1099,7 +1099,9 @@ inline float fl_imgtk_max4(float a, float b, float c, float d)
 // Maybe, it will slowly works if not enable openMP.
 Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
 {
-    if ( ( img == NULL ) || ( img->d() < 3 ) )
+    // I'm not sure this will be work for depth 1 or 2 ...
+    // not do not test depth for a monment until it fully tested.
+    if ( img == NULL )
         return NULL;
 
     long img_w = img->w();
@@ -1235,9 +1237,10 @@ Fl_RGB_Image* fl_imgtk_curve( Fl_RGB_Image* img, const uchar* LUT )
         return NULL;
 
     const uchar* ptr = (const uchar*)img->data()[0];
-    OMPSIZE_T w = img->w();
-    OMPSIZE_T h = img->h();
-    OMPSIZE_T d = img->d();
+    OMPSIZE_T w  = img->w();
+    OMPSIZE_T h  = img->h();
+    OMPSIZE_T d  = img->d();
+    OMPSIZE_T td = d;
     OMPSIZE_T imgsz = w*h;
 
     if ( imgsz == 0 )
@@ -1250,14 +1253,17 @@ Fl_RGB_Image* fl_imgtk_curve( Fl_RGB_Image* img, const uchar* LUT )
 
     memcpy( buff, ptr, imgsz * d );
 
+    if ( ( d == 2 ) || ( d == 4 ) ) td--;
+    
     #pragma omp parallel for
     for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
-        for( OMPSIZE_T cntd=1; cntd<=d; cntd++ )
+        for( OMPSIZE_T cntd=1; cntd<=td; cntd++ )
         {
             buff[ cnt * d + cntd ] = LUT[ buff[ cnt * d + cntd ] ];
         }
     }
+    
 #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
     if ( newimg != NULL )
@@ -1278,19 +1284,23 @@ bool fl_imgtk_curve_ex( Fl_RGB_Image* img, const uchar* LUT )
     if ( img == NULL )
         return false;
 
-    uchar* ptr = (uchar*)img->data()[0];
-    OMPSIZE_T w = img->w();
-    OMPSIZE_T h = img->h();
-    OMPSIZE_T d = img->d();
+    uchar* ptr   = (uchar*)img->data()[0];
+    OMPSIZE_T w  = img->w();
+    OMPSIZE_T h  = img->h();
+    OMPSIZE_T d  = img->d();
+    OMPSIZE_T td = d;
     OMPSIZE_T imgsz = w*h;
 
     if ( imgsz == 0 )
         return false;
 
+    // sense alpha channel ( alpha channels will be skipped )
+    if (( d == 2 ) || ( d == 4 )) td--;
+    
     #pragma omp parallel for
     for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
-        for( OMPSIZE_T cntd=1; cntd<=d; cntd++ )
+        for( OMPSIZE_T cntd=1; cntd<=td; cntd++ )
         {
             ptr[ cnt * d + cntd ] = LUT[ ptr[ cnt * d + cntd ] ];
         }
@@ -1420,9 +1430,14 @@ Fl_RGB_Image* fl_imgtk::invert( Fl_RGB_Image* img )
         OMPSIZE_T img_w = img->w();
         OMPSIZE_T img_h = img->h();
         OMPSIZE_T img_d = img->d();
+        OMPSIZE_T td    = img_d;
 
-        if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
+        if ( ( img_w == 0 ) || ( img_h == 0 ) )
             return NULL;
+            
+        // skip alpha channel.
+        if ( ( img_d == 2 ) || ( img_d == 4 ) ) 
+            td--;
 
         OMPSIZE_T buffsz = img_w * img_h;
         uchar* newbuff = new uchar[ buffsz * img_d ];
@@ -1438,13 +1453,14 @@ Fl_RGB_Image* fl_imgtk::invert( Fl_RGB_Image* img )
                 uchar* pdst = &newbuff[ cnt * img_d ];
 
                 // alpha channel will skipped to invert.
-                for( OMPSIZE_T rpt=0; rpt<3; rpt++ )
+                for( OMPSIZE_T rpt=0; rpt<td; rpt++ )
                 {
                     pdst[ rpt ] = 0xFF - psrc[ rpt ];
                 }
-                if ( img_d > 3 )
+                
+                if ( img_d != td )
                 {
-                    pdst[ 3 ] = psrc[ 3 ];
+                    pdst[ td ] = psrc[ td ];
                 }
             }
 #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
@@ -1470,9 +1486,14 @@ bool fl_imgtk::invert_ex( Fl_RGB_Image* img )
         OMPSIZE_T img_w = img->w();
         OMPSIZE_T img_h = img->h();
         OMPSIZE_T img_d = img->d();
+        OMPSIZE_T td    = img_d;
 
-        if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
+        if ( ( img_w == 0 ) || ( img_h == 0 ) )
             return false;
+            
+        // skip alpha channel
+        if ( ( img_d == 2 ) || ( img_d == 4 ) ) 
+            td--;
 
         OMPSIZE_T buffsz = img_w * img_h;
 
@@ -1484,7 +1505,7 @@ bool fl_imgtk::invert_ex( Fl_RGB_Image* img )
             uchar* psrc = &refbuff[ cnt * img_d ];
 
             // alpha channel will skipped to invert.
-            for( OMPSIZE_T rpt=0; rpt<3; rpt++ )
+            for( OMPSIZE_T rpt=0; rpt<td; rpt++ )
             {
                 psrc[ rpt ] = 0xFF - psrc[ rpt ];
             }
@@ -1504,8 +1525,9 @@ Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
         OMPSIZE_T img_w = img->w();
         OMPSIZE_T img_h = img->h();
         OMPSIZE_T img_d = img->d();
+        OMPSIZE_T td    = img_d;
 
-        if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
+        if ( ( img_w == 0 ) || ( img_h == 0 ) )
             return NULL;
 
         if ( ( kfc->w == 0 ) || ( kfc->h == 0 ) || ( kfc->msz == 0 ) || ( kfc->m == NULL ) )
@@ -1516,6 +1538,9 @@ Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
 
         if ( newbuff == NULL )
             return NULL;
+
+        if ( ( img_d == 2 ) || ( img_d == 4 ) )
+            td--;
 
         #pragma omp parallel for
         for( OMPSIZE_T cntx=0; cntx<img_w; cntx++ )
@@ -1538,7 +1563,7 @@ Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
 
                         if ( posM < ( img_w * img_h ) )
                         {
-                            for( OMPSIZE_T cntd=0; cntd<img_d; cntd ++ )
+                            for( OMPSIZE_T cntd=0; cntd<td; cntd ++ )
                             {
                                 adj[ cntd ] += (double)pixels[ posM * img_d  + cntd ] *
                                                (double)kfc->m[ fcnty * kfc->w + fcntx ];
@@ -1547,10 +1572,16 @@ Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
                     }
                 }
 
-                for( OMPSIZE_T cntd=0; cntd<img_d; cntd++ )
+                for( OMPSIZE_T cntd=0; cntd<td; cntd++ )
                 {
                     uchar rpixel = MIN( MAX( kfc->f * adj[ cntd ] + kfc->b, 0 ), 255 );
                     newbuff[ ( cnty * img_w + cntx ) * img_d + cntd ] = rpixel;
+                }
+                
+                if ( img_d != td ) /// alpha channel
+                {
+                    size_t pq = ( cnty * img_w + cntx ) * img_d + td;
+                    newbuff[ pq ] = pixels[ pq ]; 
                 }
             }
         }
@@ -1576,12 +1607,16 @@ bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
         OMPSIZE_T img_w = img->w();
         OMPSIZE_T img_h = img->h();
         OMPSIZE_T img_d = img->d();
+        OMPSIZE_T td    = img_d;
 
-        if ( ( img_w == 0 ) || ( img_h == 0 ) || ( img_d < 3 ) )
+        if ( ( img_w == 0 ) || ( img_h == 0 ) )
             return false;
 
         if ( ( kfc->w == 0 ) || ( kfc->h == 0 ) || ( kfc->msz == 0 ) || ( kfc->m == NULL ) )
             return false;
+            
+        if ( ( img_d == 2 ) || ( img_d == 4 ) )
+            td--;
 
         uchar* pixels  = (uchar*)img->data()[0];
 
@@ -1606,7 +1641,7 @@ bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
 
                         if ( posM < ( img_w * img_h ) )
                         {
-                            for( OMPSIZE_T cntd=0; cntd<img_d; cntd ++ )
+                            for( OMPSIZE_T cntd=0; cntd<td; cntd++ )
                             {
                                 adj[ cntd ] += (double)pixels[ posM * img_d  + cntd ] *
                                                (double)kfc->m[ fcnty * kfc->w + fcntx ];
@@ -1615,7 +1650,7 @@ bool fl_imgtk::filtered_ex( Fl_RGB_Image* img, kfconfig* kfc )
                     }
                 }
 
-                for( OMPSIZE_T cntd=0; cntd<img_d; cntd++ )
+                for( OMPSIZE_T cntd=0; cntd<td; cntd++ )
                 {
                     uchar rpixel = MIN( MAX( kfc->f * adj[ cntd ] + kfc->b, 0 ), 255 );
                     pixels[ ( cnty * img_w + cntx ) * img_d + cntd ] = rpixel;
@@ -1634,7 +1669,7 @@ bool fl_imgtk_gen_lowfreq( uchar** out, const uchar* src, unsigned w, unsigned h
     if ( src == NULL )
         return false;
 
-    if ( ( w < sz*2 ) || ( h < sz*2 ) || ( d < 3 ) )
+    if ( ( w < sz*2 ) || ( h < sz*2 ) )
         return false;
 
     if ( sz < 2 )
@@ -1651,6 +1686,10 @@ bool fl_imgtk_gen_lowfreq( uchar** out, const uchar* src, unsigned w, unsigned h
 
     OMPSIZE_T cnty;
     OMPSIZE_T cntx;
+    OMPSIZE_T td = d;
+    
+    // skip alpha channel.
+    if ( ( d == 2 ) || ( d == 4 ) ) td--;
 
     #pragma omp parallel for private( cntx )
     for( cnty=startpos; cnty<endposh; cnty++ )
@@ -1663,17 +1702,23 @@ bool fl_imgtk_gen_lowfreq( uchar** out, const uchar* src, unsigned w, unsigned h
             {
                 for( OMPSIZE_T rx = -startpos; rx<(startpos+1); rx++ )
                 {
-                    for( OMPSIZE_T rpt=0; rpt<d; rpt++ )
+                    for( OMPSIZE_T rpt=0; rpt<td; rpt++ )
                     {
                         sum[rpt] += src[ ( ( cnty + ry ) * w + ( cntx + rx ) ) * d + rpt ];
                     }
                 }
             }
 
-            for( OMPSIZE_T rpt=0; rpt<d; rpt++ )
+            for( OMPSIZE_T rpt=0; rpt<td; rpt++ )
             {
                 outbuff[ ( cnty * w + cntx ) * d + rpt ] \
                  = MIN( 255, sum[rpt] / ( sz * sz ) );
+            }
+            
+            if ( td != d )
+            {
+                size_t bq = ( cnty * w + cntx ) * d + td;
+                outbuff[ bq ] = src[ bq ];
             }
         }
     }
@@ -1723,13 +1768,17 @@ Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor, unsigne
         long mgny = margin;
         long mgnw = img->w() - ( margin * 2 );
         long mgnh = img->h() - ( margin * 2 );
+        long td   = (long)img->d();
+        
+        if ( ( img->d() == 2 ) || ( img->d() == 4 ) )
+            td--;
 
         #pragma omp parallel for private( cntx )
         for( cnty=0; cnty<cnth; cnty++ )
         {
             for( cntx=0; cntx<cntw; cntx++ )
             {
-                for( unsigned rpt=0; rpt<img->d(); rpt++ )
+                for( unsigned rpt=0; rpt<td; rpt++ )
                 {
                     if ( ( cntx > mgnx ) && ( cntx < (mgnx+mgnw) ) && \
                          ( cnty > mgny ) && ( cnty < (mgny+mgnh) ) )
@@ -1747,6 +1796,12 @@ Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor, unsigne
                         outbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ] \
                         = rbuff[ ( cnty * img->w() + cntx ) * img->d() + rpt ];
                     }
+                }
+                
+                if ( (long)img->d() != td ) /// alpha channel.
+                {
+                    long bq = ( cnty * img->w() + cntx ) * img->d() + td;
+                    outbuff[ bq ] = rbuff[ bq ];
                 }
             }
         }
@@ -1795,13 +1850,14 @@ bool fl_imgtk::edgeenhance_ex( Fl_RGB_Image* img, unsigned factor, unsigned marg
         long mgny = margin;
         long mgnw = img->w() - ( margin * 2 );
         long mgnh = img->h() - ( margin * 2 );
+        long td   = (long)img->d();
 
         #pragma omp parallel for private( cntx )
         for( cnty=mgny; cnty<mgnh; cnty++ )
         {
             for( cntx=mgnx; cntx<mgnw; cntx++ )
             {
-                for( unsigned rpt=0; rpt<img->d(); rpt++ )
+                for( unsigned rpt=0; rpt<td; rpt++ )
                 {
                     float dlv = (float)lfimg5[ ( cnty * img->w() + cntx ) * img->d() + rpt ]
                                 - (float)lfimg9[ ( cnty * img->w() + cntx ) * img->d() + rpt ];
@@ -2218,7 +2274,7 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
             OMPSIZE_T putx;
             OMPSIZE_T puty;
 
-            // bug in thnak you, https://github.com/fire-eggs
+            // bug fixed thank you for, https://github.com/fire-eggs
             #pragma omp parallel for private( cntx )
             for( cnty=rsy; cnty<srch; cnty++ )
             {
@@ -2248,13 +2304,17 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
     return NULL;
 }
 
-void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd,
+// This need more flexible ...
+// Working for now --
+bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd,
                               Fl_RGB_Image* img, int px, int py, float alpha )
 {
     if ( ( buff != NULL ) && ( img != NULL ) )
     {
-        if ( img->d() < 3 )
-            return;
+        // only availed for same depth image.
+        // experimentally blocked ...
+        // if ( img->d() > bd )
+        //     return false;
 
         uchar* rbuff = (uchar*)img->data()[0];
 
@@ -2286,6 +2346,14 @@ void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
         OMPSIZE_T cnty = 0;
         OMPSIZE_T imgw = img->w();
         OMPSIZE_T imgd = img->d();
+        OMPSIZE_T td   = imgd;
+        
+        if ( ( imgd == 2 ) || ( imgd == 4 ) )
+            td--;
+
+        float* w_p = new float[td];
+        float* r_p = new float[td];
+        float* cTemp = new float[td];
         
         #pragma omp parallel for private( cnty )
         for( cnty=miny; cnty<maxh; cnty++ )
@@ -2300,77 +2368,142 @@ void fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
 
                 float a_opa = MIN( 1.f, alpha );
                 
-                float w_r = (float)wptr[0] / 255.f;
-                float w_g = (float)wptr[1] / 255.f;
-                float w_b = (float)wptr[2] / 255.f;
+                memset( w_p, 0, sizeof( float ) * td );
+                memset( r_p, 0, sizeof( float ) * td );
                 float w_a = 1.0f;
-                
-                float r_r = (float)rptr[0] / 255.f;
-                float r_g = (float)rptr[1] / 255.f;
-                float r_b = (float)rptr[2] / 255.f;
                 float r_a = 1.0f;
-
-                if ( bd == 4 )
-                {
-                    w_a = (float)wptr[3] / 255.f;
-                }
                 
-                if ( imgd == 4 )
+                for ( OMPSIZE_T dd=0; dd<td; dd++ )
                 {
-                    r_a = (float)rptr[3] / 255.f;
+                    w_p[dd] = (float)wptr[dd] / 255.f;
+                    r_p[dd] = (float)rptr[dd] / 255.f;
                 }
-                                        
+
+                if ( td != imgd )
+                {
+                    w_a = (float)wptr[td] / 255.f;
+                    r_a = (float)rptr[td] / 255.f;
+                }
+                                                        
                 if ( a_opa < 1.f )
                 {
                     r_a *= a_opa;
                 }
-                    
-                float rTemp = r_r * r_a + w_r * w_a * ( 1.0f - r_a );
-                float gTemp = r_g * r_a + w_g * w_a * ( 1.0f - r_a );
-                float bTemp = r_b * r_a + w_b * w_a * ( 1.0f - r_a );
-
+                
+                memset( cTemp, 0, sizeof( float ) * td );
+                
+                for( OMPSIZE_T dd=0; dd<td; dd++ )
+                {    
+                    cTemp[dd] = r_p[dd] * r_a + w_p[dd] * w_a * ( 1.0f - r_a );
+                }
+                
                 r_a = w_a + ( 1.0f - w_a ) * r_a;
 
                 if ( r_a == 0.0f )
                 {
                     if ( a_opa > 0.0f )
                     {
-                        rTemp = r_r;
-                        gTemp = r_g;
-                        bTemp = r_b;
+                        for( OMPSIZE_T dd=0; dd<td; dd++ )
+                        {    
+                            cTemp[dd] = r_p[dd];
+                        }
                     }
                     else
                     {
-                        rTemp = w_r;
-                        gTemp = w_g;
-                        bTemp = w_b;
+                        for( OMPSIZE_T dd=0; dd<td; dd++ )
+                        {    
+                            cTemp[dd] = w_p[dd];
+                        }
                     }
                 }
                 else
                 {
-                    rTemp /= r_a;
-                    gTemp /= r_a;
-                    bTemp /= r_a;
+                    for( OMPSIZE_T dd=0; dd<td; dd++ )
+                    {    
+                        cTemp[dd] /= r_a;
+                    }
                 }
                 
-                if ( bd == 4 )
+                switch( bd )
                 {
-                    wptr[0] = rTemp * 255.f;
-                    wptr[1] = gTemp * 255.f;
-                    wptr[2] = bTemp * 255.f;
-                    wptr[3] = r_a * 255.f;
-                }
-                else
-                {
-                    wptr[0] = rTemp * ( 255.f * r_a );
-                    wptr[1] = gTemp * ( 255.f * r_a );
-                    wptr[2] = bTemp * ( 255.f * r_a );
-                }
+                    case 1:
+                    {
+                        float cavr = 0.f;
+                        for ( OMPSIZE_T dd=0; dd<td; dd++ )
+                        {
+                            cavr += cTemp[dd];    
+                        }
+                        cavr /= td;
+                        cavr *= r_a;
+                        
+                        wptr[0] = cavr * 255.f;
+                    }
+                    break;
+                    
+                    case 2:
+                    {
+                        float cavr = 0.f;
+                        for ( OMPSIZE_T dd=0; dd<td; dd++ )
+                        {
+                            cavr += cTemp[dd];    
+                        }
+                        cavr /= td;
+                        
+                        wptr[0] = cavr * 255.f;
+                        wptr[1] = r_a * 255.f;
+                    }
+                    break;
+                    
+                    case 3:
+                    {
+                        if ( imgd <= 2 )
+                        {
+                            wptr[0] = cTemp[0] * ( 255.f * r_a );
+                            wptr[1] = cTemp[0] * ( 255.f * r_a );
+                            wptr[2] = cTemp[0] * ( 255.f * r_a );
+                        }
+                        else
+                        if ( imgd <= 4 )
+                        {
+                            wptr[0] = cTemp[0] * ( 255.f * r_a );
+                            wptr[1] = cTemp[1] * ( 255.f * r_a );
+                            wptr[2] = cTemp[2] * ( 255.f * r_a );
+                        }
+                    }
+                    break;
+                    
+                    case 4:
+                    {
+                        if ( imgd <= 2 )
+                        {
+                            wptr[0] = cTemp[0] * 255.f;
+                            wptr[1] = cTemp[0] * 255.f;
+                            wptr[2] = cTemp[0] * 255.f;
+                            wptr[3] = r_a * 255.f;
+                        }
+                        else
+                        if ( imgd <= 3 )
+                        {
+                            wptr[0] = cTemp[0] * 255.f;
+                            wptr[1] = cTemp[1] * 255.f;
+                            wptr[2] = cTemp[2] * 255.f;
+                            wptr[3] = r_a * 255.f;
+                        }
+                    }
+                } /// of switch( bd ) --
             }
         }
+
+        delete[] r_p;
+        delete[] w_p;
+        delete[] cTemp;
         
         img->uncache();
+        
+        return true;
     }
+    
+    return false;
 }
 
 void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd,
