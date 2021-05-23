@@ -347,11 +347,13 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                 uchar* dst_bits = &dst[ y * dst_width * src_bpp ];
 
                 // scale each row
-                for ( x = 0; x < dst_width; x++)
+                for ( x=0; x<dst_width; x++ )
                 {
                     // loop through row
-                    const unsigned iLeft  = weightsTable.getLeftBoundary(x);            // retrieve left boundary
-                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;   // retrieve right boundary
+                    // retrieve left boundary
+                    const unsigned iLeft  = weightsTable.getLeftBoundary(x);
+                    // retrieve right boundary
+                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;   
                     const uchar*   pixel  = src_bits + iLeft * src_bpp;
                     double v = 0;
 
@@ -418,7 +420,8 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                 }
             }
         }
-            break;
+        break;
+        
         case 3:
         {
             OMPSIZE_T x = 0;
@@ -436,8 +439,8 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                 for ( x = 0; x < dst_width; x++)
                 {
                     // loop through row
-                    const unsigned iLeft  = weightsTable.getLeftBoundary(x);            // retrieve left boundary
-                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;   // retrieve right boundary
+                    const unsigned iLeft  = weightsTable.getLeftBoundary(x);
+                    const unsigned iLimit = weightsTable.getRightBoundary(x) - iLeft;
                     const uchar*   pixel  = src_bits + iLeft * src_bpp;
                     double r = 0, g = 0, b = 0;
 
@@ -463,7 +466,6 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                         }
 
                         pixel += src_bpp;
-
                     }
 
                     // clamp and place result in destination pixel
@@ -500,7 +502,7 @@ void ResizeEngine::horizontalFilter( const uchar* src, const unsigned height, co
                 uchar* dst_bits = &dst[ y * dst_width * src_bpp ];
 
                 // scale each row
-                for ( x = 0; x < dst_width; x++)
+                for ( x=0; x<dst_width; x++)
                 {
                     // loop through row
                     const unsigned iLeft = weightsTable.getLeftBoundary(x);             // retrieve left boundary
@@ -649,8 +651,8 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
                     uchar* src_base  = &src[ ( src_offset_y * width * src_bpp ) +
                                              ( src_offset_y * src_pitch + src_offset_x * src_bpp ) ];
                     // loop through column
-                    const unsigned iLeft = weightsTable.getLeftBoundary(y);             // retrieve left boundary
-                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;   // retrieve right boundary
+                    const unsigned iLeft = weightsTable.getLeftBoundary(y);
+                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;
                     const uchar *src_bits = src_base + iLeft * src_pitch + index;
                     double v = 0, a = 0;
 
@@ -711,8 +713,8 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
                     uchar* src_base  = &src[ ( src_offset_y * width * src_bpp ) +
                                              ( src_offset_y * src_pitch + src_offset_x * src_bpp ) ];
                     // loop through column
-                    const unsigned iLeft = weightsTable.getLeftBoundary(y);             // retrieve left boundary
-                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;   // retrieve right boundary
+                    const unsigned iLeft = weightsTable.getLeftBoundary(y);
+                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;
                     const uchar *src_bits = src_base + iLeft * src_pitch + index;
                     double r = 0, g = 0, b = 0;
 
@@ -764,7 +766,7 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
             OMPSIZE_T y = 0;
 
             #pragma omp parallel for private(y)
-            for ( x = 0; x < width; x++)
+            for ( x = 0; x < width; x++ )
             {
                 // work on column x in dst
                 const unsigned index = x * src_bpp;
@@ -777,8 +779,8 @@ void ResizeEngine::verticalFilter( const uchar* src, unsigned width, unsigned sr
                     uchar* src_base  = &src[ ( src_offset_y * width * src_bpp ) +
                                              ( src_offset_y * src_pitch + src_offset_x * src_bpp ) ];
                     // loop through column
-                    const unsigned iLeft = weightsTable.getLeftBoundary(y);             // retrieve left boundary
-                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;   // retrieve right boundary
+                    const unsigned iLeft = weightsTable.getLeftBoundary(y);
+                    const unsigned iLimit = weightsTable.getRightBoundary(y) - iLeft;
                     const uchar *src_bits = src_base + iLeft * src_pitch + index;
                     double r = 0, g = 0, b = 0, a = 0;
 

@@ -45,3 +45,4 @@ Makefile
 *.txt
 *.workspace
 *.opendb
+.DS_Store

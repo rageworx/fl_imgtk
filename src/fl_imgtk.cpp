@@ -92,7 +92,61 @@ inline void fl_imgtk_swap_mem( uchar* a, uchar* b, size_t c )
 
 Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong color )
 {
-    if ( ( w > 0 ) && ( h > 0 ) && ( d >= 3 ) )
+    if ( ( w > 0 ) && ( h > 0 )
+    if ( d == 1 )
+    {
+        OMPSIZE_T resz   = w * h;
+        uchar*    pdata  = new uchar[ ressz ];
+        uchar     ref_y  = ( color & 0x000000FF );
+        
+        if ( pdata != NULL )
+        {
+            memset( pdata, ref_y, resz );
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+            Fl_RGB_Image* newimg = new Fl_RGB_Image( pdata, w, h, d );
+            if ( newimg != NULL )
+            {
+                newimg->alloc_array = 1;
+                return newimg;
+            }
+#else
+            return new Fl_RGB_Image( pdata, w, h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        }
+    }
+    else
+    if ( d == 2 )
+    {
+        OMPSIZE_T resz   = w * h;
+        OMPSIZE_T datasz = resz * d;
+        uchar*    pdata  = new uchar[ datasz ];
+        
+        uchar ref_y   = ( color & 0x0000FF00 ) >> 8;
+        uchar ref_a   = ( color & 0x000000FF );
+
+        uchar carray[2] = { ref_y, ref_a };
+        
+        if ( pdata != NULL )
+        {
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<resz; cnt++ )
+            {
+                memcpy( &pdata[ cnt * d ], &carray[0], d );
+            }
+#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+            Fl_RGB_Image* newimg = new Fl_RGB_Image( pdata, w, h, d );
+            if ( newimg != NULL )
+            {
+                newimg->alloc_array = 1;
+                return newimg;
+            }
+#else
+            return new Fl_RGB_Image( pdata, w, h, d );
+#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        }
+    }
+    else
+    if ( d >= 3 )
     {
         OMPSIZE_T resz   = w * h;
         OMPSIZE_T datasz = resz * d;
