@@ -11,10 +11,12 @@
 #include "fl_imgtk_minmax.h"
 #include "fl_imgtk_cfg.h"
 
+// --- formal RGB and RGBA ---
 #define FI_RGBA_RED             0
 #define FI_RGBA_GREEN           1
 #define FI_RGBA_BLUE            2
 #define FI_RGBA_ALPHA           3
+// --- related in 1 or 2 depth ---
 #define FI_GRAYA_GRAY           0
 #define FI_GRAYA_ALPHA          1
 

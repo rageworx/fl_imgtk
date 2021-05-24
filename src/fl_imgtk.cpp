@@ -92,14 +92,20 @@ inline void fl_imgtk_swap_mem( uchar* a, uchar* b, size_t c )
 
 Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong color )
 {
-    if ( ( w == 0 ) || ( h > 0 ) )
+    if ( ( w == 0 ) || ( h == 0 ) )
         return NULL;
+
+    uchar ref_r   = ( color & 0xFF000000 ) >> 24;
+    uchar ref_g   = ( color & 0x00FF0000 ) >> 16;
+    uchar ref_b   = ( color & 0x0000FF00 ) >> 8;
+    uchar ref_a   = ( color & 0x000000FF );
 
     if ( d == 1 )
     {
+        float     colaf  = ((float)( ref_r + ref_g + ref_b ) / 3.f) * ( ref_a / 255.f );
         OMPSIZE_T resz   = w * h;
         uchar*    pdata  = new uchar[ resz ];
-        uchar     ref_y  = ( color & 0x000000FF );
+        uchar     ref_y  = (uchar)colaf;
         
         if ( pdata != NULL )
         {
@@ -123,8 +129,8 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
         OMPSIZE_T datasz = resz * d;
         uchar*    pdata  = new uchar[ datasz ];
         
-        uchar ref_y   = ( color & 0x0000FF00 ) >> 8;
-        uchar ref_a   = ( color & 0x000000FF );
+        ulong colaf   = (float)( ref_r + ref_g + ref_b ) / 3.f;
+        uchar ref_y   = (uchar)(colaf & 0x000000FF);
 
         uchar carray[2] = { ref_y, ref_a };
         
@@ -154,11 +160,6 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
         OMPSIZE_T datasz = resz * d;
         uchar*    pdata  = new uchar[ datasz ];
         
-        uchar ref_r   = ( color & 0xFF000000 ) >> 24;
-        uchar ref_g   = ( color & 0x00FF0000 ) >> 16;
-        uchar ref_b   = ( color & 0x0000FF00 ) >> 8;
-        uchar ref_a   = ( color & 0x000000FF );
-
         uchar carray[4] = { ref_r, ref_g, ref_b, ref_a };
         
         if ( pdata != NULL )
@@ -1258,7 +1259,7 @@ Fl_RGB_Image* fl_imgtk_curve( Fl_RGB_Image* img, const uchar* LUT )
     #pragma omp parallel for
     for( OMPSIZE_T cnt=0; cnt<imgsz; cnt++ )
     {
-        for( OMPSIZE_T cntd=1; cntd<=td; cntd++ )
+        for( OMPSIZE_T cntd=0; cntd<td; cntd++ )
         {
             buff[ cnt * d + cntd ] = LUT[ buff[ cnt * d + cntd ] ];
         }
@@ -2304,32 +2305,151 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
     return NULL;
 }
 
-// This need more flexible ...
-// Working for now --
+bool fl_imgtk_convertrgb( uchar*& wbuff, unsigned w, unsigned h, unsigned d, uchar* rbuff, unsigned rd )
+{
+    if ( ( rbuff != NULL ) 
+         && ( w > 0 ) && ( h > 0 ) && ( rd <= 2 ) && ( d >= 3 )
+         && ( d != rd ) )
+    {
+        wbuff = new uchar[ w * h * d ];
+
+        if ( wbuff == NULL )
+            return false;
+
+        if ( d == 3 )
+        {
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<(w*h); cnt++ )
+            {
+                wbuff[cnt*3+0] = \
+                wbuff[cnt*3+1] = \
+                wbuff[cnt*3+2] = rbuff[cnt];
+            }
+        }
+        else
+        {
+            #pragma omp parallel for
+            for( OMPSIZE_T cnt=0; cnt<(w*h); cnt++ )
+            {
+                wbuff[cnt*4+0] = \
+                wbuff[cnt*4+1] = \
+                wbuff[cnt*4+2] = rbuff[cnt*2];
+                wbuff[cnt*4+3] = rbuff[cnt*2+1];
+            }            
+        }
+        
+        return true;
+    }
+    return false;
+}
+
+// for effectible conversion ...
+// all data will be converted to RGBA then converted to target depth.
 bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd,
                               Fl_RGB_Image* img, int px, int py, float alpha )
 {
     if ( ( buff != NULL ) && ( img != NULL ) )
     {
-        // only availed for same depth image.
-        // experimentally blocked ...
-        // if ( img->d() > bd )
-        //     return false;
+        bool rbuffalloc    = false;
+        bool wbuffalloc    = false;
+        unsigned w_bd      = bd;
+        uchar* wbuff       = buff;
+        uchar* rbuff       = (uchar*)img->data()[0];
+        Fl_RGB_Image* rimg = img;
 
-        uchar* rbuff = (uchar*)img->data()[0];
+        if ( w_bd < 3 ) // dest buffer convert to RGB
+        {
+            uchar* refb = buff;
+        
+            if ( w_bd == 1 ) /// no alpha
+            {
+                bool retb = \
+                fl_imgtk_convertrgb( wbuff, bw, bh, 3, refb, w_bd );
+                
+                if ( retb == false )
+                    return retb;
+
+                w_bd = 3;
+            }
+            else /// has alpha
+            {
+                bool retb = \
+                fl_imgtk_convertrgb( wbuff, bw, bh, 4, refb, w_bd );
+
+                if ( retb == false )
+                    return retb;
+
+                w_bd = 4;
+            }
+
+            wbuffalloc = true;
+        }
+
+        if ( img->d() < 3 )
+        {
+            uchar* convbuff = NULL;
+            int convdepth = 3;
+            
+            // convert to RGB or RGBA.
+            if ( img->d() == 1 ) /// Y to RGB ( depth = 3 )
+            {
+                bool retb = \
+                fl_imgtk_convertrgb( convbuff, 
+                                     img->w(), img->h(), 3, 
+                                     rbuff, 1 );
+                                     
+                if ( retb == false )
+                {
+                    if ( wbuffalloc == true )
+                    {
+                        delete[] wbuff;
+                    }
+                    return false;
+                }
+            }
+            else /// Y+A to RGBA ( depth = 4 )
+            {
+                bool retb = \
+                fl_imgtk_convertrgb( convbuff, 
+                                     img->w(), img->h(), 4, 
+                                     rbuff, 1 );
+                                     
+                if ( retb == false )
+                {
+                    if ( wbuffalloc == true )
+                    {
+                        delete[] wbuff;
+                    }
+                    return false;
+                }                
+                convdepth = 4;
+            }
+            
+            // create converted image.
+            rimg = new Fl_RGB_Image( convbuff, img->w(), img->h(), convdepth );
+            if ( rimg == NULL )
+            {
+                delete[] convbuff;
+                return false;
+            }
+            
+            rimg->alloc_array = 1;
+            rbuff = (uchar*)rimg->data()[0];
+            rbuffalloc = true;
+        }
 
         int minx = px;
         int miny = py;
         int imgx = 0;
         int imgy = 0;
 
-        OMPSIZE_T maxw = MIN( img->w() + minx, bw );
-        OMPSIZE_T maxh = MIN( img->h() + miny, bh );
+        OMPSIZE_T maxw = MIN( rimg->w() + minx, bw );
+        OMPSIZE_T maxh = MIN( rimg->h() + miny, bh );
 
         if ( px < 0 )
         {
             minx = 0;
-            maxw = MIN( img->w() + px, bw );
+            maxw = MIN( rimg->w() + px, bw );
             imgx = abs( px );
             px   = 0;
         }
@@ -2337,23 +2457,21 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
         if ( py < 0 )
         {
             miny = 0;
-            maxh = MIN ( img->h() + py, bh );
+            maxh = MIN ( rimg->h() + py, bh );
             imgy = abs( py );
             py   = 0;
         }
 
         OMPSIZE_T cntx = 0;
         OMPSIZE_T cnty = 0;
-        OMPSIZE_T imgw = img->w();
-        OMPSIZE_T imgd = img->d();
+        OMPSIZE_T imgw = rimg->w();
+        OMPSIZE_T imgd = rimg->d();
         OMPSIZE_T td   = imgd;
         
-        if ( ( imgd == 2 ) || ( imgd == 4 ) )
+        if ( imgd == 4 ) /// let make skip alpha.
             td--;
-
-        float* w_p = new float[td];
-        float* r_p = new float[td];
-        float* cTemp = new float[td];
+            
+        float a_opa = MIN( 1.f, alpha );
         
         #pragma omp parallel for private( cnty )
         for( cnty=miny; cnty<maxh; cnty++ )
@@ -2364,36 +2482,41 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                 unsigned ipy = imgy + (cnty - miny);
 
                 uchar* rptr = &rbuff[ ( ipy * imgw + ipx ) * imgd ];
-                uchar* wptr = &buff[ ( ( cnty * bw ) + cntx ) * bd ];
+                uchar* wptr = &wbuff[ ( ( cnty * bw ) + cntx ) * w_bd ];
 
-                float a_opa = MIN( 1.f, alpha );
+                // read-pixels
+                float r_p[3] = {0.f};
+                float r_a    = 1.0f;
+
+                // write-pixels
+                float w_p[3] = {0.f};
+                float w_a    = 1.0f;
                 
-                memset( w_p, 0, sizeof( float ) * td );
-                memset( r_p, 0, sizeof( float ) * td );
-                float w_a = 1.0f;
-                float r_a = 1.0f;
-                
-                for ( OMPSIZE_T dd=0; dd<td; dd++ )
+                for ( OMPSIZE_T dd=0; dd<3; dd++ )
                 {
                     w_p[dd] = (float)wptr[dd] / 255.f;
                     r_p[dd] = (float)rptr[dd] / 255.f;
                 }
 
-                if ( td != imgd )
+                if ( w_bd == 4 )
                 {
-                    w_a = (float)wptr[td] / 255.f;
-                    r_a = (float)rptr[td] / 255.f;
+                    w_a = (float)wptr[3] / 255.f;
                 }
                                                         
+                if ( imgd == 4 )
+                {
+                    r_a = (float)rptr[3] / 255.f;
+                }
+
                 if ( a_opa < 1.f )
                 {
                     r_a *= a_opa;
                 }
                 
-                memset( cTemp, 0, sizeof( float ) * td );
+                float  cTemp[3] = {0};
                 
-                for( OMPSIZE_T dd=0; dd<td; dd++ )
-                {    
+                for( OMPSIZE_T dd=0; dd<3; dd++ )
+                {
                     cTemp[dd] = r_p[dd] * r_a + w_p[dd] * w_a * ( 1.0f - r_a );
                 }
                 
@@ -2403,14 +2526,14 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                 {
                     if ( a_opa > 0.0f )
                     {
-                        for( OMPSIZE_T dd=0; dd<td; dd++ )
+                        for( OMPSIZE_T dd=0; dd<3; dd++ )
                         {    
                             cTemp[dd] = r_p[dd];
                         }
                     }
                     else
                     {
-                        for( OMPSIZE_T dd=0; dd<td; dd++ )
+                        for( OMPSIZE_T dd=0; dd<3; dd++ )
                         {    
                             cTemp[dd] = w_p[dd];
                         }
@@ -2418,87 +2541,64 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                 }
                 else
                 {
-                    for( OMPSIZE_T dd=0; dd<td; dd++ )
+                    for( OMPSIZE_T dd=0; dd<3; dd++ )
                     {    
                         cTemp[dd] /= r_a;
                     }
                 }
                 
-                switch( bd )
+                if ( w_bd == 4 )
                 {
-                    case 1:
+                    for( OMPSIZE_T dd=0; dd<3; dd++ )
                     {
-                        float cavr = 0.f;
-                        for ( OMPSIZE_T dd=0; dd<td; dd++ )
-                        {
-                            cavr += cTemp[dd];    
-                        }
-                        cavr /= td;
-                        cavr *= r_a;
-                        
-                        wptr[0] = cavr * 255.f;
+                        wptr[dd] = cTemp[dd] * 255.f;
                     }
-                    break;
-                    
-                    case 2:
+                    wptr[3] = r_a * 255.f;
+                }
+                else
+                {
+                    for( OMPSIZE_T dd=0; dd<3; dd++ )
                     {
-                        float cavr = 0.f;
-                        for ( OMPSIZE_T dd=0; dd<td; dd++ )
-                        {
-                            cavr += cTemp[dd];    
-                        }
-                        cavr /= td;
-                        
-                        wptr[0] = cavr * 255.f;
-                        wptr[1] = r_a * 255.f;
+                        wptr[dd] = cTemp[dd] * ( 255.f * r_a );
                     }
-                    break;
-                    
-                    case 3:
-                    {
-                        if ( imgd <= 2 )
-                        {
-                            wptr[0] = cTemp[0] * ( 255.f * r_a );
-                            wptr[1] = cTemp[0] * ( 255.f * r_a );
-                            wptr[2] = cTemp[0] * ( 255.f * r_a );
-                        }
-                        else
-                        if ( imgd <= 4 )
-                        {
-                            wptr[0] = cTemp[0] * ( 255.f * r_a );
-                            wptr[1] = cTemp[1] * ( 255.f * r_a );
-                            wptr[2] = cTemp[2] * ( 255.f * r_a );
-                        }
-                    }
-                    break;
-                    
-                    case 4:
-                    {
-                        if ( imgd <= 2 )
-                        {
-                            wptr[0] = cTemp[0] * 255.f;
-                            wptr[1] = cTemp[0] * 255.f;
-                            wptr[2] = cTemp[0] * 255.f;
-                            wptr[3] = r_a * 255.f;
-                        }
-                        else
-                        if ( imgd <= 3 )
-                        {
-                            wptr[0] = cTemp[0] * 255.f;
-                            wptr[1] = cTemp[1] * 255.f;
-                            wptr[2] = cTemp[2] * 255.f;
-                            wptr[3] = r_a * 255.f;
-                        }
-                    }
-                } /// of switch( bd ) --
+                }
             }
         }
-
-        delete[] r_p;
-        delete[] w_p;
-        delete[] cTemp;
         
-        img->uncache();
+        if ( rbuffalloc == true )
+        {
+            delete rimg;
+        }
+        
+        if ( wbuffalloc == true ) /// let convert to target.
+        {
+            // let convert to target depth.
+            if ( bd == 1 ) /// depth 1 ( Y only )
+            {
+                #pragma omp parallel for
+                for( OMPSIZE_T cnt=0; cnt<(bw*bh); cnt++ )
+                {
+                    ulong avrc = ( wbuff[cnt*3+0]
+                                   + wbuff[cnt*3+1]
+                                   + wbuff[cnt*3+2] ) / 3;
+                    buff[cnt] = (uchar)(avrc & 0x000000FF);
+                }
+            }
+            else /// must be depth 2 ( Y+A )
+            {
+                #pragma omp parallel for
+                for( OMPSIZE_T cnt=0; cnt<(bw*bh); cnt++ )
+                {
+                    ulong avrc = ( wbuff[cnt*4+0]
+                                   + wbuff[cnt*4+1]
+                                   + wbuff[cnt*4+2] ) / 3;
+                    buff[cnt*2] = (uchar)(avrc & 0x000000FF);
+                    buff[cnt*2+1] = wbuff[cnt*4+3];
+                }
+            }
+            
+            delete[] wbuff;
+        }
         
         return true;
     }
@@ -2506,28 +2606,111 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
     return false;
 }
 
-void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd,
+bool fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd,
                               Fl_RGB_Image* img, int px, int py, float alpha )
 {
     if ( ( buff != NULL ) && ( img != NULL ) )
     {
+        bool rbuffalloc    = false;
+        bool wbuffalloc    = false;
+        unsigned w_bd      = bd;
+        uchar* wbuff       = buff;
+        uchar* rbuff       = (uchar*)img->data()[0];
+        Fl_RGB_Image* rimg = img;
+
+        if ( w_bd < 3 ) // dest buffer convert to RGB
+        {
+            uchar* refb = buff;
+            
+            if ( w_bd == 1 ) /// no alpha
+            {
+                bool retb = \
+                fl_imgtk_convertrgb( wbuff, bw, bh, 3, refb, w_bd );
+                
+                if ( retb == false )
+                    return retb;
+
+                w_bd = 3;
+            }
+            else /// has alpha
+            {
+                bool retb = \
+                fl_imgtk_convertrgb( wbuff, bw, bh, 4, refb, w_bd );
+
+                if ( retb == false )
+                    return retb;
+
+                w_bd = 4;
+            }
+
+            wbuffalloc = true;
+        }
+
         if ( img->d() < 3 )
-            return;
-
-        uchar* rbuff = (uchar*)img->data()[0];
-
+        {
+            uchar* convbuff = NULL;
+            int convdepth = 3;
+            
+            // convert to RGB or RGBA.
+            if ( img->d() == 1 ) /// Y to RGB ( depth = 3 )
+            {
+                bool retb = \
+                fl_imgtk_convertrgb( convbuff, 
+                                     img->w(), img->h(), 3, 
+                                     rbuff, 1 );
+                                     
+                if ( retb == false )
+                {
+                    if ( wbuffalloc == true )
+                    {
+                        delete[] wbuff;
+                    }
+                    return false;
+                }
+            }
+            else /// Y+A to RGBA ( depth = 4 )
+            {
+                bool retb = \
+                fl_imgtk_convertrgb( convbuff, 
+                                     img->w(), img->h(), 4, 
+                                     rbuff, 1 );
+                                     
+                if ( retb == false )
+                {
+                    if ( wbuffalloc == true )
+                    {
+                        delete[] wbuff;
+                    }
+                    return false;
+                }                
+                convdepth = 4;
+            }
+            
+            // create converted image.
+            rimg = new Fl_RGB_Image( convbuff, img->w(), img->h(), convdepth );
+            if ( rimg == NULL )
+            {
+                delete[] convbuff;
+                return false;
+            }
+            
+            rimg->alloc_array = 1;
+            rbuff = (uchar*)rimg->data()[0];
+            rbuffalloc = true;
+        }
+        
         OMPSIZE_T minx = px;
         OMPSIZE_T miny = py;
         OMPSIZE_T imgx = 0;
         OMPSIZE_T imgy = 0;
 
-        OMPSIZE_T maxw = MIN( img->w() + minx, bw );
-        OMPSIZE_T maxh = MIN( img->h() + miny, bh );
+        OMPSIZE_T maxw = MIN( rimg->w() + minx, bw );
+        OMPSIZE_T maxh = MIN( rimg->h() + miny, bh );
 
         if ( px < 0 )
         {
             minx = 0;
-            maxw = MIN( img->w() + px, bw );
+            maxw = MIN( rimg->w() + px, bw );
             imgx = abs( px );
             px   = 0;
         }
@@ -2535,15 +2718,15 @@ void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
         if ( py < 0 )
         {
             miny = 0;
-            maxh = MIN ( img->h() + py, bh );
+            maxh = MIN ( rimg->h() + py, bh );
             imgy = abs( py );
             py   = 0;
         }
 
         OMPSIZE_T cntx = 0;
         OMPSIZE_T cnty = 0;
-        OMPSIZE_T imgw = img->w();
-        OMPSIZE_T imgd = img->d();
+        OMPSIZE_T imgw = rimg->w();
+        OMPSIZE_T imgd = rimg->d();
 
         #pragma omp parallel for private( cnty )
         for( cnty=miny; cnty<maxh; cnty++ )
@@ -2584,12 +2767,50 @@ void fl_imgtk_subimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                     wptr[ rpt ] = (uchar)fp;
                 }
             }
+        } /// of for() --
+        
+        if ( rbuffalloc == true )
+        {
+            delete rimg;
         }
         
-        img->uncache();
+        if ( wbuffalloc == true ) /// let convert to target.
+        {
+            // let convert to target depth.
+            if ( bd == 1 ) /// depth 1 ( Y only )
+            {
+                #pragma omp parallel for
+                for( OMPSIZE_T cnt=0; cnt<(bw*bh); cnt++ )
+                {
+                    ulong avrc = ( wbuff[cnt*3+0]
+                                   + wbuff[cnt*3+1]
+                                   + wbuff[cnt*3+2] ) / 3;
+                    buff[cnt] = (uchar)(avrc & 0x000000FF);
+                }
+            }
+            else /// must be depth 2 ( Y+A )
+            {
+                #pragma omp parallel for
+                for( OMPSIZE_T cnt=0; cnt<(bw*bh); cnt++ )
+                {
+                    ulong avrc = ( wbuff[cnt*4+0]
+                                   + wbuff[cnt*4+1]
+                                   + wbuff[cnt*4+2] ) / 3;
+                    buff[cnt*2] = (uchar)(avrc & 0x000000FF);
+                    buff[cnt*2+1] = wbuff[cnt*4+3];
+                }
+            }
+            
+            delete[] wbuff;
+        }
+        
+        return true;
     }
+    
+    return false;
 }
 
+// result must be RGBA.
 Fl_RGB_Image* fl_imgtk::merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2, mergeconfig* cfg )
 {
     Fl_RGB_Image* newimg = NULL;
@@ -2656,6 +2877,7 @@ Fl_RGB_Image* fl_imgtk::merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2, mergeconf
     return newimg;
 }
 
+// result must be RGBA
 Fl_RGB_Image* fl_imgtk::subtract( Fl_RGB_Image* src1, Fl_RGB_Image* src2, int px, int py, float sr )
 {
     Fl_RGB_Image* newimg = NULL;
@@ -2705,7 +2927,6 @@ bool fl_imgtk::sbutract_ex( Fl_RGB_Image* src1, Fl_RGB_Image* src2, int px, int 
 
     return false;
 }
-
 
 unsigned fl_imgtk::makealphamap( uchar* &amap, Fl_RGB_Image* src, float val )
 {
@@ -2773,6 +2994,7 @@ unsigned fl_imgtk::makealphamap( uchar* &amap, unsigned w, unsigned h, uchar val
     return 0;
 }
 
+// it only availed for RGBA.
 Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
 {
     Fl_RGB_Image* newimg = NULL;
@@ -2832,6 +3054,7 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
     return newimg;
 }
 
+// it only availed for RGBA.
 Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, uchar* alphamap, unsigned amsz )
 {
     Fl_RGB_Image* newimg = NULL;
@@ -2890,6 +3113,7 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, uchar* alphamap, unsigned
     return newimg;
 }
 
+// it only availed for RGBA.
 bool fl_imgtk::applyalpha_ex( Fl_RGB_Image* src, float val )
 {
     if ( src != NULL )
@@ -3153,7 +3377,6 @@ Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulo
     return NULL;
 }
 
-
 void fl_imgtk_t_set_kfconfig( fl_imgtk::kfconfig* kfc, uchar w, uchar h, float f, float b, const float* m )
 {
     if ( ( kfc != NULL ) && ( m != NULL ) )
@@ -3225,7 +3448,7 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, ulong col, float
     
     if ( ( br <= 0.f ) || ( alpha == 0.f ) )
         return;
-        
+
     uchar col_r = ( col & 0xFF000000 ) >> 24;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
     uchar col_b = ( col & 0x0000FF00 ) >> 8;
@@ -3233,6 +3456,12 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, ulong col, float
     int w = img->w();
     int h = img->h();
     int d = img->d();
+
+    if ( d < 3 )
+    {
+        unsigned col_avr = ( col_r + col_g + col_b ) / 3;
+        col_r = col_g = col_b = (uchar)(col_avr & 0x000000FF );
+    }
 
     br *= alpha;
 
@@ -3244,12 +3473,23 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, ulong col, float
 
         uchar* ptrimg = (uchar*)img->data()[0];
 
-        ptrimg[ pos + 0 ] = ( ptrimg[ pos + 0 ] * revbr ) + ( (float)col_r * br );
-        ptrimg[ pos + 1 ] = ( ptrimg[ pos + 1 ] * revbr ) + ( (float)col_g * br );
-        ptrimg[ pos + 2 ] = ( ptrimg[ pos + 2 ] * revbr ) + ( (float)col_b * br );
-        if ( d > 3 )
+        if ( d >= 3 ) /// up to RGB and RGBA
         {
-            ptrimg[ pos + 3 ] = (uchar)( ( ptrimg[ pos + 3 ] * revbr ) + ( alpha * 255.f ) * br );
+            ptrimg[ pos + 0 ] = ( ptrimg[ pos + 0 ] * revbr ) + ( (float)col_r * br );
+            ptrimg[ pos + 1 ] = ( ptrimg[ pos + 1 ] * revbr ) + ( (float)col_g * br );
+            ptrimg[ pos + 2 ] = ( ptrimg[ pos + 2 ] * revbr ) + ( (float)col_b * br );
+            if ( d > 3 )
+            {
+                ptrimg[ pos + 3 ] = (uchar)( ( ptrimg[ pos + 3 ] * revbr ) + ( alpha * 255.f ) * br );
+            }
+        }
+        else /// up to Y or Y+A
+        {
+            ptrimg[ pos ] = ( ptrimg[ pos ] * revbr ) + ( (float)col_r * br );
+            if ( d > 1 )
+            {
+                ptrimg[ pos + 1 ] = (uchar)( ( ptrimg[ pos + 1 ] * revbr ) + ( alpha * 255.f ) * br );
+            }
         }
     }
 }
@@ -3369,7 +3609,9 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
 {
     if ( img == NULL )
         return;
+    
     float r = wd / 2;
+    
     if ( r < 0.1f )
         r = 0.1f;
         
@@ -3412,12 +3654,24 @@ inline void fl_imgtk_putpixel( uchar* buff, \
     float ar  = (float)a / 255.f; 
     float rar = 1.f - ar;
 
-    putptr[0]=(uchar)(((float)putptr[0]*rar) + ((float)r*ar));
-    putptr[1]=(uchar)(((float)putptr[1]*rar) + ((float)g*ar));
-    putptr[2]=(uchar)(((float)putptr[2]*rar) + ((float)b*ar));
-    if ( d > 3 )
+    if ( d >= 3 )
     {
-        putptr[3]=(uchar)(((float)putptr[3]*rar)+(ar*255.f)*ar);
+        putptr[0]=(uchar)(((float)putptr[0]*rar) + ((float)r*ar));
+        putptr[1]=(uchar)(((float)putptr[1]*rar) + ((float)g*ar));
+        putptr[2]=(uchar)(((float)putptr[2]*rar) + ((float)b*ar));
+        if ( d > 3 )
+        {
+            putptr[3]=(uchar)(((float)putptr[3]*rar)+(ar*255.f)*ar);
+        }
+    }
+    else
+    {
+        float colavr = (((float)r*ar) + ((float)g*ar) + ((float)b*ar))/3.f;
+        putptr[0] = (uchar)(((float)putptr[0]*rar) + colavr );
+        if ( d > 1 )
+        {
+            putptr[1]=(uchar)(((float)putptr[1]*rar)+(ar*255.f)*ar);
+        }
     }
 }
 #endif // of defined(FAST_RGBA_IGNORE_ALPHA)
@@ -3429,11 +3683,6 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, ulo
         return;
     }
     
-    if ( img->d() < 3 )
-    {
-        return;
-    }
-
     uchar* putbuff = (uchar*)img->data()[0];
     uchar col_b = ( col & 0x0000FF00 ) >> 8;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
