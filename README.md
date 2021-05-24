@@ -6,14 +6,18 @@
 
 ## Lastest update
 
-* 2021-05-17
-    1. Fixed rotate180() only woks for depth 3 (RGB bug fixed)
-	1. Fixed invert() works for alpha channel (RGBA bug fixed)
-	1. Fixed Reinhard affected by alpha channel.
-	1. Version updated to 0.3.39.27
+* 2021-05-24
+    1. Now supporting 1 or 2 depth Fl_RGB_Image.
+	1. Version updated to 0.3.40.30
+	1. debugging required
 
 ## Previous updates
 
+* 2021-05-17
+    1. Fixed rotate180() only woks for depth 3 (RGB bug fixed)
+    1. Fixed invert() works for alpha channel (RGBA bug fixed)
+    1. Fixed Reinhard affected by alpha channel.
+    1. Version updated to 0.3.39.27
 * 2021-05-11
     1. Reinhard tone mapping OpenMP performance issue fixed, now 10x faster than before.
     1. Version updated to 0.3.39.25
