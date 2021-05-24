@@ -5,7 +5,7 @@
 #endif
 
 /*******************************************************************************
-* fl_imgtk.H , version 0.3.39.28
+* fl_imgtk.H , version 0.3.40.30
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2021 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -61,7 +61,7 @@ namespace fl_imgtk
     }kfconfig; /// Kernel Filter Configuration.
 
     // Makes empty image
-	// d(depth) only for 3 or 4.
+	// if depth 1 or 2 will color turns to average color.
     Fl_RGB_Image* makeanempty( unsigned w, unsigned h, unsigned d, 
 	                           ulong color = 0xFFFFFFFF );
 	
@@ -186,6 +186,7 @@ namespace fl_imgtk
     /***
     ** color CLAHE, recommend to use on uncompressed images.
     ** -------------------------------------------------------------------------
+    ** @param 'src': Input Fl_RGB_Image, depth requires at least 3.
     ***/
     Fl_RGB_Image* CLAHE( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit );
     bool          CLAHE_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit );
@@ -193,6 +194,7 @@ namespace fl_imgtk
     /***
     ** noire, makes image to American drama.
     ** -------------------------------------------------------------------------
+    ** @param 'src': Input Fl_RGB_Image, depth requires at least 3.
     ***/
     Fl_RGB_Image* noire( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit, float bright );
     bool          noire_ex( Fl_RGB_Image* src, unsigned regionW, unsigned regionH, float cliplimit, float bright );
@@ -229,11 +231,13 @@ namespace fl_imgtk
                                int px, int py, float sr = 1.0f );
     
     // Makes alpha channel map.
+    // @param 'src': Input Fl_RGB_Image must be 4 depth 
     unsigned makealphamap( uchar* &amap, Fl_RGB_Image* src, float val = 1.0f );
     unsigned makealphamap( uchar* &amap, unsigned w, unsigned h, uchar val  = 255 );
 
     // Apply alpha channel map to Fl_RGB_Image.
     // return Fl_RGB_Image always became to 4 depth image.
+    // @param 'src': Input Fl_RGB_Image must be 4 depth 
     Fl_RGB_Image* applyalpha( Fl_RGB_Image* src, float val = 1.0f );
     Fl_RGB_Image* applyalpha( Fl_RGB_Image* src,
                               uchar* alphamap = NULL , unsigned amsz = 0);
@@ -243,8 +247,9 @@ namespace fl_imgtk
     bool drawonimage( Fl_RGB_Image* bgimg = NULL, Fl_RGB_Image* img = NULL,
                       int x = 0, int y = 0, float alpha = 1.0f );
 
-    // Make a RGB image from gradation col1 to col2.
+    // Make a RGBA image from gradation col1 to col2.
     // Use col1, col2 to 0xRRGGBB00 channel alignment, not Fl_Color !
+    // return Fl_RGB_Image always RGBA, 4 depth.
     Fl_RGB_Image* makegradation_h( unsigned w, unsigned h,
                                    ulong col1, ulong col2, bool dither );
     Fl_RGB_Image* makegradation_v( unsigned w, unsigned h,

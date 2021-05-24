@@ -2148,7 +2148,7 @@ Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
 #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                             if ( newimg != NULL )
                             {
-                                newimg->alloc_array =1;
+                                newimg->alloc_array = 1;
                             }
 #endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                         }
@@ -3905,7 +3905,6 @@ void fl_imgtk::draw_rect( Fl_RGB_Image* img, int x, int y, int w, int h, ulong c
 
     if ( ( x2 < 1 ) && ( y2 < 1 ) )
         return;
-
           
     // =
     draw_line( img, x1, y1, x2, y1, col );
@@ -3984,10 +3983,7 @@ void fl_imgtk::draw_polygon( Fl_RGB_Image* img, const fl_imgtk::vecpoint* points
     
     if ( ( points == NULL ) || ( pointscnt < 3 ) )
         return;
-    
-    if ( img->d() < 3 )
-        return;
-    
+        
     uchar col_r = ( col & 0xFF000000 ) >> 24;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
     uchar col_b = ( col & 0x0000FF00 ) >> 8;
