@@ -10,6 +10,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <cstdint> /// prevent error on Linux.
 
 #include "fl_imgtk.h"
 #include "fl_imgtk_minmax.h"
