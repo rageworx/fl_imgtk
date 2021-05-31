@@ -35,7 +35,7 @@ OUTBIN      = libfl_imgtk.a
 OUTDIR      = ./lib
 DEFINEOPT   = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
 DEFINEOPT  += -DFLTK_ABI_VERISON=10304
-OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
+OPTIMIZEOPT = -ffast-math -fopenmp -Os -s
 CPUARCHOPT  =
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
