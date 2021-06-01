@@ -30,7 +30,7 @@ FLTKDIR    = $(shell fltk-config --includedir)
 # Change if your CPU architecture supports more high technologies.
 INCDIR      = ./inc
 SOURCEDIR   = ./src
-OBJDIR      = ./obj/Release
+OBJDIR      = ./obj
 OUTBIN      = libfl_imgtk.a
 OUTDIR      = ./lib
 DEFINEOPT   = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
@@ -40,7 +40,7 @@ CPUARCHOPT  =
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
 	DEFINEOPT += -DDEBUG
-	OPTIMIZEOPT = -ffast-math
+	OPTIMIZEOPT = -ffast-math -g
 	OUTBIN = libfl_imgtk_d.a
 endif
 
