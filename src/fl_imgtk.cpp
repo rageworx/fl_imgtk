@@ -2171,7 +2171,7 @@ bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, float factor )
     {
         // Calc scaling factor.
         if ( factor < 0.f )
-            return NULL;
+            return false;
 
         unsigned scd_w = (unsigned)((float)src->w() / factor);
         unsigned scd_h = (unsigned)((float)src->h() / factor);
