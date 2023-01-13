@@ -2017,7 +2017,7 @@ Fl_RGB_Image* fl_imgtk::draw_currentwindow( void* w )
     return NULL;
 }
 
-Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
+Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, float factor )
 {
     Fl_RGB_Image* blurredimg = NULL;
 
@@ -2027,6 +2027,9 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
         {
             return NULL;
         }
+
+        if ( factor < 0.f )
+            return NULL;
 
         int prev_visible = w->visible_r();
 
@@ -2049,12 +2052,8 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
 
             Fl_Display_Device::display_device()->set_current();
 
-            // Calc scaling factor.
-            if ( factor ==  0 )
-                factor = 1;
-
-            unsigned scd_w = w->w() / factor;
-            unsigned scd_h = w->h() / factor;
+            unsigned scd_w = (unsigned)((float)w->w() / factor);
+            unsigned scd_h = (unsigned)((float)w->h() / factor);
 
             if ( scd_w == 0 )
                 scd_w = 10;
@@ -2107,15 +2106,15 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
     return blurredimg;
 }
 
-Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
+Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, float factor )
 {
     Fl_RGB_Image* newimg = NULL;
 
     if ( src != NULL )
     {
         // Calc scaling factor.
-        if ( factor ==  0 )
-            factor = 1;
+        if ( factor < 0.f )
+            return NULL;
 
         unsigned scd_w = src->w() / factor;
         unsigned scd_h = src->h() / factor;
@@ -2166,16 +2165,16 @@ Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
     return newimg;
 }
 
-bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, unsigned factor )
+bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, float factor )
 {
     if ( src != NULL )
     {
         // Calc scaling factor.
-        if ( factor ==  0 )
-            factor = 1;
+        if ( factor < 0.f )
+            return NULL;
 
-        unsigned scd_w = src->w() / factor;
-        unsigned scd_h = src->h() / factor;
+        unsigned scd_w = (unsigned)((float)src->w() / factor);
+        unsigned scd_h = (unsigned)((float)src->h() / factor);
 
         if ( scd_w == 0 )
             scd_w = 10;
