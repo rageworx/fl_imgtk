@@ -40,7 +40,7 @@ MACOS_MINVER = 11.0
 # Darwin, kernel 20 (big sur) automatically using universal binary.
 ifeq ($(KRNL),Darwin)
     ifeq ($(shell test $(KVER) -gt 19; echo $$?),0)
-		CPUARCHOPT += -arch x86_64 -arch arm64
+        CPUARCHOPT += -arch x86_64 -arch arm64
         OSOPT += -mmacosx-version-min=${MACOS_MINVER}
     endif
 endif
