@@ -12,4 +12,7 @@
     #define OMPSIZE_T       size_t
 #endif 
 
+#define FLIMGTK_MAX_WIDTH   (500000)
+#define FLIMGTK_MAX_HEIGHT  (500000)
+
 #endif /// of __FLIMGTK_CONFIG_H__
