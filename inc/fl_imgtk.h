@@ -289,9 +289,9 @@ namespace fl_imgtk
                             ulong col = 0 );
     
     ////////////////////////////////////////////////////////////////////////////
-    // Please use call discard_user_rgb_image() to destruct images from 
-    // fl_imgtk().
+    // It is same with delete img;
     void discard_user_rgb_image( Fl_RGB_Image* &img );
+    // Call when delete kfconfig instead of delete.
     void discard_kfconfig( kfconfig* &kfc ); /// Not Kentucky Fried Chicken !
 };
 
