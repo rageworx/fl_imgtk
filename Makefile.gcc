@@ -21,37 +21,34 @@ CCPATH =
 GCC = ${CCPATH}gcc
 GPP = ${CCPATH}g++
 AR  = ${CCPATH}ar
-RL  = ${CCPATH}ranlib
 
 # FLTK place
-FLTKCFG     = fltk-config --use-images
-FLTKDIR    := $(shell ${FLTKCFG} --cxxflags)
-FLTKLIBDIR := $(shell ${FLTKCFG} --ldflags)
+FLTKDIR    = $(shell fltk-config --includedir)
 
 # Sources and how it built
 # Optimization issue: recommend to build with using -ffast-math option.
 # Change if your CPU architecture supports more high technologies.
 INCDIR      = ./inc
 SOURCEDIR   = ./src
-OBJDIR      = ./obj/Release
+OBJDIR      = ./obj
 OUTBIN      = libfl_imgtk.a
 OUTDIR      = ./lib
 DEFINEOPT   = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
-DEFINEOPT  += -DFLTK_ABI_VERISON=10305
-OPTIMIZEOPT =  -std=c++11 -ffast-math -fopenmp -O3 -s
-CPUARCHOPT  = -mtune=native
+DEFINEOPT  += -DFLTK_ABI_VERISON=10304
+OPTIMIZEOPT = -ffast-math -fopenmp -Os -s
+CPUARCHOPT  =
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
-    DEFINEOPT  = -DUSING_INTERPOLATED_ROTATE_FREE 
-    DEFINEOPT += -DFLTK_ABI_VERISON=10304
 	DEFINEOPT += -DDEBUG
-    OPTIMIZEOPT = -g
+	OPTIMIZEOPT = -ffast-math -g
 	OUTBIN = libfl_imgtk_d.a
 endif
 
-CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
+CFLAGS   += -std=c++11
+CFLAGS   += -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR)
+CFLAGS   += $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
 
-.PHONY: debug
+.PHONY: prepare clean
 
 all: prepare clean ${OUTDIR}/${OUTBIN}
 
@@ -76,8 +73,7 @@ ${OBJDIR}/fl_imgtk.o:
 
 ${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}/fl_imgtk_clahe.o ${OBJDIR}/fl_imgtk.o
 	@echo "Generating $@ ..."
-	@$(AR) -cr $@ $^
-	@$(RL) $@
+	@$(AR) -q $@ ${OBJDIR}/*.o
 	@cp -f ${INCDIR}/fl_imgtk.h ${OUTDIR}
 
 clean:

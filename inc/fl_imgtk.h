@@ -5,10 +5,10 @@
 #endif
 
 /*******************************************************************************
-* fl_imgtk.H , version 0.3.40.30
+* fl_imgtk.H , version 0.3.41.31
 * =============================================================================
 * A tool kit for basic FLTK image processing.
-* (C) 2016-2021 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
+* (C) 2016-2022 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
 * All rights reserved, MIT license.
 *
 * [ Disclaimer ]
@@ -26,8 +26,8 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    40
-#define FL_IMGTK_VER_REV    30
+#define FL_IMGTK_VER_BLD    41
+#define FL_IMGTK_VER_REV    31
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \
@@ -120,9 +120,9 @@ namespace fl_imgtk
 
     Fl_RGB_Image* draw_widgetimage( Fl_Widget* w );
 	Fl_RGB_Image* draw_currentwindow( void* w = NULL );
-    Fl_RGB_Image* drawblurred_widgetimage( Fl_Widget* w, unsigned factor = 2 );
-    Fl_RGB_Image* blurredimage( Fl_RGB_Image* src, unsigned factor = 2 );
-    bool          blurredimage_ex( Fl_RGB_Image* src, unsigned factor = 2 );
+    Fl_RGB_Image* drawblurred_widgetimage( Fl_Widget* w, float factor = 2.f );
+    Fl_RGB_Image* blurredimage( Fl_RGB_Image* src, float factor = 2.f );
+    bool          blurredimage_ex( Fl_RGB_Image* src, float factor = 2.f );
 
     ////////////////////////////////////////////////////////////////////////////
     // Kernel matrix filter configurations
@@ -289,9 +289,9 @@ namespace fl_imgtk
                             ulong col = 0 );
     
     ////////////////////////////////////////////////////////////////////////////
-    // Please use call discard_user_rgb_image() to destruct images from 
-    // fl_imgtk().
+    // It is same with delete img;
     void discard_user_rgb_image( Fl_RGB_Image* &img );
+    // Call when delete kfconfig instead of delete.
     void discard_kfconfig( kfconfig* &kfc ); /// Not Kentucky Fried Chicken !
 };
 

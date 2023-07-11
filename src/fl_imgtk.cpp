@@ -10,6 +10,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <cstdint> /// prevent error on Linux, requires -std=c++11
 
 #include "fl_imgtk.h"
 #include "fl_imgtk_minmax.h"
@@ -117,16 +118,12 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
         if ( pdata != NULL )
         {
             memset( pdata, ref_y, resz );
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
             Fl_RGB_Image* newimg = new Fl_RGB_Image( pdata, w, h, d );
             if ( newimg != NULL )
             {
                 newimg->alloc_array = 1;
                 return newimg;
             }
-#else
-            return new Fl_RGB_Image( pdata, w, h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         }
     }
     else
@@ -148,16 +145,13 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
             {
                 memcpy( &pdata[ cnt * d ], &carray[0], d );
             }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
             Fl_RGB_Image* newimg = new Fl_RGB_Image( pdata, w, h, d );
             if ( newimg != NULL )
             {
                 newimg->alloc_array = 1;
                 return newimg;
             }
-#else
-            return new Fl_RGB_Image( pdata, w, h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         }
     }
     else
@@ -176,16 +170,13 @@ Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong c
             {
                 memcpy( &pdata[ cnt * d ], &carray[0], d );
             }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
             Fl_RGB_Image* newimg = new Fl_RGB_Image( pdata, w, h, d );
             if ( newimg != NULL )
             {
                 newimg->alloc_array = 1;
                 return newimg;
             }
-#else
-            return new Fl_RGB_Image( pdata, w, h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         }
     }
     
@@ -746,16 +737,13 @@ Fl_RGB_Image* fl_imgtk::createBMPmemory( const char* buffer, unsigned buffersz )
                 }
             }
         }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
         Fl_RGB_Image* newimg = new Fl_RGB_Image( array, w, h, bDepth );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else        
-        return new Fl_RGB_Image( array, w, h, bDepth );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
         
     return NULL;
@@ -794,17 +782,14 @@ Fl_RGB_Image* fl_imgtk::fliphorizontal( Fl_RGB_Image* img )
 
                 fl_imgtk_swap_mem( &buff[ pos1 ], &buff[ pos2 ], d );
             }
-        }        
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+        }
+
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else
-        return new Fl_RGB_Image( buff, w, h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -881,16 +866,12 @@ Fl_RGB_Image* fl_imgtk::flipvertical( Fl_RGB_Image* img )
             }
         }
 
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else
-        return new Fl_RGB_Image( buff, w, h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -969,16 +950,13 @@ Fl_RGB_Image* fl_imgtk::rotate90( Fl_RGB_Image* img )
                 memcpy( &buff[ pos1 ], &ptr[ pos2 ], d );
             }
         }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, new_w, new_h, d );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else
-        return new Fl_RGB_Image( buff, new_w, new_h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -1016,16 +994,13 @@ Fl_RGB_Image* fl_imgtk::rotate180( Fl_RGB_Image* img )
                                &buff[ (imgmax - cnt - 1) * d ],
                                d );
         }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else
-        return new Fl_RGB_Image( buff, w, h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -1068,16 +1043,13 @@ Fl_RGB_Image* fl_imgtk::rotate270( Fl_RGB_Image* img )
                 memcpy( &buff[ pos1 ], &ptr[ pos2 ], d );
             }
         }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, new_w, new_h, d );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else
-        return new Fl_RGB_Image( buff, new_w, new_h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -1224,16 +1196,12 @@ Fl_RGB_Image* fl_imgtk::rotatefree( Fl_RGB_Image* img, float deg )
 
         dst += dstW * img_d;
     }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     Fl_RGB_Image* newimg = new Fl_RGB_Image( obuff, dstW, dstH, img_d );
     if ( newimg != NULL )
     {
         newimg->alloc_array = 1;
         return newimg;
     }
-#else
-    return new Fl_RGB_Image( obuff, dstW, dstH, img->d() );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
 
     // prevent compiler warning.
     return NULL;
@@ -1272,16 +1240,12 @@ Fl_RGB_Image* fl_imgtk_curve( Fl_RGB_Image* img, const uchar* LUT )
         }
     }
     
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
     if ( newimg != NULL )
     {
         newimg->alloc_array = 1;
         return newimg;
     }
-#else
-    return new Fl_RGB_Image( buff, w, h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
 
     // prevent compiler warning.
     return NULL;
@@ -1471,16 +1435,12 @@ Fl_RGB_Image* fl_imgtk::invert( Fl_RGB_Image* img )
                     pdst[ td ] = psrc[ td ];
                 }
             }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
             Fl_RGB_Image* newimg = new Fl_RGB_Image( newbuff, img_w, img_h, img_d );
             if ( newimg != NULL )
             {
                 newimg->alloc_array = 1;
                 return newimg;
             }
-#else
-            return new Fl_RGB_Image( newbuff, img_w, img_h, img_d );
-#endif /// of  #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         }
     }
 
@@ -1593,16 +1553,12 @@ Fl_RGB_Image* fl_imgtk::filtered( Fl_RGB_Image* img, kfconfig* kfc )
                 }
             }
         }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( newbuff, img_w, img_h, img_d );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else
-        return new Fl_RGB_Image( newbuff, img_w, img_h, img_d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -1816,16 +1772,12 @@ Fl_RGB_Image* fl_imgtk::edgeenhance( Fl_RGB_Image* img, unsigned factor, unsigne
 
         delete[] lfimg5;
         delete[] lfimg9;
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( outbuff, img->w(), img->h(), img->d() );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else
-        return new Fl_RGB_Image( outbuff, img->w(), img->h(), img->d() );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -2010,12 +1962,10 @@ Fl_RGB_Image* fl_imgtk::draw_currentwindow( void* w )
             {
                 delete[] widgetbuff;
             }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
             else
             {
                 newimg->alloc_array = 1;
             }
-#endif ///  of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
             return newimg;
         }
     }
@@ -2023,7 +1973,7 @@ Fl_RGB_Image* fl_imgtk::draw_currentwindow( void* w )
     return NULL;
 }
 
-Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
+Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, float factor )
 {
     Fl_RGB_Image* blurredimg = NULL;
 
@@ -2033,6 +1983,9 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
         {
             return NULL;
         }
+
+        if ( factor < 0.f )
+            return NULL;
 
         int prev_visible = w->visible_r();
 
@@ -2055,12 +2008,8 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
 
             Fl_Display_Device::display_device()->set_current();
 
-            // Calc scaling factor.
-            if ( factor ==  0 )
-                factor = 1;
-
-            unsigned scd_w = w->w() / factor;
-            unsigned scd_h = w->h() / factor;
+            unsigned scd_w = (unsigned)((float)w->w() / factor);
+            unsigned scd_h = (unsigned)((float)w->h() / factor);
 
             if ( scd_w == 0 )
                 scd_w = 10;
@@ -2079,9 +2028,7 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
                     Fl_RGB_Image* sdimg = redown->scale( widgetimg, scd_w, scd_h );
                     if ( sdimg != NULL )
                     {
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                         sdimg->alloc_array = 1;
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)                        
                         BSplineFilter* bsfilter = new BSplineFilter();
                         if ( bsfilter != NULL )
                         {
@@ -2090,12 +2037,10 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
                             {
                                 blurredimg = reup->scale( sdimg, w->w(), w->h() );
                                 delete reup;
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                                 if ( blurredimg != NULL )
                                 {
                                     blurredimg->alloc_array = 1;
                                 }
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                             }
                             delete bsfilter;
                         }
@@ -2113,15 +2058,15 @@ Fl_RGB_Image* fl_imgtk::drawblurred_widgetimage( Fl_Widget* w, unsigned factor )
     return blurredimg;
 }
 
-Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
+Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, float factor )
 {
     Fl_RGB_Image* newimg = NULL;
 
     if ( src != NULL )
     {
         // Calc scaling factor.
-        if ( factor ==  0 )
-            factor = 1;
+        if ( factor < 0.f )
+            return NULL;
 
         unsigned scd_w = src->w() / factor;
         unsigned scd_h = src->h() / factor;
@@ -2141,9 +2086,7 @@ Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
                 Fl_RGB_Image* sdimg = redown->scale( src, scd_w, scd_h );
                 if ( sdimg != NULL )
                 {
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                     sdimg->alloc_array = 1;
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                     BSplineFilter* bsfilter = new BSplineFilter();
                     if ( bsfilter != NULL )
                     {
@@ -2152,12 +2095,10 @@ Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
                         {
                             newimg = reup->scale( sdimg, src->w(), src->h() );
                             delete reup;
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                             if ( newimg != NULL )
                             {
                                 newimg->alloc_array = 1;
                             }
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                         }
                         delete bsfilter;
                     }
@@ -2172,16 +2113,16 @@ Fl_RGB_Image* fl_imgtk::blurredimage( Fl_RGB_Image* src, unsigned factor )
     return newimg;
 }
 
-bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, unsigned factor )
+bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, float factor )
 {
     if ( src != NULL )
     {
         // Calc scaling factor.
-        if ( factor ==  0 )
-            factor = 1;
+        if ( factor < 0.f )
+            return false;
 
-        unsigned scd_w = src->w() / factor;
-        unsigned scd_h = src->h() / factor;
+        unsigned scd_w = (unsigned)((float)src->w() / factor);
+        unsigned scd_h = (unsigned)((float)src->h() / factor);
 
         if ( scd_w == 0 )
             scd_w = 10;
@@ -2200,9 +2141,7 @@ bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, unsigned factor )
                 Fl_RGB_Image* sdimg = redown->scale( src, scd_w, scd_h );
                 if ( sdimg != NULL )
                 {
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                     sdimg->alloc_array = 1;
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                     BSplineFilter* bsfilter = new BSplineFilter();
                     if ( bsfilter != NULL )
                     {
@@ -2213,9 +2152,7 @@ bool fl_imgtk::blurredimage_ex( Fl_RGB_Image* src, unsigned factor )
 
                             if ( newimg != NULL )
                             {
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                                 newimg->alloc_array = 1;
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
                                 uchar* pdst = (uchar*)src->data()[0];
                                 uchar* psrc = (uchar*)newimg->data()[0];
 
@@ -2296,22 +2233,20 @@ Fl_RGB_Image* fl_imgtk::crop( Fl_RGB_Image* src, unsigned sx, unsigned sy, unsig
                     memcpy( wptr, rptr, sd );
                 }
             }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
             Fl_RGB_Image* newimg = new Fl_RGB_Image( obuff, rw, rh , sd );
             if ( newimg != NULL )
             {
                 newimg->alloc_array = 1;
                 return newimg;
             }
-#else
-            return new Fl_RGB_Image( obuff, rw, rh , sd );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         }
     }
 
     return NULL;
 }
 
+// converts 1 or 2 depth image to 3 or 4 depth image.
+// error fixed.
 bool fl_imgtk_convertrgb( uchar*& wbuff, unsigned w, unsigned h, unsigned d, uchar* rbuff, unsigned rd )
 {
     if ( ( rbuff != NULL ) 
@@ -2328,9 +2263,14 @@ bool fl_imgtk_convertrgb( uchar*& wbuff, unsigned w, unsigned h, unsigned d, uch
             #pragma omp parallel for
             for( OMPSIZE_T cnt=0; cnt<(w*h); cnt++ )
             {
+                float af = 1.f;
+                if ( rd == 2 )
+                {
+                    af = (float)rbuff[cnt*rd+1]/255.f;
+                }
                 wbuff[cnt*3+0] = \
                 wbuff[cnt*3+1] = \
-                wbuff[cnt*3+2] = rbuff[cnt];
+                wbuff[cnt*3+2] = (uchar)((float)rbuff[cnt*rd]*af);
             }
         }
         else
@@ -2338,11 +2278,20 @@ bool fl_imgtk_convertrgb( uchar*& wbuff, unsigned w, unsigned h, unsigned d, uch
             #pragma omp parallel for
             for( OMPSIZE_T cnt=0; cnt<(w*h); cnt++ )
             {
-                wbuff[cnt*4+0] = \
-                wbuff[cnt*4+1] = \
-                wbuff[cnt*4+2] = rbuff[cnt*2];
-                wbuff[cnt*4+3] = rbuff[cnt*2+1];
-            }            
+                if ( rd == 1 )
+                {
+                    wbuff[cnt*4+0] = \
+                    wbuff[cnt*4+1] = \
+                    wbuff[cnt*4+2] = rbuff[cnt*rd];
+                }
+                else
+                {
+                    wbuff[cnt*4+0] = \
+                    wbuff[cnt*4+1] = \
+                    wbuff[cnt*4+2] = rbuff[cnt*rd];
+                    wbuff[cnt*4+3] = rbuff[cnt*rd+1];
+                }
+            }
         }
         
         return true;
@@ -2352,8 +2301,10 @@ bool fl_imgtk_convertrgb( uchar*& wbuff, unsigned w, unsigned h, unsigned d, uch
 
 // for effectible conversion ...
 // all data will be converted to RGBA then converted to target depth.
-bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd,
-                              Fl_RGB_Image* img, int px, int py, float alpha )
+bool fl_imgtk_putimgonbuffer( uchar* buff, 
+                              unsigned bw, unsigned bh, unsigned bd,
+                              Fl_RGB_Image* img, 
+                              int px, int py, float alpha )
 {
     if ( ( buff != NULL ) && ( img != NULL ) )
     {
@@ -2364,7 +2315,9 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
         uchar* rbuff       = (uchar*)img->data()[0];
         Fl_RGB_Image* rimg = img;
 
-        if ( w_bd < 3 ) // dest buffer convert to RGB
+        // if target image of depth is 1 or 2,
+        // image converted to RGB or RGBA.
+        if ( w_bd < 3 )
         {
             uchar* refb = buff;
         
@@ -2392,6 +2345,8 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
             wbuffalloc = true;
         }
 
+        // case of source image depth 1, 2
+        // it also converted to RGB or RGBA.
         if ( img->d() < 3 )
         {
             uchar* convbuff = NULL;
@@ -2469,6 +2424,7 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
             py   = 0;
         }
 
+        // do merge -- 
         OMPSIZE_T cntx = 0;
         OMPSIZE_T cnty = 0;
         OMPSIZE_T imgw = rimg->w();
@@ -2477,10 +2433,11 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
         
         if ( imgd == 4 ) /// let make skip alpha.
             td--;
-            
-        float a_opa = MIN( 1.f, alpha );
         
-        #pragma omp parallel for private( cnty )
+        // const refrerence alpha opacity.
+        float a_opa = MIN( 1.f, alpha );
+
+        #pragma omp parallel for private(cntx)
         for( cnty=miny; cnty<maxh; cnty++ )
         {
             for( cntx=minx; cntx<maxw; cntx++ )
@@ -2492,14 +2449,14 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                 uchar* wptr = &wbuff[ ( ( cnty * bw ) + cntx ) * w_bd ];
 
                 // read-pixels
-                float r_p[3] = {0.f};
+                float r_p[3] = {0.f,0.f,0.f};
                 float r_a    = 1.0f;
 
                 // write-pixels
-                float w_p[3] = {0.f};
+                float w_p[3] = {0.f,0.f,0.f};
                 float w_a    = 1.0f;
                 
-                for ( OMPSIZE_T dd=0; dd<3; dd++ )
+                for ( size_t dd=0; dd<3; dd++ )
                 {
                     w_p[dd] = (float)wptr[dd] / 255.f;
                     r_p[dd] = (float)rptr[dd] / 255.f;
@@ -2520,11 +2477,11 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                     r_a *= a_opa;
                 }
                 
-                float  cTemp[3] = {0};
+                float  cTemp[3] = {0.f,0.f,0.f};
                 
                 for( OMPSIZE_T dd=0; dd<3; dd++ )
                 {
-                    cTemp[dd] = r_p[dd] * r_a + w_p[dd] * w_a * ( 1.0f - r_a );
+                    cTemp[dd] = r_p[dd]*r_a+w_p[dd]*w_a*(1.0f-r_a);
                 }
                 
                 r_a = w_a + ( 1.0f - w_a ) * r_a;
@@ -2533,14 +2490,14 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                 {
                     if ( a_opa > 0.0f )
                     {
-                        for( OMPSIZE_T dd=0; dd<3; dd++ )
+                        for( size_t dd=0; dd<3; dd++ )
                         {    
                             cTemp[dd] = r_p[dd];
                         }
                     }
                     else
                     {
-                        for( OMPSIZE_T dd=0; dd<3; dd++ )
+                        for( size_t dd=0; dd<3; dd++ )
                         {    
                             cTemp[dd] = w_p[dd];
                         }
@@ -2548,26 +2505,26 @@ bool fl_imgtk_putimgonbuffer( uchar* buff, unsigned bw, unsigned bh, unsigned bd
                 }
                 else
                 {
-                    for( OMPSIZE_T dd=0; dd<3; dd++ )
+                    for( size_t dd=0; dd<3; dd++ )
                     {    
                         cTemp[dd] /= r_a;
                     }
                 }
                 
-                if ( w_bd == 4 )
+                if ( w_bd == 3 )
                 {
-                    for( OMPSIZE_T dd=0; dd<3; dd++ )
+                    for( size_t dd=0; dd<3; dd++ )
                     {
-                        wptr[dd] = cTemp[dd] * 255.f;
+                        wptr[dd] = (uchar)(cTemp[dd]*(255.f*r_a));
                     }
-                    wptr[3] = r_a * 255.f;
                 }
                 else
                 {
-                    for( OMPSIZE_T dd=0; dd<3; dd++ )
+                    for( size_t dd=0; dd<3; dd++ )
                     {
-                        wptr[dd] = cTemp[dd] * ( 255.f * r_a );
+                        wptr[dd] = (uchar)(cTemp[dd]*255.f);
                     }
+                    wptr[3] = r_a * 255.f;
                 }
             }
         }
@@ -2873,12 +2830,10 @@ Fl_RGB_Image* fl_imgtk::merge( Fl_RGB_Image* src1, Fl_RGB_Image* src2, mergeconf
         fl_imgtk_putimgonbuffer( obuff, maxsz_w, maxsz_h, 4,
                                  src2, img2px, img2py, fratios[1] );
         newimg = new Fl_RGB_Image( obuff, maxsz_w, maxsz_h, 4 );
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
         }
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return newimg;
@@ -2907,12 +2862,10 @@ Fl_RGB_Image* fl_imgtk::subtract( Fl_RGB_Image* src1, Fl_RGB_Image* src2, int px
         fl_imgtk_subimgonbuffer( obuff, maxsz_w, maxsz_h, 4, src2, px, py, sr );
 
         newimg = new Fl_RGB_Image( obuff, maxsz_w, maxsz_h, 4 );
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
         }
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return newimg;
@@ -3050,12 +3003,10 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, float val )
         }
 
         newimg = new Fl_RGB_Image( obuff, img_w, img_h, 4 );
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
         }
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return newimg;
@@ -3109,12 +3060,10 @@ Fl_RGB_Image* fl_imgtk::applyalpha( Fl_RGB_Image* src, uchar* alphamap, unsigned
         }
 
         newimg = new Fl_RGB_Image( obuff, img_w, img_h, 4 );
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
         }
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return newimg;
@@ -3278,16 +3227,12 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
                 sbuf += d;
             }
         }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buffer, w, h, d );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else
-        return new Fl_RGB_Image( buffer, w, h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -3391,16 +3336,12 @@ Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulo
             }
         }
 
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
         Fl_RGB_Image* newimg = new Fl_RGB_Image( buffer, w, h, d );
         if ( newimg != NULL )
         {
             newimg->alloc_array = 1;
             return newimg;
         }
-#else
-        return new Fl_RGB_Image( buffer, w, h, d );
-#endif /// of #if defined(FLIMGTK_IMGBUFF_OWNALLOC)
     }
 
     return NULL;
@@ -4248,12 +4189,6 @@ void fl_imgtk::discard_user_rgb_image( Fl_RGB_Image* &img )
 {
     if( img != NULL )
     {
-#if !defined(FLIMGTK_IMGBUFF_OWNALLOC)
-        if ( ( img->array != NULL ) && ( img->alloc_array == 0 ) )
-        {
-            delete[] img->array;
-        }
-#endif
         delete img;
         img = NULL;
     }

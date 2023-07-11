@@ -29,18 +29,24 @@ OBJDIR    = ./obj/Release
 OUTBIN    = libfl_imgtk.a
 OUTDIR    = ./lib
 DEFINEOPT = -DUSING_INTERPOLATED_ROTATE_FREE
-OPTIMIZEOPT = -ffast-math -O3
-CPUARCHOPT =
+# Additional options
+OPTIMIZEOPT  = -ffast-math -O3
+CPUARCHOPT   =
+OSOPT        =
+MACOS_MINVER = 11.0
+
 
 # architecture flag setting.
 # Darwin, kernel 20 (big sur) automatically using universal binary.
 ifeq ($(KRNL),Darwin)
-	ifeq ($(shell test $(KVER) -gt 19; echo $$?),0)
-		CPUARCHOPT += -arch x86_64 -arch arm64
-	endif
+    ifeq ($(shell test $(KVER) -gt 19; echo $$?),0)
+        CPUARCHOPT += -arch x86_64 -arch arm64
+        OSOPT += -mmacosx-version-min=${MACOS_MINVER}
+    endif
 endif
 
 CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
+CFLAGS    += ${OSOPT}
 
 all: prepare clean ${OUTDIR}/${OUTBIN}
 
