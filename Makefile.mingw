@@ -42,34 +42,32 @@ OPTIMIZEOPT = -ffast-math -O3 -s
 CPUARCHOPT  =
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
-	DEFINEOPT += -DDEBUG
-	OPTIMIZEOPT = -g
-	OUTBIN = libfl_imgtk_d.a
-endif
-
-ifeq (openmp,$(firstword $(MAKECMDGOALS)))
-	OPTIMIZEOPT += -fopenmp
-	DEFINEOPT += -DUSING_OMP
-	OUTBIN = libfl_imgtk_omp.a
+    DEFINEOPT   += -DDEBUG
+    OPTIMIZEOPT  = -g3
+    OUTBIN       = libfl_imgtk_d.a
 endif
 
 ifeq (avx,$(firstword $(MAKECMDGOALS)))
-	OPTIMIZEOPT += -fopenmp
-	DEFINEOPT += -DUSING_OMP
-	CPUARCHOPT += -mavx
-	OUTBIN = libfl_imgtk_avxomp.a
+    CPUARCHOPT += -mavx -fopenmp
+    DEFINEOPT  += -DUSING_OMP
+    OUTBIN      = libfl_imgtk_avxomp.a
+endif
+
+ifeq (openmp,$(firstword $(MAKECMDGOALS)))
+    OPTIMIZEOPT += -fopenmp
+    DEFINEOPT   += -DUSING_OMP
+    OUTBIN       = libfl_imgtk_omp.a
 endif
 
 CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT) 
 
-.PHONY: avx openmp
-
-all: prepare clean ${OUTDIR}/${OUTBIN}
-cleanall: clean cleanlib
+.PHONY: avx openmp clean
 
 avx: all
 openmp: all
 debug: all
+all: prepare clean ${OUTDIR}/${OUTBIN}
+cleanall: clean cleanlib
 
 prepare:
 	@mkdir -p ${OBJDIR}
