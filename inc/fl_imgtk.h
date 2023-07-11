@@ -5,7 +5,7 @@
 #endif
 
 /*******************************************************************************
-* fl_imgtk.H , version 0.3.41.31
+* fl_imgtk.H , version 0.3.42.34
 * =============================================================================
 * A tool kit for basic FLTK image processing.
 * (C) 2016-2022 Raphael Kim, Raph.K. ( rageworx or rage.kim @gmail.com )
@@ -26,8 +26,8 @@
 
 #define FL_IMGTK_VER_MJR    0
 #define FL_IMGTK_VER_MNR    3
-#define FL_IMGTK_VER_BLD    41
-#define FL_IMGTK_VER_REV    31
+#define FL_IMGTK_VER_BLD    42
+#define FL_IMGTK_VER_REV    34
 
 #define FL_IMGTK_VERSION    ( FL_IMGTK_VER_MJR * 100000000 + \
                               FL_IMGTK_VER_MNR * 100000 + \
