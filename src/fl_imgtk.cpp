@@ -92,16 +92,11 @@ inline void fl_imgtk_swap_mem( uchar* a, uchar* b, size_t c )
     }
 }
 
+/* do not use FLTK color index */
 Fl_RGB_Image* fl_imgtk::makeanempty( unsigned w, unsigned h, unsigned d, ulong color )
 {
     if ( ( w == 0 ) || ( h == 0 ) )
         return NULL;
-
-    // test color for Fl_Color in indexed
-    if ( color < 256 )
-    {
-        color = (ulong)Fl::get_color( (Fl_Color)color ) | 0x000000FF;
-    }
 
     uchar ref_r   = ( color & 0xFF000000 ) >> 24;
     uchar ref_g   = ( color & 0x00FF0000 ) >> 16;
@@ -3135,17 +3130,6 @@ bool fl_imgtk::drawonimage( Fl_RGB_Image* bgimg, Fl_RGB_Image* img, int x, int y
 // Now it handles alpha channels !
 Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulong col2, bool dither )
 {
-    // test color for Fl_Color in indexed
-    if ( col1 < 256 )
-    {
-        col1 = (ulong)Fl::get_color( (Fl_Color)col1 ) | 0x000000FF;
-    }
-    
-    if ( col2 < 256 )
-    {
-        col2 = (ulong)Fl::get_color( (Fl_Color)col2 ) | 0x000000FF;
-    }
-    
     // sens alpha channel using.
     unsigned d = 4;
     uchar alpha1 = col1 & 0x000000FF;
@@ -3240,17 +3224,6 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
 
 Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulong col2, bool dither )
 {
-    // test color for Fl_Color in indexed
-    if ( col1 < 256 )
-    {
-        col1 = (ulong)Fl::get_color( (Fl_Color)col1 ) | 0x000000FF;
-    }
-    
-    if ( col2 < 256 )
-    {
-        col2 = (ulong)Fl::get_color( (Fl_Color)col2 ) | 0x000000FF;
-    }
-
     // sens alpha channel using.
     unsigned d = 4;
     uchar alpha1 = col1 & 0x000000FF;
@@ -3414,12 +3387,6 @@ fl_imgtk::kfconfig* fl_imgtk::new_kfconfig( const char* preset )
 
 inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, ulong col, float br )
 {
-    // test color for Fl_Color in indexed
-    if ( col < 256 )
-    {
-        col = (ulong)Fl::get_color( (Fl_Color)col ) | 0x000000FF;
-    }    
-    
     float alpha = (float)( col & 0x000000FF ) / 255.f;
     
     if ( ( br <= 0.f ) || ( alpha == 0.f ) )
@@ -3482,12 +3449,6 @@ inline void fl_imgtk_dla_plot( Fl_RGB_Image* img, int x, int y, ulong col, float
 
 void fl_imgtk::draw_smooth_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, ulong col )
 {
-    // test color for Fl_Color in indexed
-    if ( col < 256 )
-    {
-        col = (ulong)Fl::get_color( (Fl_Color)col ) | 0x000000FF;
-    }
-        
     float dx = (float)x2 - (float)x1;
     float dy = (float)y2 - (float)y1;
 
@@ -3592,12 +3553,6 @@ void fl_imgtk::draw_smooth_line_ex( Fl_RGB_Image* img, int x1, int y1, int x2, i
     if ( img == NULL )
         return;
     
-    // test color for Fl_Color in indexed
-    if ( col < 256 )
-    {
-        col = (ulong)Fl::get_color( (Fl_Color)col ) | 0x000000FF;
-    }    
-    
     float r = wd / 2;
     
     if ( r < 0.1f )
@@ -3670,12 +3625,6 @@ void fl_imgtk::draw_line( Fl_RGB_Image* img, int x1, int y1, int x2, int y2, ulo
     {
         return;
     }
-    
-    // test color for Fl_Color in indexed
-    if ( col < 256 )
-    {
-        col = (ulong)Fl::get_color( (Fl_Color)col ) | 0x000000FF;
-    }    
     
     uchar* putbuff = (uchar*)img->data()[0];
     uchar col_b = ( col & 0x0000FF00 ) >> 8;
@@ -3900,12 +3849,6 @@ void fl_imgtk::draw_rect( Fl_RGB_Image* img, int x, int y, int w, int h, ulong c
     if ( ( x2 < 1 ) && ( y2 < 1 ) )
         return;
 
-    // test color for Fl_Color in indexed
-    if ( col < 256 )
-    {
-        col = (ulong)Fl::get_color( (Fl_Color)col ) | 0x000000FF;
-    }
-
     // =
     draw_line( img, x1, y1, x2, y1, col );
     draw_line( img, x1, y2, x2, y2, col );
@@ -3940,12 +3883,6 @@ void fl_imgtk::draw_fillrect( Fl_RGB_Image* img, int x, int y, int w, int h, ulo
         y = 0;
     }
     
-    // test color for Fl_Color in indexed
-    if ( col < 256 )
-    {
-        col = (ulong)Fl::get_color( (Fl_Color)col ) | 0x000000FF;
-    }    
-
     uchar* putbuff = (uchar*)img->data()[0];
     uchar col_b = ( col & 0x0000FF00 ) >> 8;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;
@@ -4095,12 +4032,6 @@ void fl_imgtk::draw_2xaa_polygon( Fl_RGB_Image* img, const vecpoint* points, uns
     
     if ( img->d() < 3 )
         return;
-    
-    // test color for Fl_Color in indexed
-    if ( col < 256 )
-    {
-        col = (ulong)Fl::get_color( (Fl_Color)col ) | 0x000000FF;
-    }    
     
     uchar col_r = ( col & 0xFF000000 ) >> 24;
     uchar col_g = ( col & 0x00FF0000 ) >> 16;

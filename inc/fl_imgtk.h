@@ -14,6 +14,11 @@
 * [ Disclaimer ]
 * - Some codes belong to FreeImage 3 library, and modified to FLTK and fl_imgtk.
 * - It follows FreeImage license and open as free.
+* 
+* [ FLTK color issue ]
+* - fl_imgtk don't follow to use FLTK index colors ( within 256 ).
+* - please use RGBA ordered fully scaled 32bit color space.
+* - eg. 0x00000012 -> is black, 18/255 alpha depth.
 *******************************************************************************/
 
 #include <FL/Fl.H>
