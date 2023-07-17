@@ -304,7 +304,7 @@ Fl_RGB_Image* fl_imgtk_F2RGB( fl_imgtk_fimg* img, bool dranged = false )
 					buff[ cnt ] = (uchar)fconv;
 				}
 			}
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
             Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
 
             if ( newimg != NULL )
@@ -313,9 +313,6 @@ Fl_RGB_Image* fl_imgtk_F2RGB( fl_imgtk_fimg* img, bool dranged = false )
             }
 
             return newimg;
-#else
-            return new Fl_RGB_Image( buff, w, h ,d );
-#endif
         }
     }
 
@@ -411,7 +408,7 @@ Fl_RGB_Image* fl_imgtk_clamp_F2RGB( fl_imgtk_fimg* img )
                     conv = 255.f;
                 buff[ cnt ] = (uchar)( conv );
             }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
             Fl_RGB_Image* newimg = new Fl_RGB_Image( buff, w, h, d );
 
             if ( newimg != NULL )
@@ -420,9 +417,6 @@ Fl_RGB_Image* fl_imgtk_clamp_F2RGB( fl_imgtk_fimg* img )
             }
 
             return newimg;
-#else
-            return new Fl_RGB_Image( buff, w, h ,d );
-#endif
         }
     }
 
