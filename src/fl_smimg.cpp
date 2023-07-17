@@ -316,12 +316,7 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
             delete[] dst_buff;
             return NULL;
         }
-
-        if ( dst != NULL )
-        {
-            dst->alloc_array = 1;
-        }
-
+        dst->alloc_array = 1;
         return dst;
     }
 
