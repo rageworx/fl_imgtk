@@ -316,12 +316,12 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
             delete[] dst_buff;
             return NULL;
         }
-#if defined(FLIMGTK_IMGBUFF_OWNALLOC)
+
         if ( dst != NULL )
         {
             dst->alloc_array = 1;
         }
-#endif 
+
         return dst;
     }
 
