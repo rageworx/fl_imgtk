@@ -3135,7 +3135,8 @@ Fl_RGB_Image* fl_imgtk::makegradation_h( unsigned w, unsigned h, ulong col1, ulo
     uchar alpha1 = col1 & 0x000000FF;
     uchar alpha2 = col2 & 0x000000FF;
 
-    if ( ( alpha1 == 0 ) || ( alpha2 == 0 ) )
+    // Issue #26, non-alpha depth error case fix
+    if ( ( alpha1 == 0 ) && ( alpha2 == 0 ) )
     {
         d = 3;
         
@@ -3229,7 +3230,8 @@ Fl_RGB_Image* fl_imgtk::makegradation_v( unsigned w, unsigned h, ulong col1, ulo
     uchar alpha1 = col1 & 0x000000FF;
     uchar alpha2 = col2 & 0x000000FF;
 
-    if ( ( alpha1 == 0 ) || ( alpha2 == 0 ) )
+    // Issue #26, non-alpha depth error case fix
+    if ( ( alpha1 == 0 ) && ( alpha2 == 0 ) )
     {
         d = 3;
         alpha1 = 0xFF;
