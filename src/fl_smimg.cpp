@@ -208,10 +208,10 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
     if ( src == NULL)
         return NULL;
 
-    if ( ( src->w() == 0 ) && ( src->h() == 0 ) )
+    if ( ( src->data_w() == 0 ) && ( src->data_h() == 0 ) )
         return NULL;
 
-    if ( ( src->w() == dst_width) && ( src->h() == dst_height))
+    if ( ( src->data_w() == dst_width) && ( src->data_h() == dst_height))
     {
         // fire-egg announced this may cause segment fault,
         // let me test it -
@@ -227,15 +227,15 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
 
     const uchar* src_buff = (uchar*)src->data()[0];
 
-    if ( dst_width <= src->w() )
+    if ( dst_width <= src->data_w() )
     {
         uchar* tmp_buff = NULL;
 
-        if ( src->w() != dst_width )
+        if ( src->data_w() != dst_width )
         {
-            if ( src->h() != dst_height )
+            if ( src->data_h() != dst_height )
             {
-                tmp_buff = new uchar[ ( dst_width * src->h() * src->d() ) + 1 ];
+                tmp_buff = new uchar[ ( dst_width * src->data_h() * src->d() ) + 1 ];
                 if ( tmp_buff == NULL )
                 {
                     delete[] dst_buff;
@@ -247,7 +247,7 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
                 tmp_buff = dst_buff;
             }
 
-            horizontalFilter( src_buff, src->h(), src->w(), src->d(), 0, 0, tmp_buff, dst_width );
+            horizontalFilter( src_buff, src->data_h(), src->data_w(), src->d(), 0, 0, tmp_buff, dst_width );
 
         }
         else
@@ -257,7 +257,7 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
 
         if ( src->h() != dst_height )
         {
-            verticalFilter( tmp_buff, dst_width, src->h(), src->d(), 0, 0,
+            verticalFilter( tmp_buff, dst_width, src->data_h(), src->d(), 0, 0,
                             dst_buff, dst_width, dst_height );
         }
 
@@ -276,7 +276,7 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
         {
             if ( src->w() != dst_width )
             {
-                tmp_buff = new uchar[ src->w() * dst_height * src->d() + 1 ];
+                tmp_buff = new uchar[ src->data_w() * dst_height * src->d() + 1 ];
                 if ( tmp_buff == NULL )
                 {
                     delete[] dst_buff;
@@ -286,7 +286,7 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
                 tmp_buff = dst_buff;
             }
 
-            verticalFilter( src_buff, src->w(), src->h(), src->d(),
+            verticalFilter( src_buff, src->data_w(), src->data_h(), src->d(),
                             0, 0, tmp_buff, dst_width, dst_height );
 
         }
@@ -297,7 +297,7 @@ Fl_RGB_Image* ResizeEngine::scale( Fl_RGB_Image* src, unsigned dst_width, unsign
 
         if ( src->w() != dst_width )
         {
-            horizontalFilter( tmp_buff, dst_height, src->w(), src->d(),
+            horizontalFilter( tmp_buff, dst_height, src->data_w(), src->d(),
                               0, 0, dst_buff, dst_width );
         }
 
