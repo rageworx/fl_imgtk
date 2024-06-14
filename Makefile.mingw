@@ -44,21 +44,21 @@ OPTIMIZEOPT = -ffast-math -O3 -s
 CPUARCHOPT  =
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
-    DEFINEOPT   += -DDEBUG
-    OPTIMIZEOPT  = -g3
-    OUTBIN       = libfl_imgtk_d.a
+	DEFINEOPT   += -DDEBUG
+	OPTIMIZEOPT  = -g3
+	OUTBIN       = libfl_imgtk_d.a
 endif
 
 ifeq (avx,$(firstword $(MAKECMDGOALS)))
-    CPUARCHOPT += -mavx -fopenmp
-    DEFINEOPT  += -DUSING_OMP
-    OUTBIN      = libfl_imgtk_avxomp.a
+	CPUARCHOPT += -mavx -fopenmp
+	DEFINEOPT  += -DUSING_OMP
+	OUTBIN      = libfl_imgtk_avxomp.a
 endif
 
 ifeq (openmp,$(firstword $(MAKECMDGOALS)))
-    OPTIMIZEOPT += -fopenmp
-    DEFINEOPT   += -DUSING_OMP
-    OUTBIN       = libfl_imgtk_omp.a
+	OPTIMIZEOPT += -fopenmp
+	DEFINEOPT   += -DUSING_OMP
+	OUTBIN       = libfl_imgtk_omp.a
 endif
 
 CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
@@ -73,43 +73,43 @@ cleanall: clean cleanlib
 install: preinstall install_lib
 
 prepare:
-        @mkdir -p ${OBJDIR}
-        @mkdir -p ${OUTDIR}
+	@mkdir -p ${OBJDIR}
+	@mkdir -p ${OUTDIR}
 
 preinstall:
-        @if [ ! -e ${INSTDIR} ];then mkdir -p ${INSTDIR}; fi
-        @if [ ! -e ${IINSTDIR} ];then mkdir -p ${IINSTDIR}; fi
+	@if [ ! -e ${INSTDIR} ];then mkdir -p ${INSTDIR}; fi
+	@if [ ! -e ${IINSTDIR} ];then mkdir -p ${IINSTDIR}; fi
 
 install_lib: ${OUTDIR}/${OUTBIN}
-        @cp -rf $< ${INSTDIR}
-        @cp -rf ${INCDIR}/fl_imgtk.h ${IINSTDIR}
+	@cp -rf $< ${INSTDIR}
+	@cp -rf ${INCDIR}/fl_imgtk.h ${IINSTDIR}
 
 uninstall:
-        @if [ -e ${INSTDIR}/${OUTBIN} ];then rm -f ${INSTDIR}/${OUTBIN}; fi
-        @if [ -e ${IINSTDIR}/fl_imgtk.h ];then rm -f ${IINSTDIR}/fl_imgtk.h; fi
+	@if [ -e ${INSTDIR}/${OUTBIN} ];then rm -f ${INSTDIR}/${OUTBIN}; fi
+	@if [ -e ${IINSTDIR}/fl_imgtk.h ];then rm -f ${IINSTDIR}/fl_imgtk.h; fi
 
 ${OBJDIR}/fl_imgtk_tonemap.o:
-        @$(GPP) -c ${SOURCEDIR}/fl_imgtk_tonemap.cpp ${CFLAGS} -o $@
+	@$(GPP) -c ${SOURCEDIR}/fl_imgtk_tonemap.cpp ${CFLAGS} -o $@
 
 ${OBJDIR}/fl_smimg.o:
-        @$(GPP) -c ${SOURCEDIR}/fl_smimg.cpp ${CFLAGS} -o $@
+	@$(GPP) -c ${SOURCEDIR}/fl_smimg.cpp ${CFLAGS} -o $@
 
 ${OBJDIR}/fl_imgtk_clahe.o:
-        @$(GPP) -c ${SOURCEDIR}/fl_imgtk_clahe.cpp ${CFLAGS} -o $@
+	@$(GPP) -c ${SOURCEDIR}/fl_imgtk_clahe.cpp ${CFLAGS} -o $@
 
 ${OBJDIR}/fl_imgtk.o:
-        @$(GPP) -c ${SOURCEDIR}/fl_imgtk.cpp ${CFLAGS} -o $@
+	@$(GPP) -c ${SOURCEDIR}/fl_imgtk.cpp ${CFLAGS} -o $@
 
 
 ${OUTDIR}/${OUTBIN}: ${OBJDIR}/fl_imgtk_tonemap.o ${OBJDIR}/fl_smimg.o ${OBJDIR}/fl_imgtk_clahe.o ${OBJDIR}/fl_imgtk.o
-        @echo "Generating $@ ..."
-        @$(AR) -cr $@ $^
-        @$(RL) $@
-        @cp -f ${INCDIR}/fl_imgtk.h ${OUTDIR}
+	@echo "Generating $@ ..."
+	@$(AR) -cr $@ $^
+	@$(RL) $@
+	@cp -f ${INCDIR}/fl_imgtk.h ${OUTDIR}
 
 clean:
-        @echo "Cleaning built directories ..."
-        @rm -rf ${OBJDIR}/*
+	@echo "Cleaning built directories ..."
+	@rm -rf ${OBJDIR}/*
 
 cleanlib:
-        @rm -rf ${OUTDIR}/${OUTBIN}
+	@rm -rf ${OUTDIR}/${OUTBIN}
