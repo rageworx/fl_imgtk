@@ -33,6 +33,7 @@ SOURCEDIR   = ./src
 OBJDIR      = ./obj
 OUTBIN      = libfl_imgtk.a
 OUTDIR      = ./lib
+INSTALLDIR  = /usr/local
 DEFINEOPT   = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
 DEFINEOPT  += -DFLTK_ABI_VERISON=10304
 OPTIMIZEOPT = -ffast-math -fopenmp -Os -s
@@ -48,9 +49,9 @@ CFLAGS   += -std=c++11
 CFLAGS   += -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR)
 CFLAGS   += $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
 
-.PHONY: prepare clean
+.PHONY: prepare clean install uninstall
 
-all: prepare clean ${OUTDIR}/${OUTBIN}
+all: prepare ${OUTDIR}/${OUTBIN}
 
 debug: all
 
@@ -80,3 +81,19 @@ clean:
 	@echo "Cleaning built directories ..."
 	@rm -rf ${OBJDIR}/*
 	@rm -rf ${OUTDIR}/${OUTBIN}
+
+install:
+	@if [ ! -e ${OUTDIR}/${OUTBIN} ];then echo "Error: library is not built yey, build it and try again"; exit 1; fi
+	@echo "Installing library .."
+	@cp -f ${OUTDIR}/${OUTBIN} ${INSTALLDIR}/lib
+	@echo "Installing header .."
+	@mkdir -p ${INSTALLDIR}/include
+	@cp -f ${INCDIR}/fl_imgtk.h ${INSTALLDIR}/include
+
+uninstall:
+	@if [ -e ${INSTALLDIR}/lib/${OUTBIN} ];then \
+	 echo "Removing library ...";\
+	 rm -f ${INSTALLDIR}/lib/${OUTBIN}; fi
+	@if [ -e ${INSTALLDIR}/include/fl_imgtk.h ]; then \
+	 echo "Removing header ...";\
+	 rm -f ${INSTALLDIR}/include/fl_imgtk.h; fi

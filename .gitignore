@@ -4,3 +4,4 @@ msvc/x64
 msvc/x86
 obj/
 *.db
+Makefile
