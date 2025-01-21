@@ -23,7 +23,8 @@ GPP = ${CCPATH}g++
 AR  = ${CCPATH}ar
 
 # FLTK place
-FLTKDIR    = $(shell fltk-config --includedir)
+FLTKDIR    = $(shell fltk-config --use-images --includedir)
+FLTKCXX	   = $(shell fltk-config --use-images --cxxflags)
 
 # Sources and how it built
 # Optimization issue: recommend to build with using -ffast-math option.
@@ -35,8 +36,8 @@ OUTBIN      = libfl_imgtk.a
 OUTDIR      = ./lib
 INSTALLDIR  = /usr/local
 DEFINEOPT   = -DUSING_INTERPOLATED_ROTATE_FREE -DUSING_OMP
-DEFINEOPT  += -DFLTK_ABI_VERISON=10304
-OPTIMIZEOPT = -ffast-math -fopenmp -Os -s
+DEFINEOPT  += $(FLTKCXX)
+OPTIMIZEOPT = -ffast-math -fopenmp -O3 -s
 CPUARCHOPT  =
 
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
