@@ -25,6 +25,7 @@ FLTKLIBDIR := $(shell ${FLTKCFG} --ldflags)
 # Change if your CPU architecture supports more high technologies.
 INCDIR    = ./inc
 SOURCEDIR = ./src
+INSTDIR   = /usr/local
 OBJDIR    = ./obj/Release
 OUTBIN    = libfl_imgtk.a
 OUTDIR    = ./lib
@@ -34,7 +35,6 @@ OPTIMIZEOPT  = -ffast-math -O3
 CPUARCHOPT   =
 OSOPT        =
 MACOS_MINVER = 11.0
-
 
 # architecture flag setting.
 # Darwin, kernel 20 (big sur) automatically using universal binary.
@@ -48,7 +48,9 @@ endif
 CFLAGS    = -I$(INCDIR) -I$(SOURCEDIR) -I$(FLTKDIR) $(DEFINEOPT) $(OPTIMIZEOPT) $(CPUARCHOPT) $(BITSOPT)
 CFLAGS    += ${OSOPT}
 
-all: prepare clean ${OUTDIR}/${OUTBIN}
+.PHONY: prepare install clean
+
+all: prepare ${OUTDIR}/${OUTBIN}
 
 prepare:
 	@mkdir -p ${OBJDIR}
@@ -76,3 +78,23 @@ clean:
 	@echo "Cleaning built directories ..."
 	@rm -rf ${OBJDIR}/*
 	@rm -rf ${OUTDIR}/${OUTBIN}
+
+install:
+	@echo "Installing ... "
+	@if [ ! -e ${OUTDIR}/${OUTBIN} ];then \
+	echo "Error, build first.";exit 1;fi
+	@if [ ! -e ${INSTDIR} ];then \
+	echo "Error, install path ${INSTDIR} not found."; \
+	exit 1;fi
+	@cp -rf ${OUTDIR}/${OUTBIN} ${INSTDIR}/lib
+	@cp -rf ${OUTDIR}/fl_imgtk.h ${INSTDIR}/include
+	@echo "Done."
+
+uninstall:
+	@echo "Uninstalling ... "
+	@if [ ! -e ${INSTDIR}/lib/${OUTBIN} ];then \
+	rm -rf ${INSTDIR}/lib/${OUTBIN};fi
+	@if [ ! -e ${INSTDIR}/include/fl_imgtk.h ];then \
+	rm -rf ${INSTDIR}/include/fl_imgtk.h;fi
+	@echo "Done."
+
